@@ -1,0 +1,27 @@
+#define PI 3.14159
+#define PI_INV (1.0 / PI)
+
+
+//将范围从[0, 1]重映射至[-1, 1]（NDC）
+float RemapNDC(float a)
+{
+    return a * 2.0 - 1.0;
+}
+
+//获取线性深度值
+//将屏幕空间的非线性深度值变换至线性深度值
+float LinearizeDepth(float depth, float near, float far)
+{
+    float z = RemapNDC(depth);
+    return (2.0 * near * far) / (far + near - z * (far - near));
+    
+}
+
+//AlphaTest
+//如果阿尔法值小于阈值，则舍弃
+float AlphaTest(float alpha, float min_)
+{
+    if (alpha < min_)
+        discard;
+    return 1.0;
+}

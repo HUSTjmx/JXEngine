@@ -1,0 +1,66 @@
+uniform vec3 viewPosWS;
+uniform float farPlaneDepth;
+uniform float nearPlaneDepth;
+
+//标准材质
+uniform vec3 baseColor;
+uniform float metallic;
+uniform float roughness;
+uniform float reflectance;
+uniform vec3 emissive;
+
+
+uniform sampler2D texture_albedo1;
+uniform sampler2D texture_normal1;
+
+
+//基色重映射
+//diffuse color
+vec3 BaseColorReMap(vec3 color, float metallic)
+{
+    return (1.0 - metallic) * color;
+}
+
+//反射率重映射
+//Fresnel项依赖于f0，并且对电介质而言是单色的
+vec3 ReflectanceReMap(float reflec)
+{
+    return 0.16 * reflec * reflec;
+}
+
+//根据折射率计算Fresnel反射率f0
+float GetF0WithIOR(float n)
+{
+    float a = n - 1.0;
+    float b = n + 1.0;
+    return a * a / (b * b);
+}
+
+//逆过程，根据f0计算折射率
+float GetIORWithF0(float f0)
+{
+    float a = 1.0 - sqrt(f0);
+    return 2.0 / a - 1.0;
+}
+
+
+//获取F90，常数版，一般是1
+float GetF90_C()
+{
+    return 1.0;
+}
+
+
+//计算电介质和金属材质的f0, 镜面反射的颜色来自金属的基色
+vec3 GetF0_All(vec3 base_color, float metal, float reflec)
+{
+    return ReflectanceReMap(reflec) * (1.0 - metal) + base_color * metal;
+}
+
+
+//粗糙度重映射 
+//a = roughness * roughness
+float RoughnessReMap(float rough)
+{
+    return rough * rough;
+}

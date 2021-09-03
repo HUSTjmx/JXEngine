@@ -1,0 +1,113 @@
+
+struct DirLight
+{
+    vec3 color;
+	vec3 direction;
+    float intensity;
+};
+
+struct PointLight
+{
+    vec3 color;
+    vec3 position;
+    float intensity;
+    float lightInvRadius;
+};
+
+struct SpotLight
+{
+    vec3 color;
+    vec3 position;
+    vec3 direction;
+    float innerAngle;
+    float outerAngle;
+    float intensity;
+    float lightInvRaduis;
+};
+
+#define DIRECTION_LIGHT_MAX_NUM 1
+#define POINT_LIGHT_NUM 10
+#define SPOT_LIGHT_NUM 5
+
+
+uniform DirLight dirLights[DIRECTION_LIGHT_MAX_NUM];
+uniform PointLight pointLights[POINT_LIGHT_NUM];
+uniform SpotLight spotLights[SPOT_LIGHT_NUM];
+
+uniform int dirLightsNum;
+uniform int pointLightsNum;
+uniform int spotLightsNum;
+
+
+//Æ½·½Ë¥¼õº¯Êý
+float GetSquareFalloffAttenuation(vec3 posToLight, float lightInvRadius)
+{
+    float distanceSquare = dot(posToLight, posToLight);
+    float factor = distanceSquare * lightInvRadius * lightInvRadius;
+    float smoothFactor = max(1.0 - factor * factor, 0.0);
+    return (smoothFactor * smoothFactor) / max(distanceSquare, 1e-4);
+}
+
+//¾Û¹âµÆË¥¼õ
+float GetSpotAngleAttenuation(vec3 l, vec3 lightDir, float innerAngle, float outerAngle)
+{
+    float cosOuter = cos(outerAngle);
+    float spotScale = 1.0 / max(cos(innerAngle) - cosOuter, 1e-4);
+    float spotOffset = -cosOuter * spotScale;
+    
+    float cd = dot(normalize(-lightDir), l);
+    float attenuation = clamp(cd * spotScale + spotOffset, 0.0, 1.0);
+    return attenuation * attenuation;
+}
+
+float GetDirLightIllumiance(int i)
+{
+    if (i > DIRECTION_LIGHT_MAX_NUM)
+        return 0.0;
+    return dirLights[i].intensity;
+}
+
+vec3 GetDirLightColor(int i)
+{
+    if (i > DIRECTION_LIGHT_MAX_NUM)
+        return vec3(0.0);
+    return dirLights[i].color;
+}
+
+float GetPointLightIllumiance(int i, vec3 w_pos)
+{
+    if (i > POINT_LIGHT_NUM)
+        return 0.0;
+    
+    vec3 posToLight = pointLights[i].position - w_pos;
+    float attenuation = GetSquareFalloffAttenuation(posToLight, pointLights[i].lightInvRadius);
+    return pointLights[i].intensity * 0.25 * PI_INV * attenuation;
+}
+
+vec3 GetPointLightColor(int i)
+{
+    if (i > POINT_LIGHT_NUM)
+        return vec3(0.0);
+    
+    return pointLights[i].color;
+}
+
+float GetSpotLightIllumiance(int i, vec3 w_pos)
+{
+    if (i > SPOT_LIGHT_NUM)
+        return 0.0f;
+
+    vec3 posToLight = spotLights[i].position - w_pos;
+    vec3 l = normalize(posToLight);
+    
+    float attenuation;
+    attenuation = GetSquareFalloffAttenuation(posToLight, spotLights[i].lightInvRaduis);
+    attenuation *= GetSpotAngleAttenuation(l, spotLights[i].direction, spotLights[i].innerAngle, spotLights[i].outerAngle);
+    
+    return spotLights[i].intensity * attenuation;
+}
+
+vec3 GetSpotLightColor(int i)
+{
+    return spotLights[i].color;
+}

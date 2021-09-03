@@ -1,0 +1,274 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="头文件\Core">
+      <UniqueIdentifier>{a5d02efc-a704-4eb3-ba69-7aa71150ea0d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Core">
+      <UniqueIdentifier>{82d334f1-36f0-416e-be27-68aede5fbb2f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Data">
+      <UniqueIdentifier>{244aa92a-d47f-49eb-8341-a4b5ce01e138}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Data">
+      <UniqueIdentifier>{768becfd-7f47-4896-bccc-454e6dca7e82}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Shaders">
+      <UniqueIdentifier>{3b816fe1-d2c4-42aa-a415-633b8e95d308}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Shaders\Test">
+      <UniqueIdentifier>{8fb39bf5-ac13-4776-98b7-997376fd267f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Shaders\LearnOpenGL">
+      <UniqueIdentifier>{e9c1455f-4fc2-48ca-9994-1c09adfbed1f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="资源文件\LearnOpenGL">
+      <UniqueIdentifier>{73af466c-0b3c-40ff-8f19-c23585e15207}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="资源文件\LearnOpenGL\textures">
+      <UniqueIdentifier>{cc6eb3e4-fa9e-445b-8640-b72184f27c07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="资源文件\LearnOpenGL\textures\Start_01">
+      <UniqueIdentifier>{9ee8f2d4-24e5-4d7d-9f06-4821de779381}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Shaders\LearnOpenGL\Start_01">
+      <UniqueIdentifier>{29b5141f-4f67-4d51-84c3-f7349cd835c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\ExtendLibrary">
+      <UniqueIdentifier>{3598b3b2-fc7d-4684-a6e0-76c86998daab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\ExtendLibrary">
+      <UniqueIdentifier>{67ebd956-f3da-4be6-9112-3643f7efbe08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Scene">
+      <UniqueIdentifier>{8164a1eb-208a-443e-b15e-36cb6c483899}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Scene">
+      <UniqueIdentifier>{56b0d6dd-8d38-4240-a94b-85ffe08ebfd0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Settings">
+      <UniqueIdentifier>{2092ae42-ade5-4fc9-bc7e-c1089790f098}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Utils">
+      <UniqueIdentifier>{eeb5a578-f561-4d06-83ff-7d86bdd4ab20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Utils">
+      <UniqueIdentifier>{a98e0e1e-12ea-4f60-8b9b-21f9d7476912}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Shaders\Core">
+      <UniqueIdentifier>{692aedf7-c6e1-4700-91ae-fe958db49da0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Shaders\LearnOpenGL\Light_02">
+      <UniqueIdentifier>{695c04f9-7994-4813-8870-c9554d7fa745}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Settings">
+      <UniqueIdentifier>{130d2e3e-05c3-41f0-b142-4b6cb07458c0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Test">
+      <UniqueIdentifier>{dd3263c9-e7c6-47eb-a349-5a2f1f4c6d9e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Test">
+      <UniqueIdentifier>{fd479586-0d0d-45de-9531-c97e49bfea37}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Shaders\LearnOpenGL\High_03">
+      <UniqueIdentifier>{7de91551-4cb1-43e4-b8f3-d6c3dd39c3bd}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="App.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Window.cpp">
+      <Filter>源文件\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="VertexModel.cpp">
+      <Filter>源文件\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture.cpp">
+      <Filter>源文件\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>源文件\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>源文件\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Actor.cpp">
+      <Filter>源文件\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>源文件\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer.cpp">
+      <Filter>源文件\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderCompiler.cpp">
+      <Filter>源文件\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Light.cpp">
+      <Filter>源文件\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Config.cpp">
+      <Filter>源文件\Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="EmbeddedData.cpp">
+      <Filter>源文件\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="Tools.cpp">
+      <Filter>源文件\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Loader.cpp">
+      <Filter>源文件\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="TestScene.cpp">
+      <Filter>源文件\Test</Filter>
+    </ClCompile>
+    <ClCompile Include="Input.cpp">
+      <Filter>源文件\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Environment\c++\src\glad.c">
+      <Filter>源文件\ExtendLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="FrameBuffer.cpp">
+      <Filter>源文件\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Pass.cpp">
+      <Filter>源文件\Core</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Window.h">
+      <Filter>头文件\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="EmbeddedData.h">
+      <Filter>头文件\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexModel.h">
+      <Filter>头文件\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="StingShaderTest.h">
+      <Filter>头文件\Shaders\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture.h">
+      <Filter>头文件\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>头文件\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>头文件\ExtendLibrary</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>头文件\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Actor.h">
+      <Filter>头文件\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>头文件\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Config.h">
+      <Filter>头文件\Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>头文件\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Input.h">
+      <Filter>头文件\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderCompiler.h">
+      <Filter>头文件\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Tools.h">
+      <Filter>头文件\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="JXAlloc.h">
+      <Filter>头文件\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Light.h">
+      <Filter>头文件\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Counted.h">
+      <Filter>头文件\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Loader.h">
+      <Filter>头文件\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="TestScene.h">
+      <Filter>头文件\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameBuffer.h">
+      <Filter>头文件\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Pass.h">
+      <Filter>头文件\Core</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="texture_01.vs">
+      <Filter>头文件\Shaders\LearnOpenGL\Start_01</Filter>
+    </None>
+    <None Include="texture_01.fs">
+      <Filter>头文件\Shaders\LearnOpenGL\Start_01</Filter>
+    </None>
+    <None Include="camera_02.vs">
+      <Filter>头文件\Shaders\LearnOpenGL\Start_01</Filter>
+    </None>
+    <None Include="camera_02.fs">
+      <Filter>头文件\Shaders\LearnOpenGL\Start_01</Filter>
+    </None>
+    <None Include="Light.cg">
+      <Filter>头文件\Shaders\Core</Filter>
+    </None>
+    <None Include="lightCube.vs">
+      <Filter>头文件\Shaders\LearnOpenGL\Light_02</Filter>
+    </None>
+    <None Include="lightCube.fs">
+      <Filter>头文件\Shaders\LearnOpenGL\Light_02</Filter>
+    </None>
+    <None Include="Uniform.cg">
+      <Filter>头文件\Shaders\Core</Filter>
+    </None>
+    <None Include="BRDF.cg">
+      <Filter>头文件\Shaders\Core</Filter>
+    </None>
+    <None Include="lightTest.vs">
+      <Filter>头文件\Shaders\LearnOpenGL\Light_02</Filter>
+    </None>
+    <None Include="lightTest.fs">
+      <Filter>头文件\Shaders\LearnOpenGL\Light_02</Filter>
+    </None>
+    <None Include="Math.cg">
+      <Filter>头文件\Shaders\Core</Filter>
+    </None>
+    <None Include="AlphaTest_01.fs">
+      <Filter>头文件\Shaders\LearnOpenGL\High_03</Filter>
+    </None>
+    <None Include="AlphaTest_01.vs">
+      <Filter>头文件\Shaders\LearnOpenGL\High_03</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\LearnOpenGL\Start_01\wall.jpg">
+      <Filter>资源文件\LearnOpenGL\textures\Start_01</Filter>
+    </Image>
+    <Image Include="resources\LearnOpenGL\Start_01\container.jpg">
+      <Filter>资源文件\LearnOpenGL\textures\Start_01</Filter>
+    </Image>
+  </ItemGroup>
+</Project>
