@@ -11,6 +11,7 @@ class Material;
 class VertexModel;
 class Camera;
 class Texture;
+class ShaderCompiler;
 
 struct Transform {
 	glm::vec3 position;
@@ -59,6 +60,8 @@ public:
 	virtual std::shared_ptr<Material> GetMaterial();
 
 	virtual void Draw();
+
+	virtual void Draw(std::shared_ptr<Material> newMat);
 
 	virtual void Delete();
 

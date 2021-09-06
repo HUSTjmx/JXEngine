@@ -136,6 +136,11 @@ void FrameBuffer::Delete()
 	glDeleteFramebuffers(1, &fbo);
 }
 
+unsigned int FrameBuffer::FBO() const
+{
+	return fbo;
+}
+
 unsigned int FrameBuffer::BindTextureToBuffer(GLenum format)
 {
 

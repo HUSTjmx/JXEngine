@@ -101,6 +101,67 @@ namespace LEARN_OPENGL_VERTICE {
 		};
 
 		unsigned int offsets[2] = { 3, 2 };
+
+		float QuadVertices[24] =
+		{
+			// positions   // texCoords
+			-1.0f,  1.0f,  0.0f, 1.0f,
+			-1.0f, -1.0f,  0.0f, 0.0f,
+			 1.0f, -1.0f,  1.0f, 0.0f,
+
+			-1.0f,  1.0f,  0.0f, 1.0f,
+			 1.0f, -1.0f,  1.0f, 0.0f,
+			1.0f,  1.0f,  1.0f, 1.0f
+		};
+
+		unsigned int QuadOffsets[2] = { 2, 2 };
+
+		float CubeMapVertice[108] = {
+			// positions          
+			-1.0f,  1.0f, -1.0f,
+			-1.0f, -1.0f, -1.0f,
+			 1.0f, -1.0f, -1.0f,
+			 1.0f, -1.0f, -1.0f,
+			 1.0f,  1.0f, -1.0f,
+			-1.0f,  1.0f, -1.0f,
+
+			-1.0f, -1.0f,  1.0f,
+			-1.0f, -1.0f, -1.0f,
+			-1.0f,  1.0f, -1.0f,
+			-1.0f,  1.0f, -1.0f,
+			-1.0f,  1.0f,  1.0f,
+			-1.0f, -1.0f,  1.0f,
+
+			 1.0f, -1.0f, -1.0f,
+			 1.0f, -1.0f,  1.0f,
+			 1.0f,  1.0f,  1.0f,
+			 1.0f,  1.0f,  1.0f,
+			 1.0f,  1.0f, -1.0f,
+			 1.0f, -1.0f, -1.0f,
+
+			-1.0f, -1.0f,  1.0f,
+			-1.0f,  1.0f,  1.0f,
+			 1.0f,  1.0f,  1.0f,
+			 1.0f,  1.0f,  1.0f,
+			 1.0f, -1.0f,  1.0f,
+			-1.0f, -1.0f,  1.0f,
+
+			-1.0f,  1.0f, -1.0f,
+			 1.0f,  1.0f, -1.0f,
+			 1.0f,  1.0f,  1.0f,
+			 1.0f,  1.0f,  1.0f,
+			-1.0f,  1.0f,  1.0f,
+			-1.0f,  1.0f, -1.0f,
+
+			-1.0f, -1.0f, -1.0f,
+			-1.0f, -1.0f,  1.0f,
+			 1.0f, -1.0f, -1.0f,
+			 1.0f, -1.0f, -1.0f,
+			-1.0f, -1.0f,  1.0f,
+			 1.0f, -1.0f,  1.0f
+		};
+
+		unsigned int CubeMapOffsets[1] = { 3 };
 	}
 }
 
@@ -134,30 +195,54 @@ namespace LEARN_OPENGL_TEXTURE {
 		std::string High_03_Grass = "resources/LearnOpenGL/High_03/grass.png";
 
 		std::string High_03_window = "resources/LearnOpenGL/High_03/blending_transparent_window.png";
+
+		std::vector<std::string> skybox1_face =
+		{
+			"resources/textures/skybox1/right.jpg",
+			"resources/textures/skybox1/left.jpg",
+			"resources/textures/skybox1/top.jpg",
+			"resources/textures/skybox1/bottom.jpg",
+			"resources/textures/skybox1/front.jpg",
+			"resources/textures/skybox1/back.jpg",
+		};
 	}
 }
 
 namespace LEARN_OPENGL_SHADER
 {
-	 std::string Start_01_texture_vs = "texture_01.vs";
+	std::string address = "shaders/";
 
-	 std::string Start_01_texture_fs = "texture_01.fs";
+	 std::string Start_01_texture_vs = address + "texture_01.vs";
 
-	 std::string Start_02_camera_vs = "camera_02.vs";
+	 std::string Start_01_texture_fs = address + "texture_01.fs";
 
-	 std::string Start_02_camera_fs = "camera_02.fs";
+	 std::string Start_02_camera_vs = address + "camera_02.vs";
 
-	 std::string Light_02_lightCube_vs = "lightCube.vs";
+	 std::string Start_02_camera_fs = address + "camera_02.fs";
 
-	 std::string Light_02_lightCube_fs = "lightCube.fs";
+	 std::string Light_02_lightCube_vs = address + "lightCube.vs";
 
-	 std::string Light_02_lightTest_vs = "lightTest.vs";
+	 std::string Light_02_lightCube_fs = address + "lightCube.fs";
 
-	 std::string Light_02_lightTest_fs = "lightTest.fs";
+	 std::string Light_02_lightTest_vs = address + "lightTest.vs";
 
-	 std::string High_03_AlphaTest_vs = "AlphaTest_01.vs";
+	 std::string Light_02_lightTest_fs = address + "lightTest.fs";
 
-	 std::string High_03_AlphaTest_fs = "AlphaTest_01.fs";
+	 std::string High_03_AlphaTest_vs = address + "AlphaTest_01.vs";
+
+	 std::string High_03_AlphaTest_fs = address + "AlphaTest_01.fs";
+
+	 std::string High_04_FrameTest_vs = address + "FrameBufferTest_02.vs";
+
+	 std::string High_04_FrameTest_fs = address + "FrameBufferTest_02.fs";
+
+	 std::string High_05_CubeMapTest_vs = address + "CubeMap_03.vs";
+
+	 std::string High_05_CubeMapTest_fs = address + "CubeMap_03.fs";
+
+	 std::string High_06_SkyBox_vs = address + "skybox_04.vs";
+
+	 std::string High_06_SkyBox_fs = address + "skybox_04.fs";
 
 	namespace TEXTURE_NAME {
 		 std::string texture_name1 = "texture1";

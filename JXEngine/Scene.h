@@ -22,6 +22,8 @@ public:
 
 	virtual void Draw();
 
+	virtual void Draw(std::shared_ptr<Material> newMat);
+
 	virtual void Delete();
 
 	virtual Camera& MainCamera();

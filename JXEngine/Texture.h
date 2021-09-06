@@ -1,6 +1,7 @@
 #pragma once
 #include <glad/glad.h>
 #include <string>
+#include <vector>
 
 class ShaderCompiler;
 
@@ -17,9 +18,11 @@ public:
 
 	Texture(int uniformPos, const std::string& address, const std::string& s_name, GLenum warpMode);
 
+	virtual ~Texture() = default;
+
 	void LoadAndGenerateTex(const std::string& address);
 
-	void Bind() const;
+	virtual void Bind() const;
 
 	void SetUniformPos(int newPos);
 
@@ -33,8 +36,9 @@ public:
 
 	void SetType(const std::string& type_);
 
+	virtual unsigned int loadCubemap(std::vector<std::string> faces) { return -1; }
 
-private:
+protected:
 
 	unsigned int texture;
 
@@ -45,3 +49,19 @@ private:
 	std::string path;
 };
 
+
+class CubeTexture : public Texture
+{
+public:
+
+	CubeTexture() : Texture() {}
+
+	CubeTexture(const std::string& name) : Texture() {
+		SetUniformPos(0);
+		SetType(name);
+	}
+
+	unsigned int loadCubemap(std::vector<std::string> faces) override;
+
+	virtual void Bind()const override;
+};

@@ -189,20 +189,25 @@
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="AlphaTest_01.fs" />
     <None Include="AlphaTest_01.vs" />
-    <None Include="BRDF.cg" />
     <None Include="camera_02.fs" />
     <None Include="camera_02.vs" />
-    <None Include="Light.cg" />
+    <None Include="CubeMap_03.fs" />
+    <None Include="CubeMap_03.vs" />
+    <None Include="FrameBufferTest_02.fs" />
+    <None Include="FrameBufferTest_02.vs" />
     <None Include="lightCube.fs" />
     <None Include="lightCube.vs" />
     <None Include="lightTest.fs" />
     <None Include="lightTest.vs" />
-    <None Include="Math.cg" />
+    <None Include="shaders\BRDF.cg" />
+    <None Include="shaders\Light.cg" />
+    <None Include="shaders\Math.cg" />
+    <None Include="shaders\Uniform.cg" />
+    <None Include="skybox_04.fs" />
+    <None Include="skybox_04.vs" />
     <None Include="texture_01.fs" />
     <None Include="texture_01.vs" />
-    <None Include="Uniform.cg" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="resources\LearnOpenGL\Start_01\container.jpg" />

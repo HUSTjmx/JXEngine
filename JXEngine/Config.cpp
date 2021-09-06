@@ -101,9 +101,10 @@ namespace CONFIG
 
 	namespace SHADING_INCLUDE_CORE
 	{
-		const std::string MATH = "Math.cg";
-		const std::string BRDF = "BRDF.cg";
-		const std::string LIGHT = "Light.cg";
-		const std::string UNIFORM = "Uniform.cg";
+		const std::string address = "shaders/";
+		const std::string MATH = address + "Math.cg";
+		const std::string BRDF = address + "BRDF.cg";
+		const std::string LIGHT = address + "Light.cg";
+		const std::string UNIFORM = address + "Uniform.cg";
 	}
 }

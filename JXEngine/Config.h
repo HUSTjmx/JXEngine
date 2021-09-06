@@ -90,6 +90,7 @@ namespace CONFIG
 
 	namespace SHADING_INCLUDE_CORE
 	{
+		extern const std::string address;
 		extern const std::string MATH;
 		extern const std::string BRDF;
 		extern const std::string LIGHT;

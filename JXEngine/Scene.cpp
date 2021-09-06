@@ -60,6 +60,18 @@ void Scene::Draw()
 	
 }
 
+void Scene::Draw(std::shared_ptr<Material> newMat)
+{
+	for (auto i = actors.begin(); i != actors.end();i++)
+	{
+		LoadLightInfo(newMat->GetShader());
+		LoadCameraInfo(newMat);
+		newMat->SetVP(*camera.get());
+		newMat->LoadInfoToShader();
+		i->get()->Draw(newMat);
+	}
+}
+
 void Scene::Delete()
 {
 	for (auto i = actors.begin(); i != actors.end();i++)

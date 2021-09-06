@@ -1,6 +1,7 @@
 #pragma once
 
 class Scene;
+class Pass;
 
 namespace OPENGL_SCENE
 {
@@ -19,8 +20,34 @@ namespace OPENGL_SCENE
 
 		Scene GetScene_AlphaBlend_03();
 
+		Scene GetScene_FrameTest_04();
+
+		Scene GetScene_CubeMapTest_05();
+
 	private:
 		TestScene() {}
+	};
+
+	class TestPass
+	{
+	public:
+		static TestPass& Intance()
+		{
+			static TestPass* intance_ = new TestPass();
+			return *intance_;
+		}
+
+		Pass GetPass_FrameTest_04();
+
+		Pass GetPass2_FrameTest_04(Pass& p);
+
+		Pass GetPass_SkyBox_05();
+
+		void Draw_FrameTest_04(Pass& p1, Pass& p2);
+	
+
+	private:
+		TestPass() {}
 	};
 }
 

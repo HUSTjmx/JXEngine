@@ -73,6 +73,22 @@ void Actor::Draw()
 	}
 }
 
+void Actor::Draw(std::shared_ptr<Material> newMat)
+{
+	newMat->BindTexturesToOpenGL();
+	for (auto mesh = meshes.begin(); mesh != meshes.end();++mesh)
+	{
+		mesh->get()->BindVAO();
+		for (int i = 0; i < positions.size();i++)
+		{
+			transform.Reset();
+			AnimaTo(positions[i], transform.scale, 0.0, transform.rotation_axis);
+			newMat->SetP(transform);
+			mesh->get()->Draw();
+		}
+	}
+}
+
 void Actor::Delete()
 {
 	for (auto mesh = meshes.begin(); mesh != meshes.end();++mesh)

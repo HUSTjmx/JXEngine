@@ -232,20 +232,11 @@
     <None Include="camera_02.fs">
       <Filter>头文件\Shaders\LearnOpenGL\Start_01</Filter>
     </None>
-    <None Include="Light.cg">
-      <Filter>头文件\Shaders\Core</Filter>
-    </None>
     <None Include="lightCube.vs">
       <Filter>头文件\Shaders\LearnOpenGL\Light_02</Filter>
     </None>
     <None Include="lightCube.fs">
       <Filter>头文件\Shaders\LearnOpenGL\Light_02</Filter>
-    </None>
-    <None Include="Uniform.cg">
-      <Filter>头文件\Shaders\Core</Filter>
-    </None>
-    <None Include="BRDF.cg">
-      <Filter>头文件\Shaders\Core</Filter>
     </None>
     <None Include="lightTest.vs">
       <Filter>头文件\Shaders\LearnOpenGL\Light_02</Filter>
@@ -253,14 +244,38 @@
     <None Include="lightTest.fs">
       <Filter>头文件\Shaders\LearnOpenGL\Light_02</Filter>
     </None>
-    <None Include="Math.cg">
-      <Filter>头文件\Shaders\Core</Filter>
-    </None>
-    <None Include="AlphaTest_01.fs">
-      <Filter>头文件\Shaders\LearnOpenGL\High_03</Filter>
-    </None>
     <None Include="AlphaTest_01.vs">
       <Filter>头文件\Shaders\LearnOpenGL\High_03</Filter>
+    </None>
+    <None Include="FrameBufferTest_02.vs">
+      <Filter>头文件\Shaders\LearnOpenGL\High_03</Filter>
+    </None>
+    <None Include="FrameBufferTest_02.fs">
+      <Filter>头文件\Shaders\LearnOpenGL\High_03</Filter>
+    </None>
+    <None Include="CubeMap_03.vs">
+      <Filter>头文件\Shaders\LearnOpenGL\High_03</Filter>
+    </None>
+    <None Include="CubeMap_03.fs">
+      <Filter>头文件\Shaders\LearnOpenGL\High_03</Filter>
+    </None>
+    <None Include="skybox_04.vs">
+      <Filter>头文件\Shaders\LearnOpenGL\High_03</Filter>
+    </None>
+    <None Include="skybox_04.fs">
+      <Filter>头文件\Shaders\LearnOpenGL\High_03</Filter>
+    </None>
+    <None Include="shaders\Math.cg">
+      <Filter>头文件\Shaders\Core</Filter>
+    </None>
+    <None Include="shaders\Uniform.cg">
+      <Filter>头文件\Shaders\Core</Filter>
+    </None>
+    <None Include="shaders\Light.cg">
+      <Filter>头文件\Shaders\Core</Filter>
+    </None>
+    <None Include="shaders\BRDF.cg">
+      <Filter>头文件\Shaders\Core</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

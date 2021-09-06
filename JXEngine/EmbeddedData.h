@@ -32,6 +32,14 @@ namespace LEARN_OPENGL_VERTICE {
 		extern float transparentVertices[30];
 
 		extern unsigned int offsets[2];
+
+		extern float QuadVertices[24];
+
+		extern unsigned int QuadOffsets[2];
+
+		extern float CubeMapVertice[108];
+
+		extern unsigned int CubeMapOffsets[1];
 	}
 }
 
@@ -54,6 +62,8 @@ namespace LEARN_OPENGL_TEXTURE {
 		extern std::string High_03_Grass;
 
 		extern std::string High_03_window;
+
+		extern std::vector<std::string> skybox1_face;
 	}
 
 
@@ -61,6 +71,8 @@ namespace LEARN_OPENGL_TEXTURE {
 
 namespace LEARN_OPENGL_SHADER
 {
+	extern std::string address;
+
 	extern std::string Start_01_texture_vs;
 
 	 extern std::string Start_01_texture_fs;
@@ -80,6 +92,18 @@ namespace LEARN_OPENGL_SHADER
 	 extern std::string High_03_AlphaTest_vs;
 
 	 extern std::string High_03_AlphaTest_fs;
+
+	 extern std::string High_04_FrameTest_vs;
+
+	 extern std::string High_04_FrameTest_fs;
+
+	 extern std::string High_05_CubeMapTest_vs;
+
+	 extern std::string High_05_CubeMapTest_fs;
+
+	 extern std::string High_06_SkyBox_vs;
+
+	 extern std::string High_06_SkyBox_fs;
 
 	namespace TEXTURE_NAME {
 		extern std::string texture_name1;

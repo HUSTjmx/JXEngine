@@ -2,6 +2,7 @@
 #include <glad/glad.h>
 #include <memory>
 #include <vector>
+#include <string>
 
 class Texture;
 
@@ -22,6 +23,8 @@ public:
 	void AddRenderObject(bool hasStencil);
 
 	void Delete();
+
+	unsigned int FBO()const;
 
 	std::vector<std::shared_ptr<Texture>> textureBuffers;
 

@@ -13,6 +13,10 @@
 #include "Input.h"
 #include "Config.h"
 #include "TestScene.h"
+#include "Pass.h"
+#include "FrameBuffer.h"
+#include "Actor.h"
+#include "Material.h"
 
 
 void InitGlfw();
@@ -131,8 +135,8 @@ void Loop(GLFWwindow* window)
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_STENCIL_TEST);
 
+	Pass p = OPENGL_SCENE::TestPass::Intance().GetPass_SkyBox_05();
 
-	Scene scene = OPENGL_SCENE::TestScene::Instance().GetScene_AlphaBlend_03();
 
 	//时钟重置，开始计时
 	Clock.Reset();
@@ -153,9 +157,9 @@ void Loop(GLFWwindow* window)
 		// ------
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-
-		scene.Draw();
+		
+		//OPENGL_SCENE::TestPass::Intance().Draw_FrameTest_04(p1, p2);
+		p.Draw();
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
@@ -163,6 +167,5 @@ void Loop(GLFWwindow* window)
 		glfwPollEvents();
 	}
 
-	scene.Delete();
 
 }
