@@ -147,6 +147,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="D:\Environment\c++\src\glad.c" />
+    <ClCompile Include="DesignPatterns.cpp" />
     <ClCompile Include="EmbeddedData.cpp" />
     <ClCompile Include="FrameBuffer.cpp" />
     <ClCompile Include="Input.cpp" />
@@ -168,6 +169,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="Counted.h" />
+    <ClInclude Include="DesignPatterns.h" />
     <ClInclude Include="EmbeddedData.h" />
     <ClInclude Include="FrameBuffer.h" />
     <ClInclude Include="Input.h" />

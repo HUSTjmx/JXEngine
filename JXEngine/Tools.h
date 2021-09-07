@@ -32,4 +32,19 @@ private:
 
 extern void SortPosByDistance(std::vector<glm::vec3>& v, glm::vec3 c_pos);
 
+class MatTool
+{
+public:
+	static MatTool& Instance()
+	{
+		static MatTool* intance_ = new MatTool();
+		return *intance_;
+	}
+
+	glm::mat4 RemoveTranslation(glm::mat4 a);
+
+private:
+	MatTool() {}
+};
+
 

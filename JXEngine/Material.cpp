@@ -1,10 +1,14 @@
+#include <algorithm>
+#include <type_traits>
 #include "Material.h"
 #include "Texture.h"
 #include "ShaderCompiler.h"
 #include <iostream>
+#include <vector>
 #include "Camera.h"
 #include "Config.h"
 #include "Actor.h"
+#include "Tools.h"
 
 Material::Material(std::shared_ptr<ShaderCompiler> s)
 {
@@ -19,6 +23,17 @@ Material::Material(std::shared_ptr<ShaderCompiler> s)
 	reflectance = 0.9;
 
 	emissive = glm::vec3(0.0);
+
+	CanMove = true;
+
+	engineSetting = std::make_shared<EngineSetting>();
+}
+
+void Material::OnNotify(Event* event)
+{
+	auto type_ = dynamic_cast<ActorType*>(event);
+	CanMove = type_->GetMobility() == ActorType::Mobility::MOVE;
+	//std::cout << CanMove << std::endl;
 }
 
 void Material::AddTexture(std::shared_ptr<Texture> tex)
@@ -86,14 +101,25 @@ void Material::SetMVP(const Camera& camera, Transform transform)
 	Active();
 	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::MODEL_MATRIX, transform.model);
 	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX, camera.GetProjectionMatrix());
-	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX, camera.GetViewMatrix());
+	if (CanMove)
+		GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX, camera.GetViewMatrix());
+	else
+	{
+		GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX, MatTool::Instance().RemoveTranslation(camera.GetViewMatrix()));
+	}
 }
 
 void Material::SetVP(const Camera& camera)
 {
 	Active();
 	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX, camera.GetProjectionMatrix());
-	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX, camera.GetViewMatrix());
+	//std::cout << CanMove << std::endl;
+	if(CanMove)
+		GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX, camera.GetViewMatrix());
+	else
+	{
+		GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX, MatTool::Instance().RemoveTranslation(camera.GetViewMatrix()));
+	}
 }
 
 void Material::SetP(Transform transform)
@@ -104,6 +130,11 @@ void Material::SetP(Transform transform)
 void Material::SetViewPos(const Camera& camera)
 {
 	GetShader()->SetVec3(CONFIG::CAMERA_CONFIG::SHADER::VIEW_POS_IN_WORLD, camera.Position);
+}
+
+void Material::SetMobility(bool movbility)
+{
+	CanMove = movbility;
 }
 
 std::vector<std::shared_ptr<Texture>> Material::LoadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName, std::string directory)
@@ -167,5 +198,42 @@ std::shared_ptr<Material> Material::Copy() const
 	m->metallic = metallic;
 	m->reflectance = reflectance;
 	m->roughness = roughness;
+	m->engineSetting = engineSetting;
 	return m;
+}
+
+
+void TranslateCmd(EngineCommands cmd)
+{
+	switch (cmd)
+	{
+	case EngineCommands::Depth_Func_LEQUAL:
+		glDepthFunc(GL_LEQUAL);
+		break;
+	case EngineCommands::Depth_Func_LESS:
+		glDepthFunc(GL_LESS);
+		break;
+	default:
+		break;
+	}
+}
+
+void EngineSetting::AddInitCmds(EngineCommands cmd)
+{
+	initCmds.push_back(cmd);
+}
+
+void EngineSetting::AddEndCmds(EngineCommands cmd)
+{
+	endCmds.push_back(cmd);
+}
+
+void EngineSetting::InitExecutive() const
+{
+	std::for_each(initCmds.begin(), initCmds.end(), TranslateCmd);
+}
+
+void EngineSetting::EndExecutive() const
+{
+	std::for_each(endCmds.begin(), endCmds.end(), TranslateCmd);
 }

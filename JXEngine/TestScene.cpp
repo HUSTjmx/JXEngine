@@ -232,11 +232,14 @@ Scene OPENGL_SCENE::TestScene::GetScene_CubeMapTest_05()
 	cubeMat->LinkTextureForShader();
 
 	MaterialPtr skyMat = std::make_shared<Material>(skyboxShader);
-	cubeMat->AddTexture(skyTex);
-	cubeMat->LinkTextureForShader();
+	skyMat->AddTexture(skyTex);
+	skyMat->LinkTextureForShader();
+	skyMat->engineSetting->AddInitCmds(EngineCommands::Depth_Func_LEQUAL);
+	skyMat->engineSetting->AddEndCmds(EngineCommands::Depth_Func_LESS);
 
 	ActorPtr a1 = std::make_shared<Actor>(cube, cubeMat);
 	ActorPtr a2 = std::make_shared<Actor>(skybox, skyMat);
+	a2->_ActorType_().SetMobility(ActorType::Mobility::STATIC);
 
 	scene.AddActor(a1);
 	scene.AddActor(a2);
@@ -275,7 +278,6 @@ Pass OPENGL_SCENE::TestPass::GetPass_SkyBox_05()
 
 	Pass pass;
 	pass.UpdateInput(std::make_shared<Scene>(scene));
-	glDepthFunc(GL_LEQUAL);
 	return pass;
 }
 

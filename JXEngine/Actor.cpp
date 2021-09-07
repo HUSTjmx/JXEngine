@@ -9,13 +9,13 @@
 
 Actor::Actor(std::shared_ptr<Material> m)
 {
-	material = m;
+	SetMaterial(m);
 	InitPosition();
 }
 
 Actor::Actor(const std::string& path, std::shared_ptr<Material> m)
 {
-	material = m;
+	SetMaterial(m);
 	loadModel(path);
 	InitPosition();
 }
@@ -30,7 +30,7 @@ Actor::Actor(std::shared_ptr<VertexModel> m, std::shared_ptr<Material> n)
 Actor& Actor::operator=(const Actor& a)
 {
 	meshes = a.meshes;
-	material = a.material;
+	SetMaterial(a.material);
 	transform = a.transform;
 	positions = a.positions;
 	return *this;
@@ -44,6 +44,8 @@ void Actor::AddMesh(std::shared_ptr<VertexModel> m)
 void Actor::SetMaterial(std::shared_ptr<Material> m)
 {
 	material = m;
+	type.addObserver(material.get());
+	//type.notify(&type);
 }
 
 void Actor::SetPostionsArray(std::vector<glm::vec3>& p)
@@ -58,8 +60,8 @@ std::shared_ptr<Material> Actor::GetMaterial()
 
 void Actor::Draw()
 {
+	material->engineSetting->InitExecutive();
 	material->BindTexturesToOpenGL();
-
 	for (auto mesh = meshes.begin(); mesh != meshes.end();++mesh)
 	{
 		mesh->get()->BindVAO();
@@ -71,6 +73,7 @@ void Actor::Draw()
 			mesh->get()->Draw();
 		}
 	}
+	material->engineSetting->EndExecutive();
 }
 
 void Actor::Draw(std::shared_ptr<Material> newMat)
@@ -271,3 +274,13 @@ void Transform::Reset()
 	model = glm::mat4(1.0f);
 }
 
+void ActorType::SetMobility(Mobility a)
+{
+	mobility = a;
+	this->notify(this);
+}
+
+ActorType::Mobility ActorType::GetMobility()
+{
+	return mobility;
+}

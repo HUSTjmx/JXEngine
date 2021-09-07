@@ -30,3 +30,8 @@ void SortPosByDistance(std::vector<glm::vec3>& v, glm::vec3 c_pos)
 	std::sort(v.begin(), v.end(), func);
 	//std::sort(v.begin(), v.end(),)
 }
+
+glm::mat4 MatTool::RemoveTranslation(glm::mat4 a)
+{
+	return glm::mat4(glm::mat3(a));
+}

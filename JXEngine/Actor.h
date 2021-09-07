@@ -6,6 +6,7 @@
 #include <assimp/postprocess.h>
 #include <memory>
 #include <vector>
+#include "DesignPatterns.h"
 
 class Material;
 class VertexModel;
@@ -36,7 +37,25 @@ struct Transform {
 
 };
 
+class ActorType : public Event, public Subject
+{
+public:
 
+	enum class Mobility {
+		STATIC,
+		MOVE
+	};
+
+	ActorType() : mobility(Mobility::MOVE) {}
+
+	void SetMobility(Mobility a);
+
+	Mobility GetMobility();
+
+private:
+
+	Mobility mobility;
+};
 
 class Actor
 {
@@ -71,11 +90,6 @@ public:
 
 	virtual void ScaleTo(glm::vec3 scale);
 
-	virtual Transform& TRANSFORM()
-	{
-		return transform;
-	}
-
 	void loadModel(std::string const& path);
 
 	void processNode(aiNode* node, const aiScene* scene);
@@ -83,6 +97,15 @@ public:
 	std::shared_ptr<VertexModel> processMesh(aiMesh* mesh, const aiScene* scene);
 
 	std::vector<std::shared_ptr<Texture>> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);
+
+	ActorType& _ActorType_() {
+		return type;
+	}
+
+	Transform& _Transform_()
+	{
+		return transform;
+	}
 
 private:
 
@@ -97,5 +120,7 @@ private:
 	std::vector<glm::vec3> positions;
 
 	std::string directory;
+
+	ActorType type;
 };
 

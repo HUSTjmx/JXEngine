@@ -147,6 +147,9 @@
     <ClCompile Include="Pass.cpp">
       <Filter>源文件\Core</Filter>
     </ClCompile>
+    <ClCompile Include="DesignPatterns.cpp">
+      <Filter>源文件\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h">
@@ -217,6 +220,9 @@
     </ClInclude>
     <ClInclude Include="Pass.h">
       <Filter>头文件\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="DesignPatterns.h">
+      <Filter>头文件\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

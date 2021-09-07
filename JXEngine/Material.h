@@ -9,7 +9,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
-
+#include "DesignPatterns.h"
 
 class Texture;
 class ShaderCompiler;
@@ -28,12 +28,38 @@ enum class UNIFORM_DATA_TYPE {
 	Mat4
 };
 
-class Material
+enum class EngineCommands
+{
+	Depth_Func_LEQUAL,
+	Depth_Func_LESS
+};
+
+class EngineSetting
+{
+public:
+	EngineSetting() {}
+
+	void AddInitCmds(EngineCommands cmd);
+
+	void AddEndCmds(EngineCommands cmd);
+
+	void InitExecutive() const;
+
+	void EndExecutive() const;
+
+private:
+	std::vector<EngineCommands> initCmds;
+	std::vector<EngineCommands> endCmds;
+};
+
+class Material : public Observer
 {
 
 public:
 
 	Material(std::shared_ptr<ShaderCompiler> s);
+
+	void OnNotify(Event* event)override;
 
 	virtual void AddTexture(std::shared_ptr<Texture> tex);
 
@@ -57,6 +83,8 @@ public:
 
 	void SetViewPos(const Camera& camera);
 
+	void SetMobility(bool movbility);
+
 	std::vector<std::shared_ptr<Texture>> LoadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName, std::string directory);
 
 	void LoadTextures(aiMaterial* mat, std::string directory);
@@ -64,11 +92,11 @@ public:
 	template<typename T>
 	void SetUniformAttri(const std::string& name, T value, void(*pf)(const std::string&, T));
 
-
 	std::shared_ptr<Material> Copy() const;
 
 	std::vector<std::shared_ptr<Texture>> textures;
 
+	std::shared_ptr<EngineSetting> engineSetting;
 
 private:
 
@@ -83,6 +111,8 @@ private:
 	float reflectance;
 
 	glm::vec3 emissive;
+
+	bool CanMove;
 };
 
 template<typename T>

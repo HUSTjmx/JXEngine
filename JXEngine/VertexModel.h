@@ -89,6 +89,7 @@ inline void VertexModel::BindVertexToBuffer(float(&vertices)[N], unsigned int(&o
 	haveIndices = false;
 	indicesSize = 0;
 	vertexSize = N / sum;
+	//std::cout << F << std::endl;
 }
 
 template<size_t N, size_t M, size_t F>
@@ -120,4 +121,6 @@ inline void VertexModel::BindVertexToBuffer(float(&vertices)[N], unsigned int(&i
 	vertexSize = N / sum;
 	indicesSize = M;
 	haveIndices = true;
+
+	
 }

@@ -1,6 +1,6 @@
 ﻿  TestScene.cpp
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Actor.h(16,18): warning C4099: “Transform”: 类型名称以前使用“class”现在使用的是“struct”
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Actor.h(16): message : 参见“Transform”的声明
+C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Actor.h(17,18): warning C4099: “Transform”: 类型名称以前使用“class”现在使用的是“struct”
+C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Actor.h(17): message : 参见“Transform”的声明
 C:\Users\ZoroD\source\repos\JXEngine\JXEngine\TestScene.cpp(50,32): warning C4305: “参数”: 从“double”到“T”截断
           with
           [
