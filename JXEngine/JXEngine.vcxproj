@@ -161,6 +161,7 @@
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="Tools.cpp" />
+    <ClCompile Include="UniformBuffer.cpp" />
     <ClCompile Include="VertexModel.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
@@ -187,6 +188,7 @@
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Tools.h" />
+    <ClInclude Include="UniformBuffer.h" />
     <ClInclude Include="VertexModel.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>

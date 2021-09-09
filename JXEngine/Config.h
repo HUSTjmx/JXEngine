@@ -29,6 +29,11 @@ namespace CONFIG
 		extern const std::string MODEL_MATRIX;
 		extern const std::string PROJECTION_MATRIX;
 		extern const std::string VIEW_MATRIX;
+
+		namespace UNIFORM_BLOCK_NAME
+		{
+			extern const std::string MATRIX_COORD_SYSTEM;
+		}
 	}
 
 	namespace LIGHT_SETTINGS

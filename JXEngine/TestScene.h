@@ -24,6 +24,8 @@ namespace OPENGL_SCENE
 
 		Scene GetScene_CubeMapTest_05();
 
+		Scene GetScene_UniformBufferTest_06();
+
 	private:
 		TestScene() {}
 	};
@@ -42,6 +44,8 @@ namespace OPENGL_SCENE
 		Pass GetPass2_FrameTest_04(Pass& p);
 
 		Pass GetPass_SkyBox_05();
+
+		Pass GetPass_UniformBufferTest_06();
 
 		void Draw_FrameTest_04(Pass& p1, Pass& p2);
 	

@@ -60,6 +60,7 @@ std::shared_ptr<Material> Actor::GetMaterial()
 
 void Actor::Draw()
 {
+	material->Active();
 	material->engineSetting->InitExecutive();
 	material->BindTexturesToOpenGL();
 	for (auto mesh = meshes.begin(); mesh != meshes.end();++mesh)
@@ -78,6 +79,7 @@ void Actor::Draw()
 
 void Actor::Draw(std::shared_ptr<Material> newMat)
 {
+	material->Active();
 	newMat->BindTexturesToOpenGL();
 	for (auto mesh = meshes.begin(); mesh != meshes.end();++mesh)
 	{

@@ -37,13 +37,11 @@ public:
 
 	virtual void UpdateGlobalMat(GlobalMat mat);
 
-	
+	Input scene;
 
 private:
 
 	Output frame;
-
-	Input scene;
 
 	GlobalMat mat;
 };

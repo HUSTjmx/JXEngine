@@ -24,6 +24,11 @@ namespace CONFIG
 		const std::string MODEL_MATRIX = "model";
 		const std::string PROJECTION_MATRIX = "projection";
 		const std::string VIEW_MATRIX = "view";
+
+		namespace UNIFORM_BLOCK_NAME
+		{
+			const std::string MATRIX_COORD_SYSTEM = "Matrices";
+		}
 	}
 
 	namespace LIGHT_SETTINGS

@@ -6,6 +6,7 @@
 #include "EmbeddedData.h"
 #include "Material.h"
 #include "ShaderCompiler.h"
+#include "UniformBuffer.h"
 #include "Config.h"
 
 Scene::Scene(std::shared_ptr<Camera> camera)
@@ -31,13 +32,31 @@ void Scene::AddLight(std::shared_ptr<Light> l)
 	lights.push_back(l);
 }
 
+void Scene::AddUniformBuffer(std::shared_ptr<UniformBuffer> ub)
+{
+	uniformBuffers.push_back(ub);
+}
+
 void Scene::Draw()
 {
+	auto coord_mat_buffer = FindUniformBuffer(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::UNIFORM_BLOCK_NAME::MATRIX_COORD_SYSTEM);
+
+	if (coord_mat_buffer != -1)
+	{
+		auto view = camera->GetViewMatrix();
+		//std::cout << coord_mat_buffer << std::endl;
+		uniformBuffers[coord_mat_buffer]->StoreData<glm::mat4>(view, CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX);
+	}
+
 	for (auto i = actors.begin(); i != actors.end();i++)
 	{
 		LoadLightInfo(i->get()->GetMaterial()->GetShader());
 		LoadCameraInfo(i->get()->GetMaterial());
-		i->get()->GetMaterial()->SetVP(*camera.get());
+		i->get()->GetMaterial()->Active();
+		if (coord_mat_buffer == -1)
+		{
+			//i->get()->GetMaterial()->SetVP(*camera.get());
+		}
 		i->get()->GetMaterial()->LoadInfoToShader();
 		i->get()->Draw();
 	}
@@ -62,6 +81,7 @@ void Scene::Draw()
 
 void Scene::Draw(std::shared_ptr<Material> newMat)
 {
+	
 	for (auto i = actors.begin(); i != actors.end();i++)
 	{
 		LoadLightInfo(newMat->GetShader());
@@ -102,4 +122,18 @@ void Scene::LoadLightInfo(std::shared_ptr<ShaderCompiler> shader)
 void Scene::LoadCameraInfo(std::shared_ptr<Material> material)
 {
 	material->SetViewPos(*camera.get());
+}
+
+int Scene::FindUniformBuffer(const std::string& name)
+{
+	int i = -1;
+	int b = 0;
+	auto func = [&i, name, &b](std::shared_ptr<UniformBuffer> s) {
+		if (std::strcmp(s->GetName().c_str(), name.c_str()) == 0) i = b;
+		b++;
+	};
+	
+	std::for_each(uniformBuffers.begin(), uniformBuffers.end(), func);
+	//std::cout << i << std::endl;
+	return i;
 }

@@ -13,6 +13,7 @@
 #include "Tools.h"
 #include "Pass.h"
 #include "FrameBuffer.h"
+#include "UniformBuffer.h"
 
 using ShaderPtr = std::shared_ptr<ShaderCompiler>;
 using TexturePtr = std::shared_ptr<Texture>;
@@ -247,6 +248,38 @@ Scene OPENGL_SCENE::TestScene::GetScene_CubeMapTest_05()
 	return scene;
 }
 
+Scene OPENGL_SCENE::TestScene::GetScene_UniformBufferTest_06()
+{
+	Scene scene(INPUT::inputCamera);
+
+	ShaderPtr sh = std::make_shared<ShaderCompiler>("shaders/UniformBufferTest_05.vs", "shaders/UniformBufferTest_05.fs");
+	sh->Compile();
+	sh->BlockBindingUniform(0, CONFIG::SHADER_DEFAULT_UNIFORM_NAME::UNIFORM_BLOCK_NAME::MATRIX_COORD_SYSTEM.c_str());
+
+
+	std::shared_ptr<UniformBuffer> matrixBuffer=std::make_shared<UniformBuffer>(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::UNIFORM_BLOCK_NAME::MATRIX_COORD_SYSTEM);
+	UniformData ud1(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX, UniformDataType::Mat4);
+	matrixBuffer->AddData(ud1);
+	UniformData ud2(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX, UniformDataType::Mat4);
+	matrixBuffer->AddData(ud2);
+	matrixBuffer->Create();
+	matrixBuffer->LinkBindingPoint();
+	auto proj = scene.MainCamera().GetProjectionMatrix();
+	matrixBuffer->StoreData<glm::mat4>(proj, CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX);
+	MaterialPtr m = std::make_shared<Material>(sh);
+
+	VertexModelPtr cube = std::make_shared<VertexModel>();
+	cube->BindVertexToBuffer(LEARN_OPENGL_VERTICE::START_01::Cube_vertices, LEARN_OPENGL_VERTICE::START_01::Cube_Offsets);
+
+	ActorPtr a = std::make_shared<Actor>(cube, m);
+
+	scene.AddActor(a);
+	scene.AddUniformBuffer(matrixBuffer);
+
+	return scene;
+}
+
+
 Pass OPENGL_SCENE::TestPass::GetPass_FrameTest_04()
 {
 	Scene scene = OPENGL_SCENE::TestScene::Instance().GetScene_AlphaBlend_03();
@@ -275,6 +308,15 @@ Pass OPENGL_SCENE::TestPass::GetPass2_FrameTest_04(Pass& p)
 Pass OPENGL_SCENE::TestPass::GetPass_SkyBox_05()
 {
 	Scene scene = OPENGL_SCENE::TestScene::Instance().GetScene_CubeMapTest_05();
+
+	Pass pass;
+	pass.UpdateInput(std::make_shared<Scene>(scene));
+	return pass;
+}
+
+Pass OPENGL_SCENE::TestPass::GetPass_UniformBufferTest_06()
+{
+	Scene scene = OPENGL_SCENE::TestScene::Instance().GetScene_UniformBufferTest_06();
 
 	Pass pass;
 	pass.UpdateInput(std::make_shared<Scene>(scene));

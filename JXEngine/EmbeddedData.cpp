@@ -244,6 +244,11 @@ namespace LEARN_OPENGL_SHADER
 
 	 std::string High_06_SkyBox_fs = address + "skybox_04.fs";
 
+	 std::string High_07_UniformBuffer_vs = address + "UniformBufferTest_05.vs";
+	 
+	 std::string High_07_UniformBuffer_fs = address + "UniformBufferTest_05.fs";
+
+
 	namespace TEXTURE_NAME {
 		 std::string texture_name1 = "texture1";
 

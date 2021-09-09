@@ -1,16 +1,28 @@
-﻿  TestScene.cpp
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Actor.h(17,18): warning C4099: “Transform”: 类型名称以前使用“class”现在使用的是“struct”
+﻿  Scene.cpp
+C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Material.h(17,16): warning C4099: “Transform”: 类型名称以前使用“struct”现在使用的是“class”
 C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Actor.h(17): message : 参见“Transform”的声明
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\TestScene.cpp(50,32): warning C4305: “参数”: 从“double”到“T”截断
-          with
-          [
-              T=float
-          ]
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\TestScene.cpp(56,20): warning C4018: “<”: 有符号/无符号不匹配
 C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(53,17): warning C4018: “>=”: 有符号/无符号不匹配
 C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(52): message : 在编译 类 模板 成员函数“void Counted<DirectionalLight>::init(void)”时
 C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(41): message : 查看对正在编译的函数 模板 实例化“void Counted<DirectionalLight>::init(void)”的引用
 C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(40): message : 在编译 类 模板 成员函数“Counted<DirectionalLight>::Counted(void)”时
 C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Light.h(63): message : 查看对正在编译的函数 模板 实例化“Counted<DirectionalLight>::Counted(void)”的引用
 C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Light.h(59): message : 查看对正在编译的 类 模板 实例化“Counted<DirectionalLight>”的引用
+  TestScene.cpp
+C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Actor.h(17,18): warning C4099: “Transform”: 类型名称以前使用“class”现在使用的是“struct”
+C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Actor.h(17): message : 参见“Transform”的声明
+C:\Users\ZoroD\source\repos\JXEngine\JXEngine\TestScene.cpp(51,32): warning C4305: “参数”: 从“double”到“T”截断
+          with
+          [
+              T=float
+          ]
+C:\Users\ZoroD\source\repos\JXEngine\JXEngine\TestScene.cpp(57,20): warning C4018: “<”: 有符号/无符号不匹配
+C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(53,17): warning C4018: “>=”: 有符号/无符号不匹配
+C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(52): message : 在编译 类 模板 成员函数“void Counted<DirectionalLight>::init(void)”时
+C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(41): message : 查看对正在编译的函数 模板 实例化“void Counted<DirectionalLight>::init(void)”的引用
+C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(40): message : 在编译 类 模板 成员函数“Counted<DirectionalLight>::Counted(void)”时
+C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Light.h(63): message : 查看对正在编译的函数 模板 实例化“Counted<DirectionalLight>::Counted(void)”的引用
+C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Light.h(59): message : 查看对正在编译的 类 模板 实例化“Counted<DirectionalLight>”的引用
+  UniformBuffer.cpp
+  正在生成代码...
+C:\Users\ZoroD\source\repos\JXEngine\JXEngine\UniformBuffer.cpp(28): warning C4715: “GetSizeByType”: 不是所有的控件路径都返回值
   JXEngine.vcxproj -> C:\Users\ZoroD\source\repos\JXEngine\Debug\JXEngine.exe

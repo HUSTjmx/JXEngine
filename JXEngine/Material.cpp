@@ -98,7 +98,6 @@ std::shared_ptr<ShaderCompiler> Material::GetShader()
 
 void Material::SetMVP(const Camera& camera, Transform transform)
 {
-	Active();
 	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::MODEL_MATRIX, transform.model);
 	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX, camera.GetProjectionMatrix());
 	if (CanMove)
@@ -111,7 +110,6 @@ void Material::SetMVP(const Camera& camera, Transform transform)
 
 void Material::SetVP(const Camera& camera)
 {
-	Active();
 	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX, camera.GetProjectionMatrix());
 	//std::cout << CanMove << std::endl;
 	if(CanMove)

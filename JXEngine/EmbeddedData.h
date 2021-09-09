@@ -104,6 +104,10 @@ namespace LEARN_OPENGL_SHADER
 	 extern std::string High_06_SkyBox_vs;
 
 	 extern std::string High_06_SkyBox_fs;
+	 
+	 extern std::string High_07_UniformBuffer_vs;
+	 
+	 extern std::string High_07_UniformBuffer_fs;
 
 	namespace TEXTURE_NAME {
 		extern std::string texture_name1;

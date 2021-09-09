@@ -50,13 +50,15 @@ public:
 
 	void BlockBindingUniform(unsigned int pos, const char* uniform) const;
 
+
 	static std::string FILE_HEAD;
+
+	unsigned int ID;
 
 private:
 
 	void CheckCompileErrors(GLuint shader, std::string type)const;
 
-	unsigned int ID;
 
 	bool hasGeometry;
 
