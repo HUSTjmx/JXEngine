@@ -230,6 +230,9 @@
     <ClInclude Include="UniformBuffer.h">
       <Filter>头文件\Core</Filter>
     </ClInclude>
+    <ClInclude Include="std.h">
+      <Filter>头文件\ExtendLibrary</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="texture_01.vs">

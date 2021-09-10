@@ -1,4 +1,146 @@
 #version 430 core
+#define PI 3.14159
+#define PI_INV (1.0 / PI)
+
+
+//将范围从[0, 1]重映射至[-1, 1]（NDC）
+float RemapNDC(float a)
+{
+    return a * 2.0 - 1.0;
+}
+
+//获取线性深度值
+//将屏幕空间的非线性深度值变换至线性深度值
+float LinearizeDepth(float depth, float near, float far)
+{
+    float z = RemapNDC(depth);
+    return (2.0 * near * far) / (far + near - z * (far - near));
+    
+}
+
+//AlphaTest
+//如果阿尔法值小于阈值，则舍弃
+float AlphaTest(float alpha, float min_)
+{
+    if (alpha < min_)
+        discard;
+    return 1.0;
+}
+
+
+struct DirLight
+{
+    vec3 color;
+	vec3 direction;
+    float intensity;
+};
+
+struct PointLight
+{
+    vec3 color;
+    vec3 position;
+    float intensity;
+    float lightInvRadius;
+};
+
+struct SpotLight
+{
+    vec3 color;
+    vec3 position;
+    vec3 direction;
+    float innerAngle;
+    float outerAngle;
+    float intensity;
+    float lightInvRaduis;
+};
+
+#define DIRECTION_LIGHT_MAX_NUM 1
+#define POINT_LIGHT_NUM 10
+#define SPOT_LIGHT_NUM 5
+
+
+uniform DirLight dirLights[DIRECTION_LIGHT_MAX_NUM];
+uniform PointLight pointLights[POINT_LIGHT_NUM];
+uniform SpotLight spotLights[SPOT_LIGHT_NUM];
+
+uniform int dirLightsNum;
+uniform int pointLightsNum;
+uniform int spotLightsNum;
+
+
+//平方衰减函数
+float GetSquareFalloffAttenuation(vec3 posToLight, float lightInvRadius)
+{
+    float distanceSquare = dot(posToLight, posToLight);
+    float factor = distanceSquare * lightInvRadius * lightInvRadius;
+    float smoothFactor = max(1.0 - factor * factor, 0.0);
+    return (smoothFactor * smoothFactor) / max(distanceSquare, 1e-4);
+}
+
+//聚光灯衰减
+float GetSpotAngleAttenuation(vec3 l, vec3 lightDir, float innerAngle, float outerAngle)
+{
+    float cosOuter = cos(outerAngle);
+    float spotScale = 1.0 / max(cos(innerAngle) - cosOuter, 1e-4);
+    float spotOffset = -cosOuter * spotScale;
+    
+    float cd = dot(normalize(-lightDir), l);
+    float attenuation = clamp(cd * spotScale + spotOffset, 0.0, 1.0);
+    return attenuation * attenuation;
+}
+
+float GetDirLightIllumiance(int i)
+{
+    if (i > DIRECTION_LIGHT_MAX_NUM)
+        return 0.0;
+    return dirLights[i].intensity;
+}
+
+vec3 GetDirLightColor(int i)
+{
+    if (i > DIRECTION_LIGHT_MAX_NUM)
+        return vec3(0.0);
+    return dirLights[i].color;
+}
+
+float GetPointLightIllumiance(int i, vec3 w_pos)
+{
+    if (i > POINT_LIGHT_NUM)
+        return 0.0;
+    
+    vec3 posToLight = pointLights[i].position - w_pos;
+    float attenuation = GetSquareFalloffAttenuation(posToLight, pointLights[i].lightInvRadius);
+    return pointLights[i].intensity * 0.25 * PI_INV * attenuation;
+}
+
+vec3 GetPointLightColor(int i)
+{
+    if (i > POINT_LIGHT_NUM)
+        return vec3(0.0);
+    
+    return pointLights[i].color;
+}
+
+float GetSpotLightIllumiance(int i, vec3 w_pos)
+{
+    if (i > SPOT_LIGHT_NUM)
+        return 0.0f;
+
+    vec3 posToLight = spotLights[i].position - w_pos;
+    vec3 l = normalize(posToLight);
+    
+    float attenuation;
+    attenuation = GetSquareFalloffAttenuation(posToLight, spotLights[i].lightInvRaduis);
+    attenuation *= GetSpotAngleAttenuation(l, spotLights[i].direction, spotLights[i].innerAngle, spotLights[i].outerAngle);
+    
+    return spotLights[i].intensity * attenuation;
+}
+
+vec3 GetSpotLightColor(int i)
+{
+    return spotLights[i].color;
+}
+
 uniform vec3 viewPosWS;
 uniform float farPlaneDepth;
 uniform float nearPlaneDepth;
@@ -66,16 +208,157 @@ float RoughnessReMap(float rough)
     return rough * rough;
 }
 
+
+#define MEDIUMP_FLT_MAX 65504.0
+#define saturateMediump(x) min(x, MEDIUMP_FLT_MAX)
+
+/*********************************************************************************
+Flament材质系统，BRDF
+
+f_r = D * G * F / (4 * (n * v) * (n * l))
+V = G / (4 * (n * v) * (n * l))
+f_r = D * V * F
+
+
+**********************************************************************************/
+
+//Walter GGX分布，等价于Trowbridge_Reitz
+float D_GGX(float NoH, float roughness)
+{
+    float a = NoH * roughness;
+    float k = roughness / (1.0 - NoH * NoH + a * a);
+    return k * k * (1.0 / PI_INV);
+}
+
+//优化后的Walter GGX分布
+float D_GGX_Optimized(float rougness, float NoH, vec3 n, vec3 h)
+{
+    vec3 NxH = cross(n, h);
+    float a = NoH * rougness;
+    float k = rougness / (dot(NxH, NxH) + a * a);
+    float d = k * k * PI_INV;
+    return saturateMediump(d);
+}
+
+//优化后的可见度项
+float V_SmithGGXCorrelated(float NoV, float NoL, float roughness)
+{
+    float a2 = roughness * roughness;
+    float GGXV = NoL * sqrt(NoV * NoV * (1.0 - a2) + a2);
+    float GGXL = NoV * sqrt(NoL * NoL * (1.0 - a2) + a2);
+    return 0.5 / (GGXL + GGXV);
+}
+
+//进一步加速的可见度项
+float V_SmithGGXCorrelatedFast(float NoV, float NoL, float roughness)
+{
+    float a = roughness;
+    float GGXV = NoL * (NoV * (1.0 - a) + a);
+    float GGXL = NoV * (NoL * (1.0 - a) + a);
+    return 0.5 / (GGXL + GGXV);
+}
+
+//Hammon的加速可见度项
+float V_SmithGGXCorrelatedFast_Hammon(float NoV, float NoL, float roughness)
+{
+    float a = roughness;
+    float n1 = 2.0 * NoV * NoL;
+    float n2 = NoL + NoV;
+    return 0.5 / mix(n1, n2, a);
+}
+
+//Cook-Torrance镜面BRDF的Fresnel项
+vec3 F_Schlick(float VoH, vec3 f0, float f90)
+{
+    return f0 + (vec3(f90) - f0) * pow(1.0 - VoH, 5.0);
+}
+
+float F_Schlick(float VoH, float f0, float f90)
+{
+    return f0 + (f90 - f0) * pow(1.0 - VoH, 5.0);
+}
+
+//将f90设置为1的Fresnel项
+vec3 F_Schlick_F90(float VoH, vec3 f0)
+{
+    float f = pow(1.0 - VoH, 5.0);
+    return f + f0 * (1.0 - f);
+}
+
+//Lambertian diffuse BRDF : 1.0 / PI
+float Fd_Lambert()
+{
+    return PI_INV;
+}
+
+//Disney diffuse BRDF
+float Fd_Burley(float NoV, float NoL, float LoH, float roughness)
+{
+    float f90 = 0.5 + 2.0 * roughness * LoH * LoH;
+    float lightScatter = F_Schlick(NoL, 1.0, f90);
+    float viewScatter = F_Schlick(NoV, 1.0, f90);
+    return lightScatter * viewScatter * PI_INV;
+}
+
+vec3 Standard_BRDF_Torrance_DVF(vec3 diffuse_color, vec3 v, vec3 l, vec3 n, float r, vec3 f0, float f90)
+{
+    vec3 h = normalize(v + l);
+    
+    float NoV = abs(dot(n, v) + 1e-5);
+    float NoL = clamp(dot(n, l), 0.0, 1.0);
+    float NoH = clamp(dot(n, l), 0.0, 1.0);
+    float LoH = clamp(dot(l, h), 0.0, 1.0);
+    
+    float D = D_GGX(NoH, r);
+    vec3 F = F_Schlick_F90(LoH, f0);
+    float V = V_SmithGGXCorrelated(NoV, NoL, r);
+    
+    //镜面反射BRDF
+    vec3 Fr = (D * V) * F;
+    
+    //漫反射BRDF
+    vec3 Fd = diffuse_color * Fd_Lambert();
+    
+    return Fr + Fd;
+}
+
 out vec4 FragColor;
 
+in vec3 FragPos;
 in vec3 Normal;
-in vec3 Position;
+in vec2 TexCoords;
 
-uniform samplerCube skybox;
 
 void main()
-{    
-    vec3 I = normalize(Position - viewPosWS);
-    vec3 R = reflect(I, normalize(Normal));
-    FragColor = vec4(texture(skybox, R).rgb, 1.0);
+{
+	vec3 norm = normalize(Normal);
+
+    vec3 viewDir = normalize(viewPosWS - FragPos);
+
+	vec3 result = vec3(0.0);
+
+	vec3 diffuse_color = BaseColorReMap(baseColor, metallic);
+
+	float r = RoughnessReMap(roughness);
+
+	vec3 f0 = GetF0_All(baseColor, metallic, reflectance);
+
+	for(int i = 0;i < dirLightsNum; i++)
+	{
+		//light_Intensity * light_color * BRDF * NoL 
+		float NoL = clamp(dot(norm, normalize(-dirLights[i].direction)), 0.0, 1.0);
+		result += GetDirLightColor(i) * GetDirLightIllumiance(i) 
+		* Standard_BRDF_Torrance_DVF(diffuse_color, viewDir, -dirLights[i].direction, norm, r, f0, 1.0) * NoL;
+	}
+
+	for(int i = 0; i < pointLightsNum; i++)
+	{
+		//light_Intensity * light_color * BRDF * NoL 
+		vec3 L = normalize(pointLights[i].position - FragPos);
+		float NoL = clamp(dot(norm, L), 0.0, 1.0);
+		result = result + GetPointLightColor(i) * GetPointLightIllumiance(i, FragPos)
+		* Standard_BRDF_Torrance_DVF(diffuse_color, viewDir, L, norm, r, f0, 1.0) * NoL; 
+	}	
+
+	FragColor =  vec4(result, 1.0);
 }

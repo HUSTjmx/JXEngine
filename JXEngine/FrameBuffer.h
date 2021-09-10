@@ -14,13 +14,13 @@ public:
 
 	FrameBuffer(unsigned int width, unsigned int height);
 
-	void AddTexture(GLenum format);
+	void AddTexture(GLenum format, bool isMSAA = false);
 
-	void AddTexture(GLenum format, std::string type_);
+	void AddTexture(GLenum format, std::string type_, bool isMSAA = false);
 
 	void NotifyGL();
 
-	void AddRenderObject(bool hasStencil);
+	void AddRenderObject(bool hasStencil, bool isMSAA = false);
 
 	void Delete();
 
@@ -30,7 +30,7 @@ public:
 
 private:
 
-	unsigned int BindTextureToBuffer(GLenum format);
+	unsigned int BindTextureToBuffer(GLenum format, bool isMSAA = false);
 
 	unsigned int fbo;
 

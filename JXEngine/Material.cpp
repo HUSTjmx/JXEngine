@@ -84,6 +84,7 @@ void Material::Active() const
 
 void Material::LoadInfoToShader() const
 {
+	Active();
 	shader->SetVec3(CONFIG::MATERIAL_SETTINGS::STANDORD_MODEL::BASE_COLOR, baseColor);
 	shader->SetFloat(CONFIG::MATERIAL_SETTINGS::STANDORD_MODEL::METALLIC, metallic);
 	shader->SetFloat(CONFIG::MATERIAL_SETTINGS::STANDORD_MODEL::ROUGHNESS, roughness);
@@ -98,6 +99,7 @@ std::shared_ptr<ShaderCompiler> Material::GetShader()
 
 void Material::SetMVP(const Camera& camera, Transform transform)
 {
+	Active();
 	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::MODEL_MATRIX, transform.model);
 	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX, camera.GetProjectionMatrix());
 	if (CanMove)
@@ -110,6 +112,7 @@ void Material::SetMVP(const Camera& camera, Transform transform)
 
 void Material::SetVP(const Camera& camera)
 {
+	Active();
 	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX, camera.GetProjectionMatrix());
 	//std::cout << CanMove << std::endl;
 	if(CanMove)
@@ -122,11 +125,14 @@ void Material::SetVP(const Camera& camera)
 
 void Material::SetP(Transform transform)
 {
+	Active();
+
 	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::MODEL_MATRIX, transform.model);
 }
 
 void Material::SetViewPos(const Camera& camera)
 {
+	Active();
 	GetShader()->SetVec3(CONFIG::CAMERA_CONFIG::SHADER::VIEW_POS_IN_WORLD, camera.Position);
 }
 

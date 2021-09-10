@@ -33,7 +33,7 @@ public:
 
 	virtual std::shared_ptr<Actor> GetActorByIndex(int index);
 
-	virtual void LoadLightInfo(std::shared_ptr<ShaderCompiler> shader);
+	virtual void LoadLightInfo(std::shared_ptr<Material> shader);
 
 	virtual void LoadCameraInfo(std::shared_ptr<Material> material);
 
@@ -41,6 +41,9 @@ public:
 	// If not find, return -1.
 	//...
 	int FindUniformBuffer(const std::string& name);
+
+	//...
+	std::vector<std::shared_ptr<Actor>>& _Actors_();
 
 	unsigned int ubo;
 

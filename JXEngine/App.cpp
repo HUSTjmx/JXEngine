@@ -18,6 +18,7 @@
 #include "Actor.h"
 #include "Material.h"
 
+//#define  __MSAA__ 1
 
 void InitGlfw();
 void TestAndSetWindow(GLFWwindow* window);
@@ -38,7 +39,7 @@ int main()
 	
 	GLFWwindow* window = glfwCreateWindow(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
 
-	std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(0.0f, 0.0f, 3.0f));
+	std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(0.0f, 0.0f, 13.0f));
 
 	INPUT::SET_CAMERA(camera);
 
@@ -69,6 +70,10 @@ void InitGlfw()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef __MSAA__
+	glfwWindowHint(GLFW_SAMPLES, 4);
+#endif
 
 #ifdef __APPLE__
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -134,15 +139,15 @@ void Loop(GLFWwindow* window)
 {
 	glEnable(GL_DEPTH_TEST);
 
-	Pass p = OPENGL_SCENE::TestPass::Intance().GetPass_UniformBufferTest_06();
+#ifdef MSAA
+	glEnable(GL_MULTISAMPLE);
+#endif // MSAA
 
 
-	
+	Pass p = OPENGL_SCENE::TestPass::Intance().GetPass_InstancedTest_08();
 
 	//时钟重置，开始计时
 	Clock.Reset();
-
-	//scene.GetActorByIndex(0)->AnimaTo(glm::vec3(0.0, 0.0, 0.0), glm::vec3(1.0, 2.0, 1.0), 30.0f);
 
 	// render loop
 	// -----------
@@ -167,8 +172,6 @@ void Loop(GLFWwindow* window)
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
-
-
 }
 
 
@@ -182,7 +185,7 @@ void Loop(GLFWwindow* window)
 //
 //#include "learnopengl/shader_m.h"
 //#include "learnopengl/camera.h"
-////#include "learnopengl/model.h"
+//#include "learnopengl/model.h"
 //
 //#include "ShaderCompiler.h"
 //#include "UniformBuffer.h"
@@ -256,94 +259,82 @@ void Loop(GLFWwindow* window)
 //	// -----------------------------
 //	glEnable(GL_DEPTH_TEST);
 //
-//	// build and compile shaders
-//	// -------------------------
-//	std::shared_ptr<ShaderCompiler> shaderRed=std::make_shared<ShaderCompiler>("shaders/UniformBufferTest_05.vs", "shaders/UniformBufferTest_05.fs");
-//	shaderRed->Compile();
+//	Shader asteroidShader("10.3.asteroids.vs", "10.3.asteroids.fs");
+//	Shader planetShader("10.3.planet.vs", "10.3.planet.fs");
 //
-//	// set up vertex data (and buffer(s)) and configure vertex attributes
+//	// load models
+//	// -----------
+//	Model rock(FileSystem::getPath("resources/objects/rock/rock.obj"));
+//	Model planet(FileSystem::getPath("resources/objects/planet/planet.obj"));
+//
+//	// generate a large list of semi-random model transformation matrices
 //	// ------------------------------------------------------------------
-//	float cubeVertices[] = {
-//		// positions         
-//		-0.5f, -0.5f, -0.5f,
-//		 0.5f, -0.5f, -0.5f,
-//		 0.5f,  0.5f, -0.5f,
-//		 0.5f,  0.5f, -0.5f,
-//		-0.5f,  0.5f, -0.5f,
-//		-0.5f, -0.5f, -0.5f,
+//	unsigned int amount = 100000;
+//	glm::mat4* modelMatrices;
+//	modelMatrices = new glm::mat4[amount];
+//	srand(glfwGetTime()); // initialize random seed	
+//	float radius = 150.0;
+//	float offset = 25.0f;
+//	for (unsigned int i = 0; i < amount; i++)
+//	{
+//		glm::mat4 model = glm::mat4(1.0f);
+//		// 1. translation: displace along circle with 'radius' in range [-offset, offset]
+//		float angle = (float)i / (float)amount * 360.0f;
+//		float displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+//		float x = sin(angle) * radius + displacement;
+//		displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+//		float y = displacement * 0.4f; // keep height of asteroid field smaller compared to width of x and z
+//		displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+//		float z = cos(angle) * radius + displacement;
+//		model = glm::translate(model, glm::vec3(x, y, z));
 //
-//		-0.5f, -0.5f,  0.5f,
-//		 0.5f, -0.5f,  0.5f,
-//		 0.5f,  0.5f,  0.5f,
-//		 0.5f,  0.5f,  0.5f,
-//		-0.5f,  0.5f,  0.5f,
-//		-0.5f, -0.5f,  0.5f,
+//		// 2. scale: Scale between 0.05 and 0.25f
+//		float scale = (rand() % 20) / 100.0f + 0.05;
+//		model = glm::scale(model, glm::vec3(scale));
 //
-//		-0.5f,  0.5f,  0.5f,
-//		-0.5f,  0.5f, -0.5f,
-//		-0.5f, -0.5f, -0.5f,
-//		-0.5f, -0.5f, -0.5f,
-//		-0.5f, -0.5f,  0.5f,
-//		-0.5f,  0.5f,  0.5f,
+//		// 3. rotation: add random rotation around a (semi)randomly picked rotation axis vector
+//		float rotAngle = (rand() % 360);
+//		model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
 //
-//		 0.5f,  0.5f,  0.5f,
-//		 0.5f,  0.5f, -0.5f,
-//		 0.5f, -0.5f, -0.5f,
-//		 0.5f, -0.5f, -0.5f,
-//		 0.5f, -0.5f,  0.5f,
-//		 0.5f,  0.5f,  0.5f,
+//		// 4. now add to list of matrices
+//		modelMatrices[i] = model;
+//	}
 //
-//		-0.5f, -0.5f, -0.5f,
-//		 0.5f, -0.5f, -0.5f,
-//		 0.5f, -0.5f,  0.5f,
-//		 0.5f, -0.5f,  0.5f,
-//		-0.5f, -0.5f,  0.5f,
-//		-0.5f, -0.5f, -0.5f,
+//	// configure instanced array
+//	// -------------------------
+//	unsigned int buffer;
+//	glGenBuffers(1, &buffer);
+//	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+//	glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
 //
-//		-0.5f,  0.5f, -0.5f,
-//		 0.5f,  0.5f, -0.5f,
-//		 0.5f,  0.5f,  0.5f,
-//		 0.5f,  0.5f,  0.5f,
-//		-0.5f,  0.5f,  0.5f,
-//		-0.5f,  0.5f, -0.5f,
-//	};
-//	// cube VAO
-//	VertexModelPtr cube = std::make_shared<VertexModel>();
-//	cube->BindVertexToBuffer(LEARN_OPENGL_VERTICE::START_01::Cube_vertices, LEARN_OPENGL_VERTICE::START_01::Cube_Offsets);
+//	// set transformation matrices as an instance vertex attribute (with divisor 1)
+//	// note: we're cheating a little by taking the, now publicly declared, VAO of the model's mesh(es) and adding new vertexAttribPointers
+//	// normally you'd want to do this in a more organized fashion, but for learning purposes this will do.
+//	// -----------------------------------------------------------------------------------------------------------------------------------
+//	for (unsigned int i = 0; i < rock.meshes.size(); i++)
+//	{
+//		unsigned int VAO = rock.meshes[i].VAO;
+//		glBindVertexArray(VAO);
+//		// set attribute pointers for matrix (4 times vec4)
+//		glEnableVertexAttribArray(3);
+//		glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+//		glEnableVertexAttribArray(4);
+//		glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+//		glEnableVertexAttribArray(5);
+//		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+//		glEnableVertexAttribArray(6);
+//		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
 //
-//	// configure a uniform buffer object
-//	// ---------------------------------
-//	// first. We get the relevant block indices
-//	shaderRed->BlockBindingUniform(0, "Matrices");
+//		glVertexAttribDivisor(3, 1);
+//		glVertexAttribDivisor(4, 1);
+//		glVertexAttribDivisor(5, 1);
+//		glVertexAttribDivisor(6, 1);
 //
-//	//// Now actually create the buffer
-//	//unsigned int uboMatrices;
-//	//glGenBuffers(1, &uboMatrices);
-//	//glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-//	//glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_STATIC_DRAW);
-//	//glBindBuffer(GL_UNIFORM_BUFFER, 0);
-//	//// define the range of the buffer that links to a uniform binding point
-//	//glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
+//		glBindVertexArray(0);
+//	}
 //
-//	//// store the projection matrix (we only do this once now) (note: we're not using zoom anymore by changing the FoV)
-//	//glm::mat4 projection = glm::perspective(45.0f, (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-//	//glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-//	//glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
-//	//glBindBuffer(GL_UNIFORM_BUFFER, 0);
 //
-//	std::shared_ptr<UniformBuffer> matrixBuffer=std::make_shared<UniformBuffer>(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::UNIFORM_BLOCK_NAME::MATRIX_COORD_SYSTEM);
-//	UniformData ud1(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX, UniformDataType::Mat4);
-//	matrixBuffer->AddData(ud1);
-//	UniformData ud2(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX, UniformDataType::Mat4);
-//	matrixBuffer->AddData(ud2);
-//	matrixBuffer->Create();
-//	matrixBuffer->LinkBindingPoint();
-//	auto proj = glm::perspective(45.0f, (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-//	matrixBuffer->StoreData<glm::mat4>(proj, CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX);
-//
-//	MaterialPtr m = std::make_shared<Material>(shaderRed);
-//	ActorPtr a = std::make_shared<Actor>(cube, m);
-//
+//	
 //	// render loop
 //	// -----------
 //	while (!glfwWindowShouldClose(window))
@@ -363,22 +354,35 @@ void Loop(GLFWwindow* window)
 //		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 //		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 //
-//		// set the view and projection matrix in the uniform block - we only have to do this once per loop iteration.
+//		// configure transformation matrices
+//		glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
 //		glm::mat4 view = camera.GetViewMatrix();
-//		matrixBuffer->StoreData<glm::mat4>(view, CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX);
+//		asteroidShader.use();
+//		asteroidShader.setMat4("projection", projection);
+//		asteroidShader.setMat4("view", view);
+//		planetShader.use();
+//		planetShader.setMat4("projection", projection);
+//		planetShader.setMat4("view", view);
 //
-//		// draw 4 cubes 
-//		// RED
-//		//cube->BindVAO();
-//		//shaderRed->UseSelf();
-//		//glm::mat4 model = glm::mat4(1.0f);
-//		//model = glm::translate(model, glm::vec3(-0.75f, 0.75f, 0.0f)); // move top-left
-//		//shaderRed->SetMat4("model", model);
-//		//cube->Draw();
-//		//
-//		// 
-//		
-//		a->Draw();
+//		// draw planet
+//		glm::mat4 model = glm::mat4(1.0f);
+//		model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
+//		model = glm::scale(model, glm::vec3(4.0f, 4.0f, 4.0f));
+//		planetShader.setMat4("model", model);
+//		planet.Draw(planetShader);
+//
+//		// draw meteorites
+//		asteroidShader.use();
+//		asteroidShader.setInt("texture_diffuse1", 0);
+//		glActiveTexture(GL_TEXTURE0);
+//		glBindTexture(GL_TEXTURE_2D, rock.textures_loaded[0].id); // note: we also made the textures_loaded vector public (instead of private) from the model class.
+//		for (unsigned int i = 0; i < rock.meshes.size(); i++)
+//		{
+//			glBindVertexArray(rock.meshes[i].VAO);
+//			glDrawElementsInstanced(GL_TRIANGLES, rock.meshes[i].indices.size(), GL_UNSIGNED_INT, 0, amount);
+//			glBindVertexArray(0);
+//		}
+//	    
 //
 //		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 //		// -------------------------------------------------------------------------------

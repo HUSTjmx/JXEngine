@@ -279,12 +279,78 @@ Scene OPENGL_SCENE::TestScene::GetScene_UniformBufferTest_06()
 	return scene;
 }
 
+Scene OPENGL_SCENE::TestScene::GetScene_GeometryNormal_07()
+{
+	Scene scene(INPUT::inputCamera);
+
+	ShaderPtr sh = std::make_shared<ShaderCompiler>(LEARN_OPENGL_SHADER::High_08_GeometryNormal_vs.c_str(), LEARN_OPENGL_SHADER::High_08_GeometryNormal_fs.c_str(), LEARN_OPENGL_SHADER::High_08_GeometryNormal_gs.c_str());
+	sh->Compile();
+
+	ShaderPtr baseTriangleShader= std::make_shared<ShaderCompiler>(LEARN_OPENGL_SHADER::Light_02_lightTest_vs.c_str()
+		, LEARN_OPENGL_SHADER::Light_02_lightTest_fs.c_str());
+	baseTriangleShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	baseTriangleShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	baseTriangleShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	baseTriangleShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	baseTriangleShader->Compile();
+
+	MaterialPtr mat = std::make_shared<Material>(sh);
+	MaterialPtr mat2 = std::make_shared<Material>(baseTriangleShader);
+
+	ActorPtr man = std::make_shared<Actor>(mat);
+	man->AddMaterial(mat2);
+	man->loadModel(ASSETS::MODEL::MODEL_NANOSUIT);
+	man->ScaleTo(glm::vec3(0.05));
+
+	scene.AddActor(man);
+
+	return scene;
+}
+
+Scene OPENGL_SCENE::TestScene::GetScene_InstanceTest_08()
+{
+	Scene scene(INPUT::inputCamera);
+	
+	ShaderPtr planetSh = std::make_shared<ShaderCompiler>(LEARN_OPENGL_SHADER::High_09_InstanceTest_pla_vs.c_str(), LEARN_OPENGL_SHADER::High_09_InstanceTest_pla_fs.c_str());
+	planetSh->Compile();
+
+	ShaderPtr atoSh = std::make_shared<ShaderCompiler>(LEARN_OPENGL_SHADER::High_09_InstanceTest_ast_vs.c_str(), LEARN_OPENGL_SHADER::High_09_InstanceTest_ast_fs.c_str());
+	atoSh->Compile();
+
+	MaterialPtr pltMat = std::make_shared<Material>(planetSh);
+	MaterialPtr atoMat = std::make_shared<Material>(atoSh);
+
+	ActorPtr plt = std::make_shared<Actor>(pltMat);
+	plt->loadModel(ASSETS::MODEL::MODEL_PLANET);
+	
+	ActorPtr aco = std::make_shared<Actor>(atoMat);
+	aco->loadModel(ASSETS::MODEL::MODEL_ASTERIOD);
+	aco->SetInstanceNum(1000);
+
+	auto data = MatTool::Instance().GenerateModelMat_R<1000>(10.0f, 5.0f);
+	unsigned int offsets[4] = { 4, 4, 4, 4 };
+	auto buffer = BufferTool::Instance().CreateArrayBuffer(data, 1000);
+
+	auto func = [&buffer, &offsets](VertexModelPtr a)
+	{
+		a->AddAttribute(buffer, offsets);
+	};
+
+	std::for_each(aco->_Meshes_().begin(), aco->_Meshes_().end(), func);
+
+
+	scene.AddActor(plt);
+	scene.AddActor(aco);
+
+	return scene;
+}
+
 
 Pass OPENGL_SCENE::TestPass::GetPass_FrameTest_04()
 {
 	Scene scene = OPENGL_SCENE::TestScene::Instance().GetScene_AlphaBlend_03();
 	std::shared_ptr<FrameBuffer> frame = std::make_shared<FrameBuffer>(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
-	frame->AddTexture(GL_RGB, "screenTexture");
+	frame->AddTexture(GL_SRGB, "screenTexture");
 	frame->NotifyGL();
 	frame->AddRenderObject(true);
 
@@ -317,6 +383,24 @@ Pass OPENGL_SCENE::TestPass::GetPass_SkyBox_05()
 Pass OPENGL_SCENE::TestPass::GetPass_UniformBufferTest_06()
 {
 	Scene scene = OPENGL_SCENE::TestScene::Instance().GetScene_UniformBufferTest_06();
+
+	Pass pass;
+	pass.UpdateInput(std::make_shared<Scene>(scene));
+	return pass;
+}
+
+Pass OPENGL_SCENE::TestPass::GetPass_GeometryNormal_07()
+{
+	Scene scene = OPENGL_SCENE::TestScene::Instance().GetScene_GeometryNormal_07();
+
+	Pass pass;
+	pass.UpdateInput(std::make_shared<Scene>(scene));
+	return pass;
+}
+
+Pass OPENGL_SCENE::TestPass::GetPass_InstancedTest_08()
+{
+	Scene scene = OPENGL_SCENE::TestScene::Instance().GetScene_InstanceTest_08();
 
 	Pass pass;
 	pass.UpdateInput(std::make_shared<Scene>(scene));

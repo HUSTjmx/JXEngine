@@ -44,20 +44,25 @@ void Scene::Draw()
 	if (coord_mat_buffer != -1)
 	{
 		auto view = camera->GetViewMatrix();
-		//std::cout << coord_mat_buffer << std::endl;
 		uniformBuffers[coord_mat_buffer]->StoreData<glm::mat4>(view, CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX);
 	}
 
 	for (auto i = actors.begin(); i != actors.end();i++)
 	{
-		LoadLightInfo(i->get()->GetMaterial()->GetShader());
-		LoadCameraInfo(i->get()->GetMaterial());
-		i->get()->GetMaterial()->Active();
+		auto func = [this](std::shared_ptr<Material> a) {
+			this->LoadLightInfo(a);
+			this->LoadCameraInfo(a);
+		};
+		std::for_each(i->get()->_Materials_().begin(), i->get()->_Materials_().end(), func);
+
 		if (coord_mat_buffer == -1)
 		{
-			//i->get()->GetMaterial()->SetVP(*camera.get());
+			auto func2 = [this](std::shared_ptr<Material> a)
+			{
+				a->SetVP(*camera.get());
+			};
+			std::for_each(i->get()->_Materials_().begin(), i->get()->_Materials_().end(), func2);
 		}
-		i->get()->GetMaterial()->LoadInfoToShader();
 		i->get()->Draw();
 	}
 
@@ -84,10 +89,9 @@ void Scene::Draw(std::shared_ptr<Material> newMat)
 	
 	for (auto i = actors.begin(); i != actors.end();i++)
 	{
-		LoadLightInfo(newMat->GetShader());
+		LoadLightInfo(newMat);
 		LoadCameraInfo(newMat);
 		newMat->SetVP(*camera.get());
-		newMat->LoadInfoToShader();
 		i->get()->Draw(newMat);
 	}
 }
@@ -109,14 +113,14 @@ std::shared_ptr<Actor> Scene::GetActorByIndex(int index)
 	return actors[index];
 }
 
-void Scene::LoadLightInfo(std::shared_ptr<ShaderCompiler> shader)
+void Scene::LoadLightInfo(std::shared_ptr<Material> material)
 {
-	shader->SetInt(CONFIG::LIGHT_SETTINGS::SHADER_DIR_LIGHT::NUM_STRING, DirectionalLight::ObjectCount());
-	shader->SetInt(CONFIG::LIGHT_SETTINGS::SHADER_POINT_LIGHT::NUM_STRING, PointLight::ObjectCount());
-	shader->SetInt(CONFIG::LIGHT_SETTINGS::SHADER_SPOT_LIGHT::NUM_STRING, SpotLight::ObjectCount());
+	material->GetShader()->SetInt(CONFIG::LIGHT_SETTINGS::SHADER_DIR_LIGHT::NUM_STRING, DirectionalLight::ObjectCount());
+	material->GetShader()->SetInt(CONFIG::LIGHT_SETTINGS::SHADER_POINT_LIGHT::NUM_STRING, PointLight::ObjectCount());
+	material->GetShader()->SetInt(CONFIG::LIGHT_SETTINGS::SHADER_SPOT_LIGHT::NUM_STRING, SpotLight::ObjectCount());
 	//std::cout << DirectionalLight::ObjectCount() << PointLight::ObjectCount() << SpotLight::ObjectCount() << std::endl;
 	for (auto i = lights.begin(); i != lights.end(); ++i)
-		i->get()->LoadInfoToShader(shader);
+		i->get()->LoadInfoToShader(material->GetShader());
 }
 
 void Scene::LoadCameraInfo(std::shared_ptr<Material> material)
@@ -136,4 +140,10 @@ int Scene::FindUniformBuffer(const std::string& name)
 	std::for_each(uniformBuffers.begin(), uniformBuffers.end(), func);
 	//std::cout << i << std::endl;
 	return i;
+}
+
+std::vector<std::shared_ptr<Actor>>& Scene::_Actors_()
+{
+	// TODO: 在此处插入 return 语句
+	return actors;
 }

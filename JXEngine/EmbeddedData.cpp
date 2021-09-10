@@ -248,6 +248,20 @@ namespace LEARN_OPENGL_SHADER
 	 
 	 std::string High_07_UniformBuffer_fs = address + "UniformBufferTest_05.fs";
 
+	 std::string High_08_GeometryNormal_vs = address + "GeometryNormalV_06.vs";
+
+	 std::string High_08_GeometryNormal_fs = address + "GeometryNormalV_06.fs";
+
+	 std::string High_08_GeometryNormal_gs = address + "GeometryNormalV_06.gs";
+
+	 std::string High_09_InstanceTest_ast_vs = address + "High03_InstanceTest_asteroids.vs";
+
+	 std::string High_09_InstanceTest_ast_fs = address + "High03_InstanceTest_asteroids.fs";
+
+	 std::string High_09_InstanceTest_pla_vs = address + "High03_InstanceTest_planet.vs";
+
+	 std::string High_09_InstanceTest_pla_fs = address + "High03_InstanceTest_planet.fs";
+
 
 	namespace TEXTURE_NAME {
 		 std::string texture_name1 = "texture1";
@@ -262,5 +276,9 @@ namespace ASSETS
 	namespace MODEL
 	{
 		std::string MODEL_NANOSUIT = "resources/model/nanosuit/nanosuit.obj";
+
+	    std::string MODEL_ASTERIOD = "resources/model/rock/rock.obj";
+
+		std::string MODEL_PLANET = "resources/model/planet/planet.obj";
 	}
 }

@@ -26,6 +26,10 @@ namespace OPENGL_SCENE
 
 		Scene GetScene_UniformBufferTest_06();
 
+		Scene GetScene_GeometryNormal_07();
+
+		Scene GetScene_InstanceTest_08();
+
 	private:
 		TestScene() {}
 	};
@@ -46,6 +50,10 @@ namespace OPENGL_SCENE
 		Pass GetPass_SkyBox_05();
 
 		Pass GetPass_UniformBufferTest_06();
+
+		Pass GetPass_GeometryNormal_07();
+
+		Pass GetPass_InstancedTest_08();
 
 		void Draw_FrameTest_04(Pass& p1, Pass& p2);
 	

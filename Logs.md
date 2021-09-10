@@ -29,3 +29,14 @@ auto proj = scene.MainCamera().GetProjectionMatrix();
 matrixBuffer->StoreData<glm::mat4>(proj, CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX);
 MaterialPtr m = std::make_shared<Material>(sh);
 ```
+
+
+
+### 9.10
+
+叮咚，教师节，今日把高级ＧＬＳＬ刷完了，明天争取搞完阴影，除了上面的，在实现下其他感兴趣的阴影算法。
+
+好饿，但是还要等硬盘传输完。难受。
+
+
+

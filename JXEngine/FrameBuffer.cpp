@@ -68,12 +68,12 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int height)
 	hasStencil = true;
 }
 
-void FrameBuffer::AddTexture(GLenum format)
+void FrameBuffer::AddTexture(GLenum format, bool isMSAA)
 {
 	//绑定帧缓冲
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-	auto texture = BindTextureToBuffer(format);
+	auto texture = BindTextureToBuffer(format, isMSAA);
 	
 	auto textureBuffer = std::make_shared<Texture>(texture);
 
@@ -82,11 +82,11 @@ void FrameBuffer::AddTexture(GLenum format)
 	textureBuffers.push_back(textureBuffer);
 }
 
-void FrameBuffer::AddTexture(GLenum format, std::string type_)
+void FrameBuffer::AddTexture(GLenum format, std::string type_, bool isMSAA)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-	auto texture = BindTextureToBuffer(format);
+	auto texture = BindTextureToBuffer(format, isMSAA);
 
 	auto textureBuffer = std::make_shared<Texture>(texture);
 
@@ -100,7 +100,7 @@ void FrameBuffer::NotifyGL()
 	glDrawBuffers(attachments.size(), &attachments[0]);
 }
 
-void FrameBuffer::AddRenderObject(bool hasStencil)
+void FrameBuffer::AddRenderObject(bool hasStencil, bool isMSAA)
 {
 	this->hasStencil = hasStencil;
 
@@ -111,21 +111,25 @@ void FrameBuffer::AddRenderObject(bool hasStencil)
 	
 	if (hasStencil)
 	{
-		//创建一个深度和模板渲染缓冲对象
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height); // use a single renderbuffer object for both a depth AND stencil buffer.
-
+		if(!isMSAA)
+			//创建一个深度和模板渲染缓冲对象
+			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height); // use a single renderbuffer object for both a depth AND stencil buffer.
+		else
+			glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, width, height);
 		//附加这个渲染缓冲对象
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // now actually attach it
 	}
 	else
 	{
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-
+		if (!isMSAA)
+			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+		else
+			glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH_COMPONENT, width, height);
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
 	}
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "Framebuffer not complete!" << std::endl;
+		std::cout << "Frame buffer not complete!" << std::endl;
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -141,23 +145,27 @@ unsigned int FrameBuffer::FBO() const
 	return fbo;
 }
 
-unsigned int FrameBuffer::BindTextureToBuffer(GLenum format)
+unsigned int FrameBuffer::BindTextureToBuffer(GLenum format, bool isMSAA)
 {
+	auto type_ = GL_TEXTURE_2D;
+
+	if (isMSAA)
+		type_ = GL_TEXTURE_2D_MULTISAMPLE;
 
 	//为帧缓冲创建一个纹理
 	unsigned int texture;
 	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
+	glBindTexture(type_, texture);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(type_, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, NULL);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(type_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(type_, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	auto attachment = GetAttachmentByIndex(attachments.size());
 	attachments.push_back(attachment);
 	//附加到帧缓冲上
-	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, type_, texture, 0);
 
 	return texture;
 }

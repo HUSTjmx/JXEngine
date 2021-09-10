@@ -1,11 +1,10 @@
 #pragma once
+#include "std.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
-#include <memory>
-#include <vector>
 #include "DesignPatterns.h"
 
 class Material;
@@ -66,17 +65,17 @@ public:
 
 	Actor(std::shared_ptr<VertexModel> m, std::shared_ptr<Material> n);
 
-	Actor(const Actor& a) : meshes(a.meshes), material(a.material), transform(a.transform), positions(a.positions) {}
+	Actor(const Actor& a) : meshes(a.meshes), materials(a.materials), transform(a.transform), positions(a.positions) {}
 
 	Actor& operator=(const Actor& a);
 
 	virtual void AddMesh(std::shared_ptr<VertexModel> m);
 
-	virtual void SetMaterial(std::shared_ptr<Material>);
+	virtual void AddMaterial(std::shared_ptr<Material>);
 
 	virtual void SetPostionsArray(std::vector<glm::vec3>& p);
 
-	virtual std::shared_ptr<Material> GetMaterial();
+	virtual std::shared_ptr<Material> GetMaterial(int index = 0);
 
 	virtual void Draw();
 
@@ -96,7 +95,9 @@ public:
 
 	std::shared_ptr<VertexModel> processMesh(aiMesh* mesh, const aiScene* scene);
 
-	std::vector<std::shared_ptr<Texture>> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);
+	// Setup the number of instance draw
+	// ...
+	void SetInstanceNum(unsigned int num);
 
 	ActorType& _ActorType_() {
 		return type;
@@ -107,13 +108,23 @@ public:
 		return transform;
 	}
 
+	// Return mesh array.
+	// Reference transport.
+	// ...
+	std::vector<std::shared_ptr<VertexModel>>& _Meshes_();
+
+	// Return materials array.
+	// Reference transport.
+	// ...
+	std::vector<std::shared_ptr<Material>>& _Materials_();
+
 private:
 
 	void InitPosition();
 
 	std::vector<std::shared_ptr<VertexModel>> meshes;
 
-	std::shared_ptr<Material> material;
+	std::vector<std::shared_ptr<Material>> materials;
 
 	Transform transform;
 

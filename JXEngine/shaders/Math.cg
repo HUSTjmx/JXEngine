@@ -1,15 +1,16 @@
 #define PI 3.14159
 #define PI_INV (1.0 / PI)
+#define GAMMA 0.4545454545
 
 
-//½«·¶Î§´Ó[0, 1]ÖØÓ³ÉäÖÁ[-1, 1]£¨NDC£©
+//ï¿½ï¿½ï¿½ï¿½Î§ï¿½ï¿½[0, 1]ï¿½ï¿½Ó³ï¿½ï¿½ï¿½ï¿½[-1, 1]ï¿½ï¿½NDCï¿½ï¿½
 float RemapNDC(float a)
 {
     return a * 2.0 - 1.0;
 }
 
-//»ñÈ¡ÏßĞÔÉî¶ÈÖµ
-//½«ÆÁÄ»¿Õ¼äµÄ·ÇÏßĞÔÉî¶ÈÖµ±ä»»ÖÁÏßĞÔÉî¶ÈÖµ
+//ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
+//ï¿½ï¿½ï¿½ï¿½Ä»ï¿½Õ¼ï¿½Ä·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ä»»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
 float LinearizeDepth(float depth, float near, float far)
 {
     float z = RemapNDC(depth);
@@ -18,10 +19,16 @@ float LinearizeDepth(float depth, float near, float far)
 }
 
 //AlphaTest
-//Èç¹û°¢¶û·¨ÖµĞ¡ÓÚãĞÖµ£¬ÔòÉáÆú
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÖµĞ¡ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 float AlphaTest(float alpha, float min_)
 {
     if (alpha < min_)
         discard;
     return 1.0;
+}
+
+// Gamma Correction
+vec3 GammaCorrection(vec3 color)
+{
+    return pow(color, vec3(GAMMA));
 }

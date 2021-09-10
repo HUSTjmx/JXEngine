@@ -109,6 +109,20 @@ namespace LEARN_OPENGL_SHADER
 	 
 	 extern std::string High_07_UniformBuffer_fs;
 
+	 extern std::string High_08_GeometryNormal_vs;
+
+	 extern std::string High_08_GeometryNormal_fs;
+
+	 extern std::string High_08_GeometryNormal_gs;
+
+	 extern std::string High_09_InstanceTest_ast_vs;
+
+	 extern std::string High_09_InstanceTest_ast_fs;
+
+	 extern std::string High_09_InstanceTest_pla_vs;
+
+	 extern std::string High_09_InstanceTest_pla_fs;
+
 	namespace TEXTURE_NAME {
 		extern std::string texture_name1;
 
@@ -121,5 +135,9 @@ namespace ASSETS
 	namespace MODEL
 	{
 		extern std::string MODEL_NANOSUIT;
+
+		extern std::string MODEL_ASTERIOD;
+
+		extern std::string MODEL_PLANET;
 	}
 }

@@ -183,6 +183,7 @@
     <ClInclude Include="Scene.h" />
     <ClInclude Include="ShaderCompiler.h" />
     <ClInclude Include="stb_image.h" />
+    <ClInclude Include="std.h" />
     <ClInclude Include="StingShaderTest.h" />
     <ClInclude Include="TestScene.h" />
     <ClInclude Include="Texture.h" />

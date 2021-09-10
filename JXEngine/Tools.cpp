@@ -35,3 +35,5 @@ glm::mat4 MatTool::RemoveTranslation(glm::mat4 a)
 {
 	return glm::mat4(glm::mat3(a));
 }
+
+

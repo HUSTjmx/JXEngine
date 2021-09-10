@@ -1,4 +1,3 @@
-#include <iostream>
 #include "Actor.h"
 #include "Config.h"
 #include "Camera.h"
@@ -9,13 +8,13 @@
 
 Actor::Actor(std::shared_ptr<Material> m)
 {
-	SetMaterial(m);
+	AddMaterial(m);
 	InitPosition();
 }
 
 Actor::Actor(const std::string& path, std::shared_ptr<Material> m)
 {
-	SetMaterial(m);
+	AddMaterial(m);
 	loadModel(path);
 	InitPosition();
 }
@@ -23,14 +22,14 @@ Actor::Actor(const std::string& path, std::shared_ptr<Material> m)
 Actor::Actor(std::shared_ptr<VertexModel> m, std::shared_ptr<Material> n)
 {
 	AddMesh(m);
-	SetMaterial(n);
+	AddMaterial(n);
 	InitPosition();
 }
 
 Actor& Actor::operator=(const Actor& a)
 {
 	meshes = a.meshes;
-	SetMaterial(a.material);
+	materials = a.materials;
 	transform = a.transform;
 	positions = a.positions;
 	return *this;
@@ -41,10 +40,10 @@ void Actor::AddMesh(std::shared_ptr<VertexModel> m)
 	meshes.push_back(m);
 }
 
-void Actor::SetMaterial(std::shared_ptr<Material> m)
+void Actor::AddMaterial(std::shared_ptr<Material> m)
 {
-	material = m;
-	type.addObserver(material.get());
+	materials.push_back(m);
+	type.addObserver(m.get());
 	//type.notify(&type);
 }
 
@@ -53,33 +52,39 @@ void Actor::SetPostionsArray(std::vector<glm::vec3>& p)
 	positions = p;
 }
 
-std::shared_ptr<Material> Actor::GetMaterial()
+std::shared_ptr<Material> Actor::GetMaterial(int index)
 {
-	return material;
+	return materials[index];
 }
 
 void Actor::Draw()
 {
-	material->Active();
-	material->engineSetting->InitExecutive();
-	material->BindTexturesToOpenGL();
-	for (auto mesh = meshes.begin(); mesh != meshes.end();++mesh)
+	for (auto material = materials.begin(); material != materials.end(); ++material)
 	{
-		mesh->get()->BindVAO();
-		for (int i = 0; i < positions.size();i++)
+		material->get()->Active();
+		material->get()->engineSetting->InitExecutive();
+		material->get()->LoadInfoToShader();
+		material->get()->BindTexturesToOpenGL();
+		for (auto mesh = meshes.begin(); mesh != meshes.end();++mesh)
 		{
-			transform.Reset();
-			AnimaTo(positions[i], transform.scale, 0.0, transform.rotation_axis);
-			material->SetP(transform);
-			mesh->get()->Draw();
+			mesh->get()->BindVAO();
+			for (int i = 0; i < positions.size();i++)
+			{
+				transform.Reset();
+				AnimaTo(positions[i], transform.scale, 0.0, transform.rotation_axis);
+				material->get()->SetP(transform);
+				mesh->get()->Draw();
+			}
 		}
+		material->get()->engineSetting->EndExecutive();
 	}
-	material->engineSetting->EndExecutive();
 }
 
 void Actor::Draw(std::shared_ptr<Material> newMat)
 {
-	material->Active();
+	newMat->Active();
+	newMat->engineSetting->InitExecutive();
+	newMat->LoadInfoToShader();
 	newMat->BindTexturesToOpenGL();
 	for (auto mesh = meshes.begin(); mesh != meshes.end();++mesh)
 	{
@@ -92,6 +97,7 @@ void Actor::Draw(std::shared_ptr<Material> newMat)
 			mesh->get()->Draw();
 		}
 	}
+	newMat->engineSetting->EndExecutive();
 }
 
 void Actor::Delete()
@@ -217,13 +223,42 @@ std::shared_ptr<VertexModel> Actor::processMesh(aiMesh* mesh, const aiScene* sce
 	// process materials
 	aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-	this->material->LoadTextures(material, directory);
+//	this->material->LoadTextures(material, directory);
+
+	auto func = [material, this](std::shared_ptr<Material> m) {
+		m->LoadTextures(material, this->directory);
+	};
+
+	std::for_each(materials.begin(), materials.end(), func);
+
 
 	// return a mesh object created from the extracted mesh data
 	std::shared_ptr<VertexModel> v = std::make_shared<VertexModel>();
 	v->BindVertexToBuffer(vertices, indices);
 	
 	return v;
+}
+
+void Actor::SetInstanceNum(unsigned int num)
+{
+	auto func = [&num](std::shared_ptr<VertexModel> a)
+	{
+		a->SetInstanceNum(num);
+	};
+
+	std::for_each(meshes.begin(), meshes.end(), func);
+}
+
+std::vector<std::shared_ptr<VertexModel>>& Actor::_Meshes_()
+{
+	// TODO: 在此处插入 return 语句
+	return meshes;
+}
+
+std::vector<std::shared_ptr<Material>>& Actor::_Materials_()
+{
+	// TODO: 在此处插入 return 语句
+	return materials;
 }
 
 void Actor::InitPosition()

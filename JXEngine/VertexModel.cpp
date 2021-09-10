@@ -7,6 +7,7 @@ void VertexModel::BindVertexToBuffer(std::vector<Vertex> vertices, std::vector<u
 	vertexSize = vertices.size();
 	indicesSize = indices.size();
 	haveIndices = true;
+	attriPointerPos = 5;
 
 	// create buffers / arrays
     glGenVertexArrays(1, &VAO);
@@ -16,7 +17,7 @@ void VertexModel::BindVertexToBuffer(std::vector<Vertex> vertices, std::vector<u
 	glBindVertexArray(VAO);
 	// load data into vertex buffers
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	// A great thing about structs is that their memory layout is sequential for all its items.
+	// A great thing about struct is that their memory layout is sequential for all its items.
 	// The effect is that we can simply pass a pointer to the struct and it translates perfectly to a glm::vec3/2 array which
 	// again translates to 3/2 floats which translates to a byte array.
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
@@ -61,12 +62,21 @@ void VertexModel::Draw()
 
 void VertexModel::DrawIndex()
 {
-	glDrawElements(GL_TRIANGLES, indicesSize, GL_UNSIGNED_INT, 0);
+	//std::cout << instanceSize << std::endl;
+	if (!IsInstanced)
+		glDrawElements(GL_TRIANGLES, indicesSize, GL_UNSIGNED_INT, 0);
+	else
+		glDrawElementsInstanced(
+			GL_TRIANGLES, indicesSize, GL_UNSIGNED_INT, 0, instanceSize
+		);
 }
 
 void VertexModel::DrawBase()
 {
-	glDrawArrays(GL_TRIANGLES, 0, vertexSize);
+	if(!IsInstanced)
+		glDrawArrays(GL_TRIANGLES, 0, vertexSize);
+	else
+		glDrawArraysInstanced(GL_TRIANGLES, 0, vertexSize, instanceSize);
 }
 
 void VertexModel::Delete()
@@ -74,5 +84,18 @@ void VertexModel::Delete()
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
+}
+
+void VertexModel::SetInstanceNum(unsigned int num)
+{
+	instanceSize = num;
+
+	if (instanceSize > 1) IsInstanced = true;
+	else IsInstanced = false;
+}
+
+unsigned int VertexModel::GetVAO()
+{
+	return VAO;
 }
 

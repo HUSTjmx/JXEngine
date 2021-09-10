@@ -14,6 +14,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 
 
 //namespace StructureTool {
@@ -98,6 +99,18 @@ public:
 	// ...
 	glm::mat4 RemoveTranslation(glm::mat4 a);
 
+	//Generate a large list of semi-random model transformation matrices.
+	//
+	// Input:
+	//   <radius>: float, the range of pos.
+	//   <offset>: float, .
+	//
+	// template: 
+	//   <amount>: the number of mat.
+	//...
+	template<size_t amount>
+	std::shared_ptr<glm::mat4> GenerateModelMat_R(float radius, float offset);
+
 private:
 
 	MatTool() {}
@@ -138,6 +151,15 @@ public:
 	template<typename T, size_t M>
 	void CopyDataToArrayBuffer(unsigned int& buffer, T(*data)[M]);
 
+	// Create a array buffer for this data.
+	// 
+	// Input:
+	//   <a>: mat4*, the array data for binding
+	//   <size>: int, size of the array data.
+	// ...
+	template<typename T>
+	unsigned int CreateArrayBuffer(std::shared_ptr<T> a, int size);
+
 	// According to the type of T, return the size of Block,
 	// on the other word, return the base alignment.
 	// 
@@ -166,6 +188,17 @@ inline void BufferTool::CopyDataToArrayBuffer(unsigned int& buffer, T(*data)[M])
 	glUnmapBuffer(GL_ARRAY_BUFFER);
 }
 
+template<typename T>
+inline unsigned int BufferTool::CreateArrayBuffer(std::shared_ptr<T> a, int size)
+{
+	unsigned int buffer;
+	glGenBuffers(1, &buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glBufferData(GL_ARRAY_BUFFER, size * sizeof(T), &a.get()[0], GL_STATIC_DRAW);
+	return buffer;
+}
+
+
 template<typename T, size_t NUM>
 inline unsigned int BufferTool::GetBaseAlignment_std140()
 {
@@ -188,4 +221,40 @@ template<>
 inline unsigned int BufferTool::GetBaseAlignment_std140<float, 1>()
 {
 	return 4;
+}
+
+template<size_t amount>
+inline std::shared_ptr<glm::mat4> MatTool::GenerateModelMat_R(float radius, float offset)
+{
+	glm::mat4* modelMatrices;
+	modelMatrices = new glm::mat4[amount];
+	srand(glfwGetTime()); // initialize random seed	
+	
+	for (unsigned int i = 0; i < amount; i++)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		// 1. translation: displace along circle with 'radius' in range [-offset, offset]
+		float angle = (float)i / (float)amount * 360.0f;
+		float displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+		float x = sin(angle) * radius + displacement;
+		displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+		float y = displacement * 0.4f; // keep height of asteroid field smaller compared to width of x and z
+		displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+		float z = cos(angle) * radius + displacement;
+		model = glm::translate(model, glm::vec3(x, y, z));
+
+		// 2. scale: Scale between 0.05 and 0.25f
+		float scale = (rand() % 20) / 100.0f + 0.05;
+		model = glm::scale(model, glm::vec3(scale));
+
+		// 3. rotation: add random rotation around a (semi)randomly picked rotation axis vector
+		float rotAngle = (rand() % 360);
+		model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
+
+		// 4. now add to list of matrices
+		modelMatrices[i] = model;
+	}
+
+
+	return std::shared_ptr<glm::mat4>(modelMatrices);
 }
