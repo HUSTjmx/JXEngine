@@ -37,6 +37,11 @@ public:
 
 	virtual void LoadCameraInfo(std::shared_ptr<Material> material);
 
+	// Load some default info to material.
+	// e.g. time, mouse_pos etc.
+	// ...
+	virtual void LoadDefaultInfo(std::shared_ptr<Material> material);
+
 	// Find uniform buffer with the same name.
 	// If not find, return -1.
 	//...

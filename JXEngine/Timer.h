@@ -24,6 +24,10 @@ public:
 		return deltaTime;
 	}
 
+	// Get current time.
+	// ...
+	float GetCurrentTime()const;
+
 private:
 
 	Timer() : deltaTime(0.0), lastFrame(0.0), currentFrame(0.0) {}

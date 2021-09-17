@@ -21,9 +21,9 @@ namespace LEARN_OPENGL {
 
 namespace LEARN_OPENGL_VERTICE {
 	namespace START_01 {
-		extern float Cube_vertices[288];
+		extern std::vector<float> Cube_vertices;
 
-		extern unsigned int Cube_Offsets[3];
+		extern std::vector<unsigned int> Cube_Offsets;
 	}
 
 	namespace HIGH_03 {
@@ -40,6 +40,13 @@ namespace LEARN_OPENGL_VERTICE {
 		extern float CubeMapVertice[108];
 
 		extern unsigned int CubeMapOffsets[1];
+	}
+
+	namespace HIGH_LIGHT_04
+	{
+		extern float PlaneVertices[48];
+
+		extern unsigned int PlaneOffsets[3];
 	}
 }
 
@@ -123,6 +130,18 @@ namespace LEARN_OPENGL_SHADER
 
 	 extern std::string High_09_InstanceTest_pla_fs;
 
+	 extern std::string HighLight_10_ShadowMapGet_vs;
+
+	 extern std::string HighLight_10_ShadowMapGet_fs;
+
+	 extern std::string HighLight_10_ShadowMapDebug_vs;
+
+	 extern std::string HighLight_10_ShadowMapDebug_fs;
+
+	 extern std::string HighLight_11_BaseShadow_vs;
+
+	 extern std::string HighLight_11_BaseShadow_fs;
+
 	namespace TEXTURE_NAME {
 		extern std::string texture_name1;
 
@@ -139,5 +158,38 @@ namespace ASSETS
 		extern std::string MODEL_ASTERIOD;
 
 		extern std::string MODEL_PLANET;
+	}
+
+	namespace TEXTURE
+	{
+		namespace NOISY
+		{
+			extern std::string Path;
+			extern std::string Star;
+		}
+	}
+}
+
+namespace SHADER_PATH
+{
+	namespace RAY_MARCHING
+	{
+		namespace SKY
+		{
+			extern std::string Path;
+			extern std::string earthSky_vs;
+			extern std::string earthSky_fs;
+		}
+	}
+
+	namespace POST_RENDER
+	{
+		namespace FOVEA
+		{
+			extern std::string Path;
+			extern std::string KernelFovea_vs;
+			extern std::string KernelFovea_fs;
+			extern std::string KernelFovea_Pass2_fs;
+		}
 	}
 }

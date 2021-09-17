@@ -8,6 +8,7 @@
 #include "ShaderCompiler.h"
 #include "UniformBuffer.h"
 #include "Config.h"
+#include "Timer.h"
 
 Scene::Scene(std::shared_ptr<Camera> camera)
 {
@@ -52,6 +53,7 @@ void Scene::Draw()
 		auto func = [this](std::shared_ptr<Material> a) {
 			this->LoadLightInfo(a);
 			this->LoadCameraInfo(a);
+			this->LoadDefaultInfo(a);
 		};
 		std::for_each(i->get()->_Materials_().begin(), i->get()->_Materials_().end(), func);
 
@@ -63,6 +65,7 @@ void Scene::Draw()
 			};
 			std::for_each(i->get()->_Materials_().begin(), i->get()->_Materials_().end(), func2);
 		}
+		//i->get()->LoadInfoToShader();
 		i->get()->Draw();
 	}
 
@@ -86,12 +89,21 @@ void Scene::Draw()
 
 void Scene::Draw(std::shared_ptr<Material> newMat)
 {
-	
+	auto coord_mat_buffer = FindUniformBuffer(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::UNIFORM_BLOCK_NAME::MATRIX_COORD_SYSTEM);
+
+	if (coord_mat_buffer != -1)
+	{
+		auto view = camera->GetViewMatrix();
+		uniformBuffers[coord_mat_buffer]->StoreData<glm::mat4>(view, CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX);
+	}
+
 	for (auto i = actors.begin(); i != actors.end();i++)
 	{
 		LoadLightInfo(newMat);
 		LoadCameraInfo(newMat);
-		newMat->SetVP(*camera.get());
+		LoadDefaultInfo(newMat);
+		if (coord_mat_buffer == -1)
+			newMat->SetVP(*camera.get());
 		i->get()->Draw(newMat);
 	}
 }
@@ -115,17 +127,35 @@ std::shared_ptr<Actor> Scene::GetActorByIndex(int index)
 
 void Scene::LoadLightInfo(std::shared_ptr<Material> material)
 {
+	material->Active();
+	//std::cout << material->GetShader()->ID << std::endl;
 	material->GetShader()->SetInt(CONFIG::LIGHT_SETTINGS::SHADER_DIR_LIGHT::NUM_STRING, DirectionalLight::ObjectCount());
 	material->GetShader()->SetInt(CONFIG::LIGHT_SETTINGS::SHADER_POINT_LIGHT::NUM_STRING, PointLight::ObjectCount());
 	material->GetShader()->SetInt(CONFIG::LIGHT_SETTINGS::SHADER_SPOT_LIGHT::NUM_STRING, SpotLight::ObjectCount());
+	
 	//std::cout << DirectionalLight::ObjectCount() << PointLight::ObjectCount() << SpotLight::ObjectCount() << std::endl;
 	for (auto i = lights.begin(); i != lights.end(); ++i)
 		i->get()->LoadInfoToShader(material->GetShader());
+
+	if (DirectionalLight::ObjectCount() > 0)
+	{
+		material->GetShader()->SetMat4(CONFIG::SHADOW_MAP::SHADER_NAME::LIGHT_SPACE_MAT_NAME, CONFIG::SHADOW_MAP::LIGHT_SPACE_MAT);
+	}
 }
 
 void Scene::LoadCameraInfo(std::shared_ptr<Material> material)
 {
-	material->SetViewPos(*camera.get());
+	camera->LoadInfoToShader(material);
+}
+
+void Scene::LoadDefaultInfo(std::shared_ptr<Material> material)
+{
+	glm::vec2 resolution = glm::vec2((float)CONFIG::SCREEN_CONFIG::SCR_WIDTH, (float)CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+
+	material->Active();
+	//std::cout << Timer::Instance().GetCurrentTime() << std::endl;
+	material->GetShader()->SetFloat(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::TIME, Timer::Instance().GetCurrentTime());
+	material->GetShader()->SetVec2(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::RESOLUTION, resolution);
 }
 
 int Scene::FindUniformBuffer(const std::string& name)

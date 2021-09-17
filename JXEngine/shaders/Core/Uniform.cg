@@ -1,8 +1,12 @@
-uniform vec3 viewPosWS;
-uniform float farPlaneDepth;
-uniform float nearPlaneDepth;
+uniform vec2 Resolution;
 
-//±ê×¼²ÄÖÊ
+uniform float iTime;
+
+uniform vec3 viewPosWS;
+uniform float near_plane;
+uniform float far_plane;
+
+//ï¿½ï¿½×¼ï¿½ï¿½ï¿½ï¿½
 uniform vec3 baseColor;
 uniform float metallic;
 uniform float roughness;
@@ -14,21 +18,21 @@ uniform sampler2D texture_albedo1;
 uniform sampler2D texture_normal1;
 
 
-//»ùÉ«ÖØÓ³Éä
+//ï¿½ï¿½É«ï¿½ï¿½Ó³ï¿½ï¿½
 //diffuse color
 vec3 BaseColorReMap(vec3 color, float metallic)
 {
     return (1.0 - metallic) * color;
 }
 
-//·´ÉäÂÊÖØÓ³Éä
-//FresnelÏîÒÀÀµÓÚf0£¬²¢ÇÒ¶Ôµç½éÖÊ¶øÑÔÊÇµ¥É«µÄ
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½ï¿½
+//Fresnelï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½f0ï¿½ï¿½ï¿½ï¿½ï¿½Ò¶Ôµï¿½ï¿½ï¿½Ê¶ï¿½ï¿½ï¿½ï¿½Çµï¿½É«ï¿½ï¿½
 vec3 ReflectanceReMap(float reflec)
 {
     return 0.16 * reflec * reflec;
 }
 
-//¸ù¾İÕÛÉäÂÊ¼ÆËãFresnel·´ÉäÂÊf0
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½Fresnelï¿½ï¿½ï¿½ï¿½ï¿½ï¿½f0
 float GetF0WithIOR(float n)
 {
     float a = n - 1.0;
@@ -36,7 +40,7 @@ float GetF0WithIOR(float n)
     return a * a / (b * b);
 }
 
-//Äæ¹ı³Ì£¬¸ù¾İf0¼ÆËãÕÛÉäÂÊ
+//ï¿½ï¿½ï¿½ï¿½Ì£ï¿½ï¿½ï¿½ï¿½ï¿½f0ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 float GetIORWithF0(float f0)
 {
     float a = 1.0 - sqrt(f0);
@@ -44,21 +48,21 @@ float GetIORWithF0(float f0)
 }
 
 
-//»ñÈ¡F90£¬³£Êı°æ£¬Ò»°ãÊÇ1
+//ï¿½ï¿½È¡F90ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ£¬Ò»ï¿½ï¿½ï¿½ï¿½1
 float GetF90_C()
 {
     return 1.0;
 }
 
 
-//¼ÆËãµç½éÖÊºÍ½ğÊô²ÄÖÊµÄf0, ¾µÃæ·´ÉäµÄÑÕÉ«À´×Ô½ğÊôµÄ»ùÉ«
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÊºÍ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½f0, ï¿½ï¿½ï¿½æ·´ï¿½ï¿½ï¿½ï¿½ï¿½É«ï¿½ï¿½ï¿½Ô½ï¿½ï¿½ï¿½ï¿½Ä»ï¿½É«
 vec3 GetF0_All(vec3 base_color, float metal, float reflec)
 {
     return ReflectanceReMap(reflec) * (1.0 - metal) + base_color * metal;
 }
 
 
-//´Ö²Ú¶ÈÖØÓ³Éä 
+//ï¿½Ö²Ú¶ï¿½ï¿½ï¿½Ó³ï¿½ï¿½ 
 //a = roughness * roughness
 float RoughnessReMap(float rough)
 {

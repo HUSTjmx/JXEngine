@@ -5,6 +5,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <vector>
+#include <memory>
+#include "Config.h"
+
+class Material;
 
 // Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific input methods
 enum Camera_Movement {
@@ -14,9 +18,19 @@ enum Camera_Movement {
 	RIGHT
 };
 
+// Camera projection type.
+// 1.Ortho.
+// 2.Perspective.
+// ...
+enum class ProjectionType
+{
+	Ortho,
+	Perspective
+};
+
 // Default camera values
-const float YAW = -90.0f;
-const float PITCH = 0.0f;
+const float YAW = 90.0f;
+const float PITCH = 10.0f;
 const float SPEED = 2.5f;
 const float SENSITIVITY = 0.1f;
 const float ZOOM = 45.0f;
@@ -40,13 +54,27 @@ public:
 	float MouseSensitivity;
 	float Zoom;
 
+	// Near plane.
+	// ...
+	float nearPlane;
+	
+	// Far plane.
+	// ...
+	float farPlane;
+
+	ProjectionType projectionType;
+
 	// constructor with vectors
-	Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+	Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, 1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
 	{
 		Position = position;
 		WorldUp = up;
 		Yaw = yaw;
 		Pitch = pitch;
+		projectionType = ProjectionType::Perspective;
+		
+		nearPlane = CONFIG::CAMERA_CONFIG::NEAR_PLANE;
+		farPlane = CONFIG::CAMERA_CONFIG::FAR_PLANE;
 		updateCameraVectors();
 	}
 
@@ -57,7 +85,29 @@ public:
 		WorldUp = glm::vec3(upX, upY, upZ);
 		Yaw = yaw;
 		Pitch = pitch;
+		projectionType = ProjectionType::Perspective;
+		nearPlane = CONFIG::CAMERA_CONFIG::NEAR_PLANE;
+		farPlane = CONFIG::CAMERA_CONFIG::FAR_PLANE;
 		updateCameraVectors();
+	}
+
+	Camera& operator=(const Camera& c)
+	{
+		this->farPlane = c.farPlane;
+		this->Front = c.Front;
+		this->MouseSensitivity = c.MouseSensitivity;
+		this->MovementSpeed = c.MovementSpeed;
+		this->nearPlane = c.nearPlane;
+		this->Pitch = c.Pitch;
+		this->Position = c.Position;
+		this->projectionType = c.projectionType;
+		this->Right = c.Right;
+		this->Up = c.Up;
+		this->WorldUp = c.WorldUp;
+		this->Yaw = c.Yaw;
+		this->Zoom = c.Zoom;
+
+		return *this;
 	}
 
 	// returns the view matrix calculated using Euler Angles and the LookAt Matrix
@@ -77,7 +127,9 @@ public:
 	// processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
 	void ProcessMouseScroll(float yoffset);
 
-	
+	// Load some camera info to shader, e.g. viewPos, farPlane, nearPlane etc.
+	// ...
+	void LoadInfoToShader(std::shared_ptr<Material> mat);
 
 private:
 	// calculates the front vector from the Camera's (updated) Euler Angles

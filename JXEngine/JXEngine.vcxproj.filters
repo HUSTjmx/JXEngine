@@ -153,6 +153,9 @@
     <ClCompile Include="UniformBuffer.cpp">
       <Filter>源文件\Core</Filter>
     </ClCompile>
+    <ClCompile Include="Atmosphere.cpp">
+      <Filter>源文件\Scene</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h">
@@ -232,6 +235,9 @@
     </ClInclude>
     <ClInclude Include="std.h">
       <Filter>头文件\ExtendLibrary</Filter>
+    </ClInclude>
+    <ClInclude Include="Atmosphere.h">
+      <Filter>头文件\Scene</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

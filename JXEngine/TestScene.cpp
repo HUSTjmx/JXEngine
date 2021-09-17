@@ -14,12 +14,16 @@
 #include "Pass.h"
 #include "FrameBuffer.h"
 #include "UniformBuffer.h"
+#include "Atmosphere.h"
 
 using ShaderPtr = std::shared_ptr<ShaderCompiler>;
 using TexturePtr = std::shared_ptr<Texture>;
 using MaterialPtr = std::shared_ptr<Material>;
 using ActorPtr = std::shared_ptr<Actor>;
 using VertexModelPtr = std::shared_ptr<VertexModel>;
+using FrameBufferPtr = std::shared_ptr<FrameBuffer>;
+using LightPtr = std::shared_ptr<Light>;
+using SkyPtr = std::shared_ptr<Atmosphere>;
 
 Scene OPENGL_SCENE::TestScene::GetScene_Start01()
 {
@@ -172,7 +176,7 @@ Scene OPENGL_SCENE::TestScene::GetScene_AlphaBlend_03()
 		glm::vec3(0.5f, 0.0f, -0.6f)
 	};
 	SortPosByDistance(vegetation, INPUT::inputCamera->Position);
-	std::cout << vegetation[0].r << std::endl;
+	//std::cout << vegetation[0].r << std::endl;
 	a1->SetPostionsArray(vegetation);
 
 
@@ -345,12 +349,194 @@ Scene OPENGL_SCENE::TestScene::GetScene_InstanceTest_08()
 	return scene;
 }
 
+Scene OPENGL_SCENE::TestScene::GetScene_ShadowMap_09()
+{
+	//glEnable(GL_CULL_FACE);
+	glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
+
+	std::shared_ptr<Camera> light_camera = std::make_shared<Camera>();
+
+	Scene scene(light_camera);
+
+	ShaderPtr shadowMap_sh = std::make_shared<ShaderCompiler>(LEARN_OPENGL_SHADER::HighLight_10_ShadowMapGet_vs.c_str(), LEARN_OPENGL_SHADER::HighLight_10_ShadowMapGet_fs.c_str());
+	shadowMap_sh->Compile();
+
+
+	MaterialPtr shadowMap_mat = std::make_shared<Material>(shadowMap_sh);
+	shadowMap_mat->engineSetting->AddInitCmds(EngineCommands::Cull_Front);
+	shadowMap_mat->engineSetting->AddEndCmds(EngineCommands::Cull_Back);
+
+	VertexModelPtr cube = std::make_shared<VertexModel>();
+	cube->BindVertexToBuffer(LEARN_OPENGL_VERTICE::START_01::Cube_vertices, LEARN_OPENGL_VERTICE::START_01::Cube_Offsets);
+
+	VertexModelPtr plane = std::make_shared<VertexModel>();
+	plane->BindVertexToBuffer(LEARN_OPENGL_VERTICE::HIGH_LIGHT_04::PlaneVertices, LEARN_OPENGL_VERTICE::HIGH_LIGHT_04::PlaneOffsets);
+
+	ActorPtr a1 = std::make_shared<Actor>(cube, shadowMap_mat);
+	std::vector<glm::vec3> vegetation
+	{
+		glm::vec3(-1.5f, 0.0f, -0.48f),
+		glm::vec3(1.5f, 0.0f, 0.51f),
+		glm::vec3(0.0f, 1.0f, 0.7f),
+		glm::vec3(-0.3f, 0.0f, -2.3f),
+		glm::vec3(0.5f, 1.0f, -0.6f)
+	};
+	a1->SetPostionsArray(vegetation);
+	ActorPtr a2 = std::make_shared<Actor>(plane, shadowMap_mat);
+
+	scene.AddActor(a1);
+	scene.AddActor(a2);
+
+	scene.MainCamera().farPlane = 37.5f;
+	scene.MainCamera().nearPlane = 1.0f;
+	scene.MainCamera().Position = lightPos;
+	scene.MainCamera().Front = -lightPos;
+	scene.MainCamera().projectionType = ProjectionType::Ortho;
+
+	CONFIG::SHADOW_MAP::DIR_LIGHT_CAMERA = scene.MainCamera();
+	CONFIG::SHADOW_MAP::LIGHT_SPACE_MAT = CONFIG::SHADOW_MAP::DIR_LIGHT_CAMERA.GetProjectionMatrix() * CONFIG::SHADOW_MAP::DIR_LIGHT_CAMERA.GetViewMatrix();
+
+	return scene;
+}
+
+Scene OPENGL_SCENE::TestScene::GetScene_ShadowDebug_10()
+{
+
+	Scene scene(INPUT::inputCamera);
+
+	ShaderPtr debug_sh = std::make_shared<ShaderCompiler>(LEARN_OPENGL_SHADER::HighLight_10_ShadowMapDebug_vs.c_str(), LEARN_OPENGL_SHADER::HighLight_10_ShadowMapDebug_fs.c_str());
+	debug_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	debug_sh->Compile();
+
+	MaterialPtr debug_mat = std::make_shared<Material>(debug_sh);
+
+	VertexModelPtr postObj = std::make_shared<VertexModel>();
+	postObj->BindVertexToBuffer(LEARN_OPENGL_VERTICE::HIGH_03::QuadVertices, LEARN_OPENGL_VERTICE::HIGH_03::QuadOffsets);
+
+	ActorPtr a = std::make_shared<Actor>(postObj, debug_mat);
+
+	scene.AddActor(a);
+
+	return scene;
+}
+
+Scene OPENGL_SCENE::TestScene::GetScene_ShadowBase_11()
+{
+	glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
+	Scene scene(INPUT::inputCamera);
+
+	ShaderPtr shadowMap_sh = std::make_shared<ShaderCompiler>(LEARN_OPENGL_SHADER::HighLight_11_BaseShadow_vs.c_str(), LEARN_OPENGL_SHADER::HighLight_11_BaseShadow_fs.c_str());
+	shadowMap_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	shadowMap_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::SHADOW);
+	shadowMap_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	shadowMap_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	shadowMap_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	shadowMap_sh->Compile();
+
+	ShaderPtr sky_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::SKY::earthSky_vs.c_str(), SHADER_PATH::RAY_MARCHING::SKY::earthSky_fs.c_str());
+	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	sky_sh->Compile();
+
+	Texture t1(0, LEARN_OPENGL_TEXTURE::START_01::Start_01_container.c_str(), LEARN_OPENGL_SHADER::TEXTURE_NAME::texture_name1, GL_REPEAT);
+	Texture t2(1, LEARN_OPENGL_TEXTURE::START_01::Start_01_wall.c_str(), LEARN_OPENGL_SHADER::TEXTURE_NAME::texture_name2, GL_REPEAT);
+	Texture t3(0, ASSETS::TEXTURE::NOISY::Star.c_str(), std::string("noisyTexture"), GL_REPEAT);
+	t1.SetType("diffuseTexture");
+	t2.SetType("diffuseTexture");
+
+
+
+	MaterialPtr shadowMap_mat = std::make_shared<Material>(shadowMap_sh);
+	shadowMap_mat->AddTexture(std::make_shared<Texture>(t1));
+	shadowMap_mat->LinkTextureForShader();
+	shadowMap_mat->GetShader()->SetMat4(CONFIG::SHADOW_MAP::SHADER_NAME::LIGHT_SPACE_MAT_NAME, CONFIG::SHADOW_MAP::LIGHT_SPACE_MAT);
+
+	MaterialPtr sky_mat = std::make_shared<Material>(sky_sh);
+	sky_mat->AddTexture(std::make_shared<Texture>(t3));
+	sky_mat->LinkTextureForShader();
+	sky_mat->engineSetting->AddInitCmds(EngineCommands::Depth_Func_LEQUAL);
+	sky_mat->engineSetting->AddEndCmds(EngineCommands::Depth_Func_LESS);
+
+	
+	VertexModelPtr cube = std::make_shared<VertexModel>();
+	cube->BindVertexToBuffer(LEARN_OPENGL_VERTICE::START_01::Cube_vertices, LEARN_OPENGL_VERTICE::START_01::Cube_Offsets);
+	//cube->BindVertexToBuffer(v_d, indices, offsets);
+	//std::cout << v_d.size() << "  " << offsets.size();
+
+	VertexModelPtr plane = std::make_shared<VertexModel>();
+	plane->BindVertexToBuffer(LEARN_OPENGL_VERTICE::HIGH_LIGHT_04::PlaneVertices, LEARN_OPENGL_VERTICE::HIGH_LIGHT_04::PlaneOffsets);
+
+	ActorPtr a1 = std::make_shared<Actor>(cube, shadowMap_mat);
+	//a1->ScaleTo(glm::vec3(0.2));
+	std::vector<glm::vec3> vegetation
+	{
+		glm::vec3(-1.5f, 0.0f, -0.48f),
+		glm::vec3(1.5f, 0.0f, 0.51f),
+		glm::vec3(0.0f, 1.0f, 0.7f),
+		glm::vec3(-0.3f, 0.0f, -2.3f),
+		glm::vec3(0.5f, 1.0f, -0.6f)
+	};
+	a1->SetPostionsArray(vegetation);
+
+	auto mat2 = shadowMap_mat->Copy();
+	mat2->textures.clear();
+	mat2->AddTexture(std::make_shared<Texture>(t2));
+	shadowMap_mat->LinkTextureForShader();
+	ActorPtr a2 = std::make_shared<Actor>(plane, mat2);
+
+	std::cout << sky_mat->GetShader()->ID << std::endl;
+	ActorPtr a3 = std::make_shared<Atmosphere>(sky_mat);
+	a3->_ActorType_().SetMobility(ActorType::Mobility::STATIC);
+	a3->LoadInfoToShader();
+
+	scene.AddActor(a1);
+	scene.AddActor(a2);
+	scene.AddActor(a3);
+
+	LightPtr dir1 = std::make_shared<DirectionalLight>(-lightPos);
+	dir1->color = glm::vec3(1.0, 1.0, 0.8);
+	dir1->value = 1.6;
+
+
+	scene.AddLight(dir1);
+
+	return scene;
+}
+
+Scene OPENGL_SCENE::TestScene::GetScene_FoveatedRender_12()
+{
+	Scene scene(INPUT::inputCamera);
+
+	ShaderPtr postShader = std::make_shared<ShaderCompiler>(SHADER_PATH::POST_RENDER::FOVEA::KernelFovea_vs.c_str(), SHADER_PATH::POST_RENDER::FOVEA::KernelFovea_fs.c_str());
+	postShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::POST_PROCESSING);
+	postShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	postShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	postShader->Compile();
+
+	postShader->UseSelf();
+	glm::vec2 re = glm::vec2((float)CONFIG::SCREEN_CONFIG::FOVEA::FOVEA_WIDTH, (float)CONFIG::SCREEN_CONFIG::FOVEA::FOVEA_HEIGHT);
+	postShader->SetVec2(CONFIG::MATERIAL_SETTINGS::FOVEA_RENDER::RESOLUTION_NAME, re);
+
+	MaterialPtr postMat = std::make_shared<Material>(postShader);
+
+	VertexModelPtr postObj = std::make_shared<VertexModel>();
+	postObj->BindVertexToBuffer(LEARN_OPENGL_VERTICE::HIGH_03::QuadVertices, LEARN_OPENGL_VERTICE::HIGH_03::QuadOffsets);
+
+	ActorPtr actor = std::make_shared<Actor>(postObj, postMat);
+
+	scene.AddActor(actor);
+
+	return scene;
+}
+
 
 Pass OPENGL_SCENE::TestPass::GetPass_FrameTest_04()
 {
 	Scene scene = OPENGL_SCENE::TestScene::Instance().GetScene_AlphaBlend_03();
 	std::shared_ptr<FrameBuffer> frame = std::make_shared<FrameBuffer>(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
-	frame->AddTexture(GL_SRGB, "screenTexture");
+	frame->AddTexture(GL_RGB, "screenTexture", false);
 	frame->NotifyGL();
 	frame->AddRenderObject(true);
 
@@ -407,6 +593,99 @@ Pass OPENGL_SCENE::TestPass::GetPass_InstancedTest_08()
 	return pass;
 }
 
+Pass OPENGL_SCENE::TestPass::GetPass_ShadowMap_09()
+{
+	Scene scene = OPENGL_SCENE::TestScene::Instance().GetScene_ShadowMap_09();
+	FrameBufferPtr frame = std::make_shared<FrameBuffer>(CONFIG::SHADOW_MAP::SHADOW_WIDTH, CONFIG::SHADOW_MAP::SHADOW_HEIGHT);
+	frame->AddTexture(GL_DEPTH_COMPONENT);
+
+
+	Pass pass;
+	pass.UpdateInput(std::make_shared<Scene>(scene));
+	pass.UpdateOutput(frame);
+	return pass;
+}
+
+Pass OPENGL_SCENE::TestPass::GetPass_ShadowDebug_10(Pass& p)
+{
+	Scene scene2 = OPENGL_SCENE::TestScene::Instance().GetScene_ShadowDebug_10();
+	Pass pass2;
+	pass2.UpdateInput(std::make_shared<Scene>(scene2));
+	pass2.UpdateGlobalMat(scene2.GetActorByIndex(0)->GetMaterial());
+	pass2.GetMat()->AddTexture(p.GetOutput()->textureBuffers[0]);
+	pass2.GetMat()->LinkTextureForShader();
+	return pass2;
+}
+
+Pass OPENGL_SCENE::TestPass::GetPass_BaseShadow_11(Pass& p)
+{
+	Scene scene2 = OPENGL_SCENE::TestScene::Instance().GetScene_ShadowBase_11();
+	p.GetOutput()->textureBuffers[0]->SetType(CONFIG::SHADOW_MAP::SHADER_NAME::SHADOW_MAP_NAME);
+
+	auto func = [&p](std::shared_ptr<Actor> a)
+	{
+		a->AddTextureForMaterial_A(p.GetOutput()->textureBuffers[0]);
+	};
+
+	std::for_each(scene2._Actors_().begin(), scene2._Actors_().end(), func);
+
+	Pass pass2;
+	pass2.UpdateInput(std::make_shared<Scene>(scene2));
+
+	return pass2;
+}
+
+Pass OPENGL_SCENE::TestPass::GetPass_FoveatedRendering_12(Pass& p)
+{
+	std::shared_ptr<FrameBuffer> frame = std::make_shared<FrameBuffer>(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+	frame->AddTexture(GL_RGB, "screenTexture", false);
+	frame->NotifyGL();
+	frame->AddRenderObject(true);
+	p.UpdateOutput(frame);
+
+	Scene scene2 = TestScene::Instance().GetScene_FoveatedRender_12();
+
+
+	Pass pass2;
+	pass2.UpdateInput(std::make_shared<Scene>(scene2));
+	pass2.UpdateGlobalMat(scene2.GetActorByIndex(0)->GetMaterial());
+	pass2.GetMat()->AddTexture(p.GetOutput()->textureBuffers[0]);
+	pass2.GetMat()->LinkTextureForShader();
+
+	return pass2;
+}
+
+Pass OPENGL_SCENE::TestPass::GetPass_FoveatedRendering_Pass2_13(Pass& p)
+{
+	std::shared_ptr<FrameBuffer> frame = std::make_shared<FrameBuffer>(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+	frame->AddTexture(GL_RGB, "screenTexture", false);
+	frame->NotifyGL();
+	frame->AddRenderObject(true);
+	p.UpdateOutput(frame);
+
+	Scene scene2 = TestScene::Instance().GetScene_FoveatedRender_12();
+
+	ShaderPtr postShader = std::make_shared<ShaderCompiler>(SHADER_PATH::POST_RENDER::FOVEA::KernelFovea_vs.c_str(), SHADER_PATH::POST_RENDER::FOVEA::KernelFovea_Pass2_fs.c_str());
+	postShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::POST_PROCESSING);
+	postShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	postShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	postShader->Compile();
+
+	postShader->UseSelf();
+	glm::vec2 re = glm::vec2((float)CONFIG::SCREEN_CONFIG::FOVEA::FOVEA_WIDTH, (float)CONFIG::SCREEN_CONFIG::FOVEA::FOVEA_HEIGHT);
+	postShader->SetVec2(CONFIG::MATERIAL_SETTINGS::FOVEA_RENDER::RESOLUTION_NAME, re);
+
+	MaterialPtr postMat = std::make_shared<Material>(postShader);
+
+	Pass pass2;
+	pass2.UpdateInput(std::make_shared<Scene>(scene2));
+	pass2.UpdateGlobalMat(postMat);
+	pass2.GetMat()->AddTexture(p.GetOutput()->textureBuffers[0]);
+	pass2.GetMat()->LinkTextureForShader();
+	
+	return pass2;
+}
+
 void OPENGL_SCENE::TestPass::Draw_FrameTest_04(Pass& p1, Pass& p2)
 {
 	p1.BindOutput();
@@ -422,3 +701,103 @@ void OPENGL_SCENE::TestPass::Draw_FrameTest_04(Pass& p1, Pass& p2)
 	glClear(GL_COLOR_BUFFER_BIT);
 	p2.Draw();
 }
+
+void OPENGL_SCENE::TestPass::DrawShadowTest_05(Pass& p1, Pass& p2)
+{
+	glEnable(GL_CULL_FACE);
+	//OPENGL_SCENE::TestPass::Intance().Draw_FrameTest_04(p1, p2);
+	glViewport(0, 0, CONFIG::SHADOW_MAP::SHADOW_WIDTH, CONFIG::SHADOW_MAP::SHADOW_HEIGHT);
+	p1.BindOutput();
+	glClear(GL_DEPTH_BUFFER_BIT);
+	p1.Draw();
+
+	glDisable(GL_CULL_FACE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//// reset viewport
+	glViewport(0, 0, CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	p2.Draw();
+}
+
+void OPENGL_SCENE::TestPass::DrawBaseShadow_06(Pass& p1, Pass& p2)
+{
+	//OPENGL_SCENE::TestPass::Intance().Draw_FrameTest_04(p1, p2);
+	glViewport(0, 0, CONFIG::SHADOW_MAP::SHADOW_WIDTH, CONFIG::SHADOW_MAP::SHADOW_HEIGHT);
+	p1.BindOutput();
+	glClear(GL_DEPTH_BUFFER_BIT);
+	p1.Draw();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//// reset viewport
+	glViewport(0, 0, CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	p2.Draw();
+}
+void OPENGL_SCENE::TestPass::DrawFoveated_07(Pass& p1, Pass& p2, Pass& p3)
+{
+	//OPENGL_SCENE::TestPass::Intance().Draw_FrameTest_04(p1, p2);
+	glViewport(0, 0, CONFIG::SHADOW_MAP::SHADOW_WIDTH, CONFIG::SHADOW_MAP::SHADOW_HEIGHT);
+	p1.BindOutput();
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	p1.Draw();
+
+	
+	//// reset viewport
+	p2.BindOutput();
+	glViewport(0, 0, CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	p2.Draw();
+
+	
+	//glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
+	// clear all relevant buffers
+	p3.BindOutput();
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
+	glClear(GL_DEPTH_BUFFER_BIT);
+	p3.Draw();
+}
+
+
+void OPENGL_SCENE::TestPass::DrawFoveated_Comp_08(Pass& p1, Pass& p2, Pass& p3, Pass& p4)
+{
+	//OPENGL_SCENE::TestPass::Intance().Draw_FrameTest_04(p1, p2);
+	glViewport(0, 0, CONFIG::SHADOW_MAP::SHADOW_WIDTH, CONFIG::SHADOW_MAP::SHADOW_HEIGHT);
+	p1.BindOutput();
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	p1.Draw();
+
+
+	//// reset viewport
+	p2.BindOutput();
+	glViewport(0, 0, CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	p2.Draw();
+
+
+	//glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
+	// clear all relevant buffers
+	p3.BindOutput();
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
+	glClear(GL_DEPTH_BUFFER_BIT);
+	p3.Draw();
+
+	p4.BindOutput();
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
+	glClear(GL_DEPTH_BUFFER_BIT);
+	p4.Draw();
+}
+// 
+// void OPENGL_SCENE::TestPass::DrawBaseShadow_06(Pass& p, Material& mat)
+// {
+// 	glViewport(0, 0, CONFIG::SHADOW_MAP::SHADOW_WIDTH, CONFIG::SHADOW_MAP::SHADOW_HEIGHT);
+// 	p.BindOutput();
+// 	glClear(GL_DEPTH_BUFFER_BIT);
+// 	p.Draw();
+// 
+// 
+// }
+
+
+

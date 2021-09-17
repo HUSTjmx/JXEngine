@@ -13,3 +13,9 @@ float Timer::Timing()
 	lastFrame = currentFrame;
 	return deltaTime;
 }
+
+float Timer::GetCurrentTime() const
+{
+
+	return glfwGetTime();
+}

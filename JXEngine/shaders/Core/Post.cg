@@ -1,0 +1,107 @@
+
+
+// Foveated Rendering
+// ...
+uniform vec2 LowResolution;
+
+#define W Resolution.x
+#define H Resolution.y
+#define w LowResolution.x
+#define h LowResolution.y
+
+// Kernel function.
+// ...
+float K(float a){
+    //return a * a;
+    return a;
+    return 0.99 * a + 0.01 * a * a;
+    return sin(a * PI / 2.);
+    return 0.5 * a + 0.5 * a * a;
+}
+
+// Inv kernel function.
+// ...
+float K_inv(float a){
+   // return sqrt(a);
+    return a;
+}
+
+// Get Fovea Point
+// ...
+vec2 getFovea(){
+    return Resolution.xy /2.;
+    //return iMouse.xy;
+}
+
+// Tool function for fovea
+// ...
+float getL(){
+    float x = getFovea().x;
+    float y = getFovea().y;
+    
+    float l1 = L2(x ,y);
+    float l2 = L2(W - x, H - y);
+    float l3 = L2(x, H - y);
+    float l4 = L2(W - x, y);
+    return log(max4(l1, l2, l3, l4));
+}
+
+
+// Foveated Algorithm --- Pass 1.
+// ...
+vec3 FoveatedRendering_Pass_1(sampler2D frame, vec2 uv)
+{
+    uv = uv * Resolution;
+
+    float L = getL();
+    float A = L / w;
+    float B = PI2 / h;
+    
+    float k_u = K(uv.x / w) * w;
+    float A_K_u = A * k_u;
+    A_K_u = exp(A_K_u);
+    
+    float b_v = B * uv.y;
+    float cos_b = cos(b_v);
+    float sin_b = sin(b_v);
+    
+    float x = A_K_u * cos_b + getFovea().x;
+    float y = A_K_u * sin_b + getFovea().y;
+    
+    uv = vec2(x / w, y / h);
+    
+    vec3 col = texture(frame, uv).xyz;
+    
+    if(inRange(uv) < 0.0)col = vec3(0. ,0. ,0.);
+
+  //  return vec3(h);
+    return col;
+}
+
+vec3 FoveatedRendering_Pass_2(sampler2D frame, vec2 uv)
+{
+    uv = uv * Resolution;
+
+    uv = uv - getFovea();
+    
+    float dis = L2(uv.x, uv.y);
+    float L = getL();
+    dis = log(dis) / L;
+    
+    float x = K_inv(dis) * w;
+    
+    float arcyx = atan2(uv.x, uv.y);
+    
+    float y = arcyx + l(uv.y) * PI2;
+    y = y * h / (PI2);
+    
+    
+    uv = vec2(x / w, y / h);
+    
+    vec3 col = texture(frame, uv).xyz;
+    
+    if(inRange(uv) < 0.0)col = vec3(0. ,0. ,0.);
+
+    //return vec3(h);
+    return col;
+}

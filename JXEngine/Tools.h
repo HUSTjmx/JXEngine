@@ -11,6 +11,7 @@
 #include <fstream>
 #include <algorithm>
 #include <vector>
+#include <map>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glad/glad.h>
@@ -255,6 +256,75 @@ inline std::shared_ptr<glm::mat4> MatTool::GenerateModelMat_R(float radius, floa
 		modelMatrices[i] = model;
 	}
 
-
 	return std::shared_ptr<glm::mat4>(modelMatrices);
 }
+
+
+
+
+// Sphere Creator.
+// ...
+class SphereCreator 
+{
+public:
+
+	static SphereCreator& Instance()
+	{
+		static SphereCreator* instance_ = new SphereCreator();
+		return *instance_;
+	}
+
+	// Vertex class.
+	// There are some data we need, e.g. pos, uv, normal.
+	// ...
+	struct Vertex {
+		glm::vec3 pos;
+		glm::vec2 uv;
+		glm::vec3 normal;
+	};
+
+	// Face class.
+	// There are three id, it is enough to show face.
+	// ...
+	struct face
+	{
+		int v1;
+		int v2;
+		int v3;
+
+		face(int i, int j, int k)
+		{
+			v1 = i;
+			v2 = j;
+			v3 = k;
+		}
+	};
+
+	// Create op with ico algorithm.
+	// ...
+	void Create_ICO(std::vector<float>& v_d, std::vector<unsigned int>& indexs, std::vector<unsigned int>& offsets, int recursionLevel);
+
+private:
+
+	SphereCreator() {}
+
+	// Add vertex to mesh, fix position to be unit sphere.
+	// ...
+	int AddVertex(glm::vec3 pos);
+
+	// Return index of point in the middle of p1 and p2.
+	// ...
+	int GetMiddlePoint(int p1, int p2);
+
+	// Vertexs in Sphere.
+	// ...
+	std::vector<Vertex> vertexs;
+
+	// Current vertex id.
+	// ...
+	int index;
+
+	// record.
+	// ...
+	std::map<_int64, int> m_cache;
+};

@@ -17,6 +17,8 @@
 #include "FrameBuffer.h"
 #include "Actor.h"
 #include "Material.h"
+#include "ShaderCompiler.h"
+#include "VertexModel.h"
 
 //#define  __MSAA__ 1
 
@@ -39,7 +41,8 @@ int main()
 	
 	GLFWwindow* window = glfwCreateWindow(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
 
-	std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(0.0f, 0.0f, 13.0f));
+	std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(0.0f, 0.8f, -5.0f));
+	camera->Front = glm::vec3(0, 0, 1);
 
 	INPUT::SET_CAMERA(camera);
 
@@ -143,11 +146,21 @@ void Loop(GLFWwindow* window)
 	glEnable(GL_MULTISAMPLE);
 #endif // MSAA
 
+	auto p = OPENGL_SCENE::TestPass::Intance().GetPass_ShadowMap_09();
 
-	Pass p = OPENGL_SCENE::TestPass::Intance().GetPass_InstancedTest_08();
+	auto p2 = OPENGL_SCENE::TestPass::Intance().GetPass_BaseShadow_11(p);
+
+	auto p3 = OPENGL_SCENE::TestPass::Intance().GetPass_FoveatedRendering_12(p2);
+
+	auto p4 = OPENGL_SCENE::TestPass::Intance().GetPass_FoveatedRendering_Pass2_13(p3);
+	//auto p1 = OPENGL_SCENE::TestPass::Intance().GetPass_FrameTest_04();
+	//auto p2 = OPENGL_SCENE::TestPass::Intance().GetPass2_FrameTest_04(p1);
 
 	//时钟重置，开始计时
 	Clock.Reset();
+
+	//
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	// render loop
 	// -----------
@@ -164,8 +177,10 @@ void Loop(GLFWwindow* window)
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
+		OPENGL_SCENE::TestPass::Intance().DrawFoveated_Comp_08(p, p2, p3, p4);
+		//OPENGL_SCENE::TestPass::Intance().DrawFoveated_07(p, p2, p3);
+		//OPENGL_SCENE::TestPass::Intance().DrawBaseShadow_06(p, p2);
 		//OPENGL_SCENE::TestPass::Intance().Draw_FrameTest_04(p1, p2);
-		p.Draw();
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------

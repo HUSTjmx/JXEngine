@@ -32,6 +32,7 @@ Actor& Actor::operator=(const Actor& a)
 	materials = a.materials;
 	transform = a.transform;
 	positions = a.positions;
+	this->type = a.type;
 	return *this;
 }
 
@@ -259,6 +260,17 @@ std::vector<std::shared_ptr<Material>>& Actor::_Materials_()
 {
 	// TODO: 在此处插入 return 语句
 	return materials;
+}
+
+void Actor::AddTextureForMaterial_A(std::shared_ptr<Texture> tex)
+{
+	auto func = [&tex](std::shared_ptr<Material> m)
+	{
+		m->AddTexture(tex->Copy());
+		m->LinkTextureForShader();
+	};
+	std::for_each(materials.begin(), materials.end(), func);
+
 }
 
 void Actor::InitPosition()

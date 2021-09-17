@@ -1,11 +1,18 @@
 #include "Config.h"
+#include "Camera.h"
 namespace CONFIG
 {
 
 	namespace SCREEN_CONFIG
 	{
-		unsigned int SCR_WIDTH = 800;
-		unsigned int SCR_HEIGHT = 600;
+		unsigned int SCR_WIDTH = 1200;
+		unsigned int SCR_HEIGHT = 900;
+
+		namespace FOVEA
+		{
+			unsigned int FOVEA_WIDTH = 1200;
+			unsigned int FOVEA_HEIGHT = 900;
+		}
 	}
 
 	namespace CAMERA_CONFIG
@@ -16,6 +23,24 @@ namespace CONFIG
 		
 		namespace SHADER {
 			std::string VIEW_POS_IN_WORLD = "ViewPosWS";
+			std::string FAR_PLANE = "near_plane";
+			std::string NEAR_PLANE = "far_plane";
+		}
+	}
+
+	namespace SHADOW_MAP
+	{
+		unsigned int SHADOW_WIDTH = 1024;
+		unsigned int SHADOW_HEIGHT = 1024;
+
+		Camera DIR_LIGHT_CAMERA;
+
+		glm::mat4 LIGHT_SPACE_MAT;
+
+		namespace SHADER_NAME {
+			std::string LIGHT_SPACE_MAT_NAME = "lightSpaceMatrix";
+
+			std::string SHADOW_MAP_NAME = "shadowMap";
 		}
 	}
 
@@ -24,6 +49,10 @@ namespace CONFIG
 		const std::string MODEL_MATRIX = "model";
 		const std::string PROJECTION_MATRIX = "projection";
 		const std::string VIEW_MATRIX = "view";
+
+		const std::string TIME = "iTime";
+
+		const std::string RESOLUTION = "Resolution";
 
 		namespace UNIFORM_BLOCK_NAME
 		{
@@ -102,14 +131,32 @@ namespace CONFIG
 			const std::string REFLECTANCE = "reflectance";
 			const std::string EMISSIVE = "emissive";
 		}
+
+		namespace SKY_MODEL
+		{
+			const std::string EARTH_RADIUS = "earthRadius";
+		    const std::string ATMOSHERE_RADIUS = "atmosphereRadius";
+			const std::string HR = "Hr";
+			const std::string HM = "Hm";
+		    const std::string BETA_R = "betaR";
+			const std::string BETA_M = "betaM";
+		}
+
+		namespace FOVEA_RENDER
+		{
+			std::string RESOLUTION_NAME = "LowResolution";
+		}
 	}
 
 	namespace SHADING_INCLUDE_CORE
 	{
-		const std::string address = "shaders/";
+		const std::string address = "shaders/Core/";
 		const std::string MATH = address + "Math.cg";
 		const std::string BRDF = address + "BRDF.cg";
 		const std::string LIGHT = address + "Light.cg";
 		const std::string UNIFORM = address + "Uniform.cg";
+		const std::string SHADOW = address + "Shadow.cg";
+		const std::string RAY_MARCHING = address + "RayMarching.cg";
+		const std::string POST_PROCESSING = address + "Post.cg";
 	}
 }

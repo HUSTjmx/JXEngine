@@ -109,6 +109,7 @@ void Texture::SetUniformPos(int newPos)
 void Texture::SetForShader(const ShaderCompiler& shader)
 {
 	shader.UseSelf();
+	//std::cout << uniformPos << std::endl;
 	shader.SetInt(shaderName, uniformPos);
 }
 
@@ -131,6 +132,19 @@ void Texture::SetType(const std::string& type_)
 {
 	//std::cout << type_ << std::endl;
 	shaderName = type_;
+}
+
+std::shared_ptr<Texture> Texture::Copy() const
+{
+	std::shared_ptr<Texture> t = std::make_shared<Texture>();
+	t->texture = this->texture;
+	t->shaderName = shaderName;
+	return t;
+}
+
+unsigned int Texture::Self() const
+{
+	return texture;
 }
 
 void Texture::Bind() const

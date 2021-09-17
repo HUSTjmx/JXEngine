@@ -1,151 +1,13 @@
 #version 430 core
-#define PI 3.14159
-#define PI_INV (1.0 / PI)
+uniform vec2 Resolution;
 
-
-//½«·¶Î§´Ó[0, 1]ÖØÓ³ÉäÖÁ[-1, 1]£¨NDC£©
-float RemapNDC(float a)
-{
-    return a * 2.0 - 1.0;
-}
-
-//»ñÈ¡ÏßÐÔÉî¶ÈÖµ
-//½«ÆÁÄ»¿Õ¼äµÄ·ÇÏßÐÔÉî¶ÈÖµ±ä»»ÖÁÏßÐÔÉî¶ÈÖµ
-float LinearizeDepth(float depth, float near, float far)
-{
-    float z = RemapNDC(depth);
-    return (2.0 * near * far) / (far + near - z * (far - near));
-    
-}
-
-//AlphaTest
-//Èç¹û°¢¶û·¨ÖµÐ¡ÓÚãÐÖµ£¬ÔòÉáÆú
-float AlphaTest(float alpha, float min_)
-{
-    if (alpha < min_)
-        discard;
-    return 1.0;
-}
-
-
-struct DirLight
-{
-    vec3 color;
-	vec3 direction;
-    float intensity;
-};
-
-struct PointLight
-{
-    vec3 color;
-    vec3 position;
-    float intensity;
-    float lightInvRadius;
-};
-
-struct SpotLight
-{
-    vec3 color;
-    vec3 position;
-    vec3 direction;
-    float innerAngle;
-    float outerAngle;
-    float intensity;
-    float lightInvRaduis;
-};
-
-#define DIRECTION_LIGHT_MAX_NUM 1
-#define POINT_LIGHT_NUM 10
-#define SPOT_LIGHT_NUM 5
-
-
-uniform DirLight dirLights[DIRECTION_LIGHT_MAX_NUM];
-uniform PointLight pointLights[POINT_LIGHT_NUM];
-uniform SpotLight spotLights[SPOT_LIGHT_NUM];
-
-uniform int dirLightsNum;
-uniform int pointLightsNum;
-uniform int spotLightsNum;
-
-
-//Æ½·½Ë¥¼õº¯Êý
-float GetSquareFalloffAttenuation(vec3 posToLight, float lightInvRadius)
-{
-    float distanceSquare = dot(posToLight, posToLight);
-    float factor = distanceSquare * lightInvRadius * lightInvRadius;
-    float smoothFactor = max(1.0 - factor * factor, 0.0);
-    return (smoothFactor * smoothFactor) / max(distanceSquare, 1e-4);
-}
-
-//¾Û¹âµÆË¥¼õ
-float GetSpotAngleAttenuation(vec3 l, vec3 lightDir, float innerAngle, float outerAngle)
-{
-    float cosOuter = cos(outerAngle);
-    float spotScale = 1.0 / max(cos(innerAngle) - cosOuter, 1e-4);
-    float spotOffset = -cosOuter * spotScale;
-    
-    float cd = dot(normalize(-lightDir), l);
-    float attenuation = clamp(cd * spotScale + spotOffset, 0.0, 1.0);
-    return attenuation * attenuation;
-}
-
-float GetDirLightIllumiance(int i)
-{
-    if (i > DIRECTION_LIGHT_MAX_NUM)
-        return 0.0;
-    return dirLights[i].intensity;
-}
-
-vec3 GetDirLightColor(int i)
-{
-    if (i > DIRECTION_LIGHT_MAX_NUM)
-        return vec3(0.0);
-    return dirLights[i].color;
-}
-
-float GetPointLightIllumiance(int i, vec3 w_pos)
-{
-    if (i > POINT_LIGHT_NUM)
-        return 0.0;
-    
-    vec3 posToLight = pointLights[i].position - w_pos;
-    float attenuation = GetSquareFalloffAttenuation(posToLight, pointLights[i].lightInvRadius);
-    return pointLights[i].intensity * 0.25 * PI_INV * attenuation;
-}
-
-vec3 GetPointLightColor(int i)
-{
-    if (i > POINT_LIGHT_NUM)
-        return vec3(0.0);
-    
-    return pointLights[i].color;
-}
-
-float GetSpotLightIllumiance(int i, vec3 w_pos)
-{
-    if (i > SPOT_LIGHT_NUM)
-        return 0.0f;
-
-    vec3 posToLight = spotLights[i].position - w_pos;
-    vec3 l = normalize(posToLight);
-    
-    float attenuation;
-    attenuation = GetSquareFalloffAttenuation(posToLight, spotLights[i].lightInvRaduis);
-    attenuation *= GetSpotAngleAttenuation(l, spotLights[i].direction, spotLights[i].innerAngle, spotLights[i].outerAngle);
-    
-    return spotLights[i].intensity * attenuation;
-}
-
-vec3 GetSpotLightColor(int i)
-{
-    return spotLights[i].color;
-}
+uniform float iTime;
 
 uniform vec3 viewPosWS;
-uniform float farPlaneDepth;
-uniform float nearPlaneDepth;
+uniform float near_plane;
+uniform float far_plane;
 
-//±ê×¼²ÄÖÊ
+//ï¿½ï¿½×¼ï¿½ï¿½ï¿½ï¿½
 uniform vec3 baseColor;
 uniform float metallic;
 uniform float roughness;
@@ -157,21 +19,21 @@ uniform sampler2D texture_albedo1;
 uniform sampler2D texture_normal1;
 
 
-//»ùÉ«ÖØÓ³Éä
+//ï¿½ï¿½É«ï¿½ï¿½Ó³ï¿½ï¿½
 //diffuse color
 vec3 BaseColorReMap(vec3 color, float metallic)
 {
     return (1.0 - metallic) * color;
 }
 
-//·´ÉäÂÊÖØÓ³Éä
-//FresnelÏîÒÀÀµÓÚf0£¬²¢ÇÒ¶Ôµç½éÖÊ¶øÑÔÊÇµ¥É«µÄ
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½ï¿½
+//Fresnelï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½f0ï¿½ï¿½ï¿½ï¿½ï¿½Ò¶Ôµï¿½ï¿½ï¿½Ê¶ï¿½ï¿½ï¿½ï¿½Çµï¿½É«ï¿½ï¿½
 vec3 ReflectanceReMap(float reflec)
 {
     return 0.16 * reflec * reflec;
 }
 
-//¸ù¾ÝÕÛÉäÂÊ¼ÆËãFresnel·´ÉäÂÊf0
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½Fresnelï¿½ï¿½ï¿½ï¿½ï¿½ï¿½f0
 float GetF0WithIOR(float n)
 {
     float a = n - 1.0;
@@ -179,7 +41,7 @@ float GetF0WithIOR(float n)
     return a * a / (b * b);
 }
 
-//Äæ¹ý³Ì£¬¸ù¾Ýf0¼ÆËãÕÛÉäÂÊ
+//ï¿½ï¿½ï¿½ï¿½Ì£ï¿½ï¿½ï¿½ï¿½ï¿½f0ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 float GetIORWithF0(float f0)
 {
     float a = 1.0 - sqrt(f0);
@@ -187,178 +49,433 @@ float GetIORWithF0(float f0)
 }
 
 
-//»ñÈ¡F90£¬³£Êý°æ£¬Ò»°ãÊÇ1
+//ï¿½ï¿½È¡F90ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ£¬Ò»ï¿½ï¿½ï¿½ï¿½1
 float GetF90_C()
 {
     return 1.0;
 }
 
 
-//¼ÆËãµç½éÖÊºÍ½ðÊô²ÄÖÊµÄf0, ¾µÃæ·´ÉäµÄÑÕÉ«À´×Ô½ðÊôµÄ»ùÉ«
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÊºÍ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½f0, ï¿½ï¿½ï¿½æ·´ï¿½ï¿½ï¿½ï¿½ï¿½É«ï¿½ï¿½ï¿½Ô½ï¿½ï¿½ï¿½ï¿½Ä»ï¿½É«
 vec3 GetF0_All(vec3 base_color, float metal, float reflec)
 {
     return ReflectanceReMap(reflec) * (1.0 - metal) + base_color * metal;
 }
 
 
-//´Ö²Ú¶ÈÖØÓ³Éä 
+//ï¿½Ö²Ú¶ï¿½ï¿½ï¿½Ó³ï¿½ï¿½ 
 //a = roughness * roughness
 float RoughnessReMap(float rough)
 {
     return rough * rough;
 }
 
-
-#define MEDIUMP_FLT_MAX 65504.0
-#define saturateMediump(x) min(x, MEDIUMP_FLT_MAX)
-
-/*********************************************************************************
-Flament²ÄÖÊÏµÍ³£¬BRDF
-
-f_r = D * G * F / (4 * (n * v) * (n * l))
-V = G / (4 * (n * v) * (n * l))
-f_r = D * V * F
+#define PI 3.14159265358
+#define PI_INV 0.31830988618
+#define HALF_PI (0.5 * PI)
+#define PI2 6.28318530
+#define GAMMA 0.4545454545
 
 
-**********************************************************************************/
-
-//Walter GGX·Ö²¼£¬µÈ¼ÛÓÚTrowbridge_Reitz
-float D_GGX(float NoH, float roughness)
+// Range remapping from [0, 1] to [-1, 1].
+// ...
+float RemapNDC(float a)
 {
-    float a = NoH * roughness;
-    float k = roughness / (1.0 - NoH * NoH + a * a);
-    return k * k * (1.0 / PI_INV);
+    return a * 2.0 - 1.0;
 }
 
-//ÓÅ»¯ºóµÄWalter GGX·Ö²¼
-float D_GGX_Optimized(float rougness, float NoH, vec3 n, vec3 h)
+// Get Linear depth.
+// ...
+float LinearizeDepth(float depth, float near, float far)
 {
-    vec3 NxH = cross(n, h);
-    float a = NoH * rougness;
-    float k = rougness / (dot(NxH, NxH) + a * a);
-    float d = k * k * PI_INV;
-    return saturateMediump(d);
-}
-
-//ÓÅ»¯ºóµÄ¿É¼û¶ÈÏî
-float V_SmithGGXCorrelated(float NoV, float NoL, float roughness)
-{
-    float a2 = roughness * roughness;
-    float GGXV = NoL * sqrt(NoV * NoV * (1.0 - a2) + a2);
-    float GGXL = NoV * sqrt(NoL * NoL * (1.0 - a2) + a2);
-    return 0.5 / (GGXL + GGXV);
-}
-
-//½øÒ»²½¼ÓËÙµÄ¿É¼û¶ÈÏî
-float V_SmithGGXCorrelatedFast(float NoV, float NoL, float roughness)
-{
-    float a = roughness;
-    float GGXV = NoL * (NoV * (1.0 - a) + a);
-    float GGXL = NoV * (NoL * (1.0 - a) + a);
-    return 0.5 / (GGXL + GGXV);
-}
-
-//HammonµÄ¼ÓËÙ¿É¼û¶ÈÏî
-float V_SmithGGXCorrelatedFast_Hammon(float NoV, float NoL, float roughness)
-{
-    float a = roughness;
-    float n1 = 2.0 * NoV * NoL;
-    float n2 = NoL + NoV;
-    return 0.5 / mix(n1, n2, a);
-}
-
-//Cook-Torrance¾µÃæBRDFµÄFresnelÏî
-vec3 F_Schlick(float VoH, vec3 f0, float f90)
-{
-    return f0 + (vec3(f90) - f0) * pow(1.0 - VoH, 5.0);
-}
-
-float F_Schlick(float VoH, float f0, float f90)
-{
-    return f0 + (f90 - f0) * pow(1.0 - VoH, 5.0);
-}
-
-//½«f90ÉèÖÃÎª1µÄFresnelÏî
-vec3 F_Schlick_F90(float VoH, vec3 f0)
-{
-    float f = pow(1.0 - VoH, 5.0);
-    return f + f0 * (1.0 - f);
-}
-
-//Lambertian diffuse BRDF : 1.0 / PI
-float Fd_Lambert()
-{
-    return PI_INV;
-}
-
-//Disney diffuse BRDF
-float Fd_Burley(float NoV, float NoL, float LoH, float roughness)
-{
-    float f90 = 0.5 + 2.0 * roughness * LoH * LoH;
-    float lightScatter = F_Schlick(NoL, 1.0, f90);
-    float viewScatter = F_Schlick(NoV, 1.0, f90);
-    return lightScatter * viewScatter * PI_INV;
-}
-
-vec3 Standard_BRDF_Torrance_DVF(vec3 diffuse_color, vec3 v, vec3 l, vec3 n, float r, vec3 f0, float f90)
-{
-    vec3 h = normalize(v + l);
+    float z = RemapNDC(depth);
+    return (2.0 * near * far) / (far + near - z * (far - near));
     
-    float NoV = abs(dot(n, v) + 1e-5);
-    float NoL = clamp(dot(n, l), 0.0, 1.0);
-    float NoH = clamp(dot(n, l), 0.0, 1.0);
-    float LoH = clamp(dot(l, h), 0.0, 1.0);
-    
-    float D = D_GGX(NoH, r);
-    vec3 F = F_Schlick_F90(LoH, f0);
-    float V = V_SmithGGXCorrelated(NoV, NoL, r);
-    
-    //¾µÃæ·´ÉäBRDF
-    vec3 Fr = (D * V) * F;
-    
-    //Âþ·´ÉäBRDF
-    vec3 Fd = diffuse_color * Fd_Lambert();
-    
-    return Fr + Fd;
 }
+
+// AlphaTest
+// ...
+float AlphaTest(float alpha, float min_)
+{
+    if (alpha < min_)
+        discard;
+    return 1.0;
+}
+
+// Gamma Correction
+// ...
+vec3 GammaCorrection(vec3 color)
+{
+    return pow(color, vec3(GAMMA));
+}
+
+// Random Creation.
+// We do not use Trigonometric function.
+// ...
+// -----------------------------------------------------
+//  1 out, 1 in...
+float hash11(float p)
+{
+    //p = fract(p * .1031);
+    //p *= p + 33.33;
+    //p *= p + p;
+    //return fract(p);
+    return fract(sin(p) * 10000.0);
+}
+
+//----------------------------------------------------------------------------------------
+//  1 out, 2 in
+// ...
+float hash12(vec2 uv)
+{
+	//vec3 p3  = fract(vec3(p.xyx) * .1031);
+    //p3 += dot(p3, p3.yzx + 33.33);
+    //return fract((p3.x + p3.y) * p3.z);
+
+    const float a = 12.9898, b = 78.233, c = 43758.5453;
+    float dt = dot(uv.xy, vec2(a, b)), sn = mod(dt, PI);
+    return fract(sin(sn) * c);
+}
+
+//----------------------------------------------------------------------------------------
+//  1 out, 3 in
+// ...
+float hash13(vec3 p3)
+{
+	p3  = fract(p3 * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+//----------------------------------------------------------------------------------------
+//  2 out, 1 in
+// ...
+vec2 hash21(float p)
+{
+	vec3 p3 = fract(vec3(p) * vec3(.1031, .1030, .0973));
+	p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.xx+p3.yz)*p3.zy);
+
+}
+
+//----------------------------------------------------------------------------------------
+///  2 out, 2 in
+// ...
+vec2 hash22(vec2 p)
+{
+	vec3 p3 = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yzx+33.33);
+    return fract((p3.xx+p3.yz)*p3.zy);
+
+}
+
+//----------------------------------------------------------------------------------------
+///  2 out, 3 in
+// ...
+vec2 hash23(vec3 p3)
+{
+	p3 = fract(p3 * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yzx+33.33);
+    return fract((p3.xx+p3.yz)*p3.zy);
+}
+
+//----------------------------------------------------------------------------------------
+//  3 out, 1 in
+// ...
+vec3 hash31(float p)
+{
+   vec3 p3 = fract(vec3(p) * vec3(.1031, .1030, .0973));
+   p3 += dot(p3, p3.yzx+33.33);
+   return fract((p3.xxy+p3.yzz)*p3.zyx); 
+}
+
+
+//----------------------------------------------------------------------------------------
+///  3 out, 2 in
+// ...
+vec3 hash32(vec2 p)
+{
+	vec3 p3 = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yxz+33.33);
+    return fract((p3.xxy+p3.yzz)*p3.zyx);
+}
+
+//----------------------------------------------------------------------------------------
+///  3 out, 3 in
+// ...
+vec3 hash33(vec3 p3)
+{
+	p3 = fract(p3 * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yxz+33.33);
+    return fract((p3.xxy + p3.yxx)*p3.zyx);
+
+}
+
+//----------------------------------------------------------------------------------------
+// 4 out, 1 in
+// ...
+vec4 hash41(float p)
+{
+	vec4 p4 = fract(vec4(p) * vec4(.1031, .1030, .0973, .1099));
+    p4 += dot(p4, p4.wzxy+33.33);
+    return fract((p4.xxyz+p4.yzzw)*p4.zywx);
+    
+}
+
+//----------------------------------------------------------------------------------------
+// 4 out, 2 in
+// ...
+vec4 hash42(vec2 p)
+{
+	vec4 p4 = fract(vec4(p.xyxy) * vec4(.1031, .1030, .0973, .1099));
+    p4 += dot(p4, p4.wzxy+33.33);
+    return fract((p4.xxyz+p4.yzzw)*p4.zywx);
+
+}
+
+//----------------------------------------------------------------------------------------
+// 4 out, 3 in
+// ...
+vec4 hash43(vec3 p)
+{
+	vec4 p4 = fract(vec4(p.xyzx)  * vec4(.1031, .1030, .0973, .1099));
+    p4 += dot(p4, p4.wzxy+33.33);
+    return fract((p4.xxyz+p4.yzzw)*p4.zywx);
+}
+
+//----------------------------------------------------------------------------------------
+// 4 out, 4 in
+// ...
+vec4 hash44(vec4 p4)
+{
+	p4 = fract(p4  * vec4(.1031, .1030, .0973, .1099));
+    p4 += dot(p4, p4.wzxy+33.33);
+    return fract((p4.xxyz+p4.yzzw)*p4.zywx);
+}
+
+
+// IQ Noise
+// ...
+float noise31_IQ(vec3 rp)
+{
+    vec3 ip = floor(rp);
+    rp -= ip;
+    vec3 s = vec3(7, 157, 113);
+    vec4 h = vec4(0.0, s.yz, s.y + s.z) + dot(ip, s);
+    rp = rp * rp * (3.0 - 2.0 * rp);
+    h = mix(fract(sin(h) * 43758.5), fract(sin(h + s.x) * 43758.5), rp.x);
+    h.xy = mix(h.xz, h.yw, rp.y);
+    return mix(h.x, h.y, rp.z);
+}
+
+// FBM v1
+// Base.
+// ...
+float fbm_v1(vec3 x)
+{
+    float r = 0.0;
+    float w = 1.0;
+    float s = 1.0;
+    for(int i = 0; i < 5; i++)
+    {
+        w *= 0.5;
+        s *= 2.0;
+        r += w * noise31_IQ(s * x);
+    }
+    return r;
+}
+
+// FBM v2
+// ...
+float fbm_v2(vec3 x, float H, int numOctaves)
+{
+    float G = exp2(-H);
+    float f = 1.0;
+    float a = 1.0;
+    float t = 0.0;
+    for(int i = 0; i < numOctaves; ++i)
+    {
+        t += a * noise31_IQ(f * x);
+        f *= 2.0;
+        a *= G;
+    }
+    return t;
+}
+
+
+// Some useful math functions.
+// ...
+// ---------------------------------------------------
+// ---------------------------------------------------
+
+float Gain_11(float x, float k)
+{
+    float a = 0.5 * pow(2.0 * ((x < 0.5) ? x : 1.0 - x), k);
+    return (x < 0.5) ? a : 1.0 - a;
+}
+
+vec3 Gain_33(vec3 x, float k)
+{
+    return vec3(Gain_11(x.x, k), Gain_11(x.y, k), Gain_11(x.z, k));
+}
+
+// L2 Paradigm
+// ...
+float L2(float x, float y){
+    return sqrt(x * x + y * y);
+}
+
+// Max function with 4 items.
+// ...
+float max4(float l1,float l2, float l3, float l4){
+    return max(max(l1, l2), max(l3, l4));
+}
+
+// Judge function.
+// if in > 0.0, return 0.0.
+// else return 1.0.
+// ...
+float l(float y){
+    if(y < 0.0)return 1.0;
+    return 0.0;
+}
+
+// Right atan.
+// ...
+float atan2(float x, float y){
+    if(x > 0.)return atan(y/x);
+    if(x < 0. && y >= 0.) return atan(y/x) + PI;
+    if(x < 0. && y < 0.) return atan(y/x) - PI;
+    if(x == 0. && y > 0.) return HALF_PI;
+    if(x == 0. && y < 0.) return -1. * HALF_PI;
+    return 0.0;
+}
+
+// Judge uv in range [0, 1].
+// ...
+float inRange(vec2 uv){
+    if(uv.x < 0.0 || uv.x > 1.0)return -1.0;
+    if(uv.y < 0.0 || uv.y > 1.0)return -1.0;
+    return 1.0;
+}
+
+
+
+// Foveated Rendering
+// ...
+uniform vec2 LowResolution;
+
+#define W Resolution.x
+#define H Resolution.y
+#define w LowResolution.x
+#define h LowResolution.y
+
+// Kernel function.
+// ...
+float K(float a){
+    //return a * a;
+    return a;
+    return 0.99 * a + 0.01 * a * a;
+    return sin(a * PI / 2.);
+    return 0.5 * a + 0.5 * a * a;
+}
+
+// Inv kernel function.
+// ...
+float K_inv(float a){
+   // return sqrt(a);
+    return a;
+}
+
+// Get Fovea Point
+// ...
+vec2 getFovea(){
+    return Resolution.xy /2.;
+    //return iMouse.xy;
+}
+
+// Tool function for fovea
+// ...
+float getL(){
+    float x = getFovea().x;
+    float y = getFovea().y;
+    
+    float l1 = L2(x ,y);
+    float l2 = L2(W - x, H - y);
+    float l3 = L2(x, H - y);
+    float l4 = L2(W - x, y);
+    return log(max4(l1, l2, l3, l4));
+}
+
+
+// Foveated Algorithm --- Pass 1.
+// ...
+vec3 FoveatedRendering_Pass_1(sampler2D frame, vec2 uv)
+{
+    uv = uv * Resolution;
+
+    float L = getL();
+    float A = L / w;
+    float B = PI2 / h;
+    
+    float k_u = K(uv.x / w) * w;
+    float A_K_u = A * k_u;
+    A_K_u = exp(A_K_u);
+    
+    float b_v = B * uv.y;
+    float cos_b = cos(b_v);
+    float sin_b = sin(b_v);
+    
+    float x = A_K_u * cos_b + getFovea().x;
+    float y = A_K_u * sin_b + getFovea().y;
+    
+    uv = vec2(x / w, y / h);
+    
+    vec3 col = texture(frame, uv).xyz;
+    
+    if(inRange(uv) < 0.0)col = vec3(0. ,0. ,0.);
+
+  //  return vec3(h);
+    return col;
+}
+
+vec3 FoveatedRendering_Pass_2(sampler2D frame, vec2 uv)
+{
+    uv = uv * Resolution;
+
+    uv = uv - getFovea();
+    
+    float dis = L2(uv.x, uv.y);
+    float L = getL();
+    dis = log(dis) / L;
+    
+    float x = K_inv(dis) * w;
+    
+    float arcyx = atan2(uv.x, uv.y);
+    
+    float y = arcyx + l(uv.y) * PI2;
+    y = y * h / (PI2);
+    
+    
+    uv = vec2(x / w, y / h);
+    
+    vec3 col = texture(frame, uv).xyz;
+    
+    if(inRange(uv) < 0.0)col = vec3(0. ,0. ,0.);
+
+    //return vec3(h);
+    return col;
+}
+
 
 out vec4 FragColor;
 
-in vec3 FragPos;
-in vec3 Normal;
 in vec2 TexCoords;
 
+uniform sampler2D screenTexture;
 
 void main()
 {
-	vec3 norm = normalize(Normal);
-
-    vec3 viewDir = normalize(viewPosWS - FragPos);
-
-	vec3 result = vec3(0.0);
-
-	vec3 diffuse_color = BaseColorReMap(baseColor, metallic);
-
-	float r = RoughnessReMap(roughness);
-
-	vec3 f0 = GetF0_All(baseColor, metallic, reflectance);
-
-	for(int i = 0;i < dirLightsNum; i++)
-	{
-		//light_Intensity * light_color * BRDF * NoL 
-		float NoL = clamp(dot(norm, normalize(-dirLights[i].direction)), 0.0, 1.0);
-		result += GetDirLightColor(i) * GetDirLightIllumiance(i) 
-		* Standard_BRDF_Torrance_DVF(diffuse_color, viewDir, -dirLights[i].direction, norm, r, f0, 1.0) * NoL;
-	}
-
-	for(int i = 0; i < pointLightsNum; i++)
-	{
-		//light_Intensity * light_color * BRDF * NoL 
-		vec3 L = normalize(pointLights[i].position - FragPos);
-		float NoL = clamp(dot(norm, L), 0.0, 1.0);
-		result = result + GetPointLightColor(i) * GetPointLightIllumiance(i, FragPos)
-		* Standard_BRDF_Torrance_DVF(diffuse_color, viewDir, L, norm, r, f0, 1.0) * NoL; 
-	}	
-
-	FragColor =  vec4(result, 1.0);
-}
+    vec3 col = FoveatedRendering_Pass_2(screenTexture, TexCoords);
+    FragColor = vec4(col.rgb, 1.0);
+} 

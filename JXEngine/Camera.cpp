@@ -1,9 +1,13 @@
 #include "Camera.h"
 #include "Config.h"
+#include "Material.h"
+#include "ShaderCompiler.h"
 
 glm::mat4 Camera::GetProjectionMatrix() const
 {
-	return glm::perspective(glm::radians(Zoom), CONFIG::CAMERA_CONFIG::ASPECT, CONFIG::CAMERA_CONFIG::NEAR_PLANE, CONFIG::CAMERA_CONFIG::FAR_PLANE);
+	if(projectionType == ProjectionType::Perspective)
+		return glm::perspective(glm::radians(Zoom), CONFIG::CAMERA_CONFIG::ASPECT, nearPlane, farPlane);
+	return glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, nearPlane, farPlane);
 }
 
 void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime)
@@ -47,6 +51,14 @@ void Camera::ProcessMouseScroll(float yoffset)
 		Zoom = 1.0f;
 	if (Zoom > 45.0f)
 		Zoom = 45.0f;
+}
+
+void Camera::LoadInfoToShader(std::shared_ptr<Material> mat)
+{
+	mat->Active();
+	mat->SetViewPos(*this);
+	mat->GetShader()->SetFloat(CONFIG::CAMERA_CONFIG::SHADER::FAR_PLANE, farPlane);
+	mat->GetShader()->SetFloat(CONFIG::CAMERA_CONFIG::SHADER::NEAR_PLANE, nearPlane);
 }
 
 void Camera::updateCameraVectors()

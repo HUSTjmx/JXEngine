@@ -36,6 +36,14 @@ public:
 
 	void SetType(const std::string& type_);
 
+	// Copy self, but only transport texture_id and shaderName.
+	// Other data do not need.
+	// ...
+	std::shared_ptr<Texture> Copy() const;
+
+	// ...
+	unsigned int Self()const;
+
 	virtual unsigned int loadCubemap(std::vector<std::string> faces) { return -1; }
 
 protected:

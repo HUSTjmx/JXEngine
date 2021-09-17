@@ -111,11 +111,16 @@ void FrameBuffer::AddRenderObject(bool hasStencil, bool isMSAA)
 	
 	if (hasStencil)
 	{
-		if(!isMSAA)
+		if (!isMSAA)
+		{
+			//std::cout << isMSAA << std::endl;
 			//创建一个深度和模板渲染缓冲对象
 			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height); // use a single renderbuffer object for both a depth AND stencil buffer.
+		}
 		else
+		{
 			glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, width, height);
+		}
 		//附加这个渲染缓冲对象
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // now actually attach it
 	}
@@ -147,6 +152,7 @@ unsigned int FrameBuffer::FBO() const
 
 unsigned int FrameBuffer::BindTextureToBuffer(GLenum format, bool isMSAA)
 {
+	//std::cout << isMSAA << std::endl;
 	auto type_ = GL_TEXTURE_2D;
 
 	if (isMSAA)
@@ -157,12 +163,20 @@ unsigned int FrameBuffer::BindTextureToBuffer(GLenum format, bool isMSAA)
 	glGenTextures(1, &texture);
 	glBindTexture(type_, texture);
 
-	glTexImage2D(type_, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, NULL);
+	if (isMSAA)
+		glTexImage2DMultisample(type_, 4, format, width, height, GL_TRUE);
+	else
+		glTexImage2D(type_, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, NULL);
 
 	glTexParameteri(type_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(type_, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(type_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(type_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	GLfloat borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
+	glTexParameterfv(type_, GL_TEXTURE_BORDER_COLOR, borderColor);
 
 	auto attachment = GetAttachmentByIndex(attachments.size());
+	if (format == GL_DEPTH_COMPONENT) attachment = GL_DEPTH_ATTACHMENT;
 	attachments.push_back(attachment);
 	//附加到帧缓冲上
 	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, type_, texture, 0);

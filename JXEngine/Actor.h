@@ -77,6 +77,10 @@ public:
 
 	virtual std::shared_ptr<Material> GetMaterial(int index = 0);
 
+	// Load some info about self to shader.
+	// ...
+	virtual void LoadInfoToShader() {}
+
 	virtual void Draw();
 
 	virtual void Draw(std::shared_ptr<Material> newMat);
@@ -118,13 +122,15 @@ public:
 	// ...
 	std::vector<std::shared_ptr<Material>>& _Materials_();
 
+	// Add a texture for all material, e.g. shadowMap.
+	// ...
+	void AddTextureForMaterial_A(std::shared_ptr<Texture> tex);
+
 private:
 
 	void InitPosition();
 
 	std::vector<std::shared_ptr<VertexModel>> meshes;
-
-	std::vector<std::shared_ptr<Material>> materials;
 
 	Transform transform;
 
@@ -133,5 +139,9 @@ private:
 	std::string directory;
 
 	ActorType type;
+
+protected:
+
+	std::vector<std::shared_ptr<Material>> materials;
 };
 

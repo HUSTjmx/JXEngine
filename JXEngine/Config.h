@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+class Camera;
+
 namespace CONFIG
 {
 
@@ -11,6 +13,12 @@ namespace CONFIG
 	{
 		extern unsigned int SCR_WIDTH;
 		extern unsigned int SCR_HEIGHT;
+
+		namespace FOVEA
+		{
+			extern unsigned int FOVEA_WIDTH;
+			extern unsigned int FOVEA_HEIGHT;
+		}
 	}
 
 	namespace CAMERA_CONFIG
@@ -21,6 +29,24 @@ namespace CONFIG
 		
 		namespace SHADER {
 			extern std::string VIEW_POS_IN_WORLD;
+			extern std::string FAR_PLANE;
+			extern std::string NEAR_PLANE;
+		}
+	}
+
+	namespace SHADOW_MAP
+	{
+		extern unsigned int SHADOW_WIDTH;
+		extern unsigned int SHADOW_HEIGHT;
+
+		extern Camera DIR_LIGHT_CAMERA;
+
+		extern glm::mat4 LIGHT_SPACE_MAT;
+
+		namespace SHADER_NAME {
+			extern std::string LIGHT_SPACE_MAT_NAME;
+
+			extern std::string SHADOW_MAP_NAME;
 		}
 	}
 
@@ -29,6 +55,10 @@ namespace CONFIG
 		extern const std::string MODEL_MATRIX;
 		extern const std::string PROJECTION_MATRIX;
 		extern const std::string VIEW_MATRIX;
+
+		extern const std::string TIME;
+
+		extern const std::string RESOLUTION;
 
 		namespace UNIFORM_BLOCK_NAME
 		{
@@ -91,6 +121,21 @@ namespace CONFIG
 			extern const std::string REFLECTANCE;
 			extern const std::string EMISSIVE;
 		}
+
+		namespace SKY_MODEL
+		{
+			extern const std::string EARTH_RADIUS;
+			extern const std::string ATMOSHERE_RADIUS;
+			extern const std::string HR;
+			extern const std::string HM;
+			extern const std::string BETA_R;
+			extern const std::string BETA_M;
+		}
+
+		namespace FOVEA_RENDER
+		{
+			extern std::string RESOLUTION_NAME;
+		}
 	}
 
 	namespace SHADING_INCLUDE_CORE
@@ -100,6 +145,9 @@ namespace CONFIG
 		extern const std::string BRDF;
 		extern const std::string LIGHT;
 		extern const std::string UNIFORM;
+		extern const std::string SHADOW;
+		extern const std::string RAY_MARCHING;
+		extern const std::string POST_PROCESSING;
 
 	}
 }

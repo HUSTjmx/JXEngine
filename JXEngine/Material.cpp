@@ -18,9 +18,9 @@ Material::Material(std::shared_ptr<ShaderCompiler> s)
 
 	metallic = 0.0;
 
-	roughness = 0.1;
+	roughness = 0.9;
 
-	reflectance = 0.9;
+	reflectance = 0.1;
 
 	emissive = glm::vec3(0.0);
 
@@ -35,6 +35,7 @@ void Material::OnNotify(Event* event)
 	CanMove = type_->GetMobility() == ActorType::Mobility::MOVE;
 	//std::cout << CanMove << std::endl;
 }
+
 
 void Material::AddTexture(std::shared_ptr<Texture> tex)
 {
@@ -71,9 +72,13 @@ void Material::LinkTextureForShader()
 			number = std::to_string(normalNr++); // transfer unsigned int to stream
 		else if (name == "texture_height")
 			number = std::to_string(heightNr++); // transfer unsigned int to stream
+
 		i->get()->SetUniformPos(i - textures.begin());
 		i->get()->SetType(name + number);
+		//std::cout << name + number << " ";
 		i->get()->SetForShader(*shader);
+		
+		
 	}
 }
 
@@ -203,6 +208,7 @@ std::shared_ptr<Material> Material::Copy() const
 	m->reflectance = reflectance;
 	m->roughness = roughness;
 	m->engineSetting = engineSetting;
+	m->textures = textures;
 	return m;
 }
 
@@ -216,6 +222,15 @@ void TranslateCmd(EngineCommands cmd)
 		break;
 	case EngineCommands::Depth_Func_LESS:
 		glDepthFunc(GL_LESS);
+		break;
+	case  EngineCommands::Depth_Clear:
+		glClear(GL_DEPTH_BUFFER_BIT);
+		break;
+	case EngineCommands::Cull_Front:
+		glCullFace(GL_FRONT);
+		break;
+	case EngineCommands::Cull_Back:
+		glCullFace(GL_BACK);
 		break;
 	default:
 		break;

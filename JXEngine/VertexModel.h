@@ -90,6 +90,33 @@ public:
 	// ...
 	void BindVertexToBuffer(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
 
+	// Bind vertex data to the buffer object(VBO) and use EBO, when we bind a VAO.
+	// We should firstly call this or it`s variants after we create a instance.
+	// 
+	// We will set haveIndices <True>.
+	// 
+	// Input:
+	//   <vertices>: vector<float>, the vertices data we need.
+	//   <offsets>: vector<uint>, the layout of data.
+	//
+	// Heavy load 4 : no indices.
+	// ...
+	void BindVertexToBuffer(std::vector<float> vertices, std::vector<unsigned int> offsets);
+
+	// Bind vertex data to the buffer object(VBO) and use EBO, when we bind a VAO.
+	// We should firstly call this or it`s variants after we create a instance.
+	// 
+	// We will set haveIndices <True>.
+	// 
+	// Input:
+	//   <vertices>: vector<float>, the vertices data we need.
+	//   <indices>: vector<uint>, the indices data we need.
+	//   <offsets>: vector<uint>, the layout of data.
+	//
+	// Heavy load 5 : have indices.
+	// ...
+	void BindVertexToBuffer(std::vector<float> vertices, std::vector<unsigned int> indices, std::vector<unsigned int> offsets);
+
 	// Set some data (buffer) as an instance vertex attribute (with divisor 1).
 	//
 	// Input:

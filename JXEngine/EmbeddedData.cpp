@@ -29,7 +29,7 @@ namespace LEARN_OPENGL {
 
 namespace LEARN_OPENGL_VERTICE {
 	namespace START_01 {
-		 float Cube_vertices[] = {
+		std::vector<float>  Cube_vertices = {
 			 // positions          // normals           // texture coords
 			-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
 			 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
@@ -74,7 +74,7 @@ namespace LEARN_OPENGL_VERTICE {
 			-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
 		};
 
-		 unsigned int Cube_Offsets[] = { 3, 3, 2 };
+		std::vector<unsigned int>  Cube_Offsets = { 3, 3, 2 };
 	}
 
 	namespace HIGH_03 {
@@ -162,6 +162,22 @@ namespace LEARN_OPENGL_VERTICE {
 		};
 
 		unsigned int CubeMapOffsets[1] = { 3 };
+	}
+
+	namespace HIGH_LIGHT_04
+	{
+		float PlaneVertices[48] = {
+			// Positions          // Normals         // Texture Coords
+			25.0f, -0.5f, 25.0f, 0.0f, 1.0f, 0.0f, 25.0f, 0.0f,
+			-25.0f, -0.5f, -25.0f, 0.0f, 1.0f, 0.0f, 0.0f, 25.0f,
+			-25.0f, -0.5f, 25.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+
+			25.0f, -0.5f, 25.0f, 0.0f, 1.0f, 0.0f, 25.0f, 0.0f,
+			25.0f, -0.5f, -25.0f, 0.0f, 1.0f, 0.0f, 25.0f, 25.0f,
+			-25.0f, -0.5f, -25.0f, 0.0f, 1.0f, 0.0f, 0.0f, 25.0f
+		};
+
+		unsigned int PlaneOffsets[3] = { 3, 3, 2 };
 	}
 }
 
@@ -262,6 +278,17 @@ namespace LEARN_OPENGL_SHADER
 
 	 std::string High_09_InstanceTest_pla_fs = address + "High03_InstanceTest_planet.fs";
 
+	 std::string HighLight_10_ShadowMapGet_vs = address + "HighLight04_ShadowMapGet.vs";
+
+	 std::string HighLight_10_ShadowMapGet_fs = address + "HighLight04_ShadowMapGet.fs";
+
+	 std::string HighLight_10_ShadowMapDebug_vs = address + "HighLight04_ShadowMapDebug.vs";
+
+	 std::string HighLight_10_ShadowMapDebug_fs = address + "HighLight04_ShadowMapDebug.fs";
+
+	 std::string HighLight_11_BaseShadow_vs = address + "HighLight04_BaseShadow_04.vs";
+	  
+	 std::string HighLight_11_BaseShadow_fs = address + "HighLight04_BaseShadow_04.fs";
 
 	namespace TEXTURE_NAME {
 		 std::string texture_name1 = "texture1";
@@ -280,5 +307,38 @@ namespace ASSETS
 	    std::string MODEL_ASTERIOD = "resources/model/rock/rock.obj";
 
 		std::string MODEL_PLANET = "resources/model/planet/planet.obj";
+	}
+
+	namespace TEXTURE
+	{
+		namespace NOISY
+		{
+			extern std::string Path = "resources/textures/noisy/";
+			extern std::string Star = "star.jpg";
+		}
+	}
+}
+
+namespace SHADER_PATH
+{
+	namespace RAY_MARCHING
+	{
+		namespace SKY
+		{
+			std::string Path = "shaders/RayMarching/Sky/";
+			std::string earthSky_vs = Path + "sky.vs";
+			std::string earthSky_fs = Path + "sky.fs";
+		}
+	}
+
+	namespace POST_RENDER
+	{
+		namespace FOVEA
+		{
+			std::string Path = "shaders/PostRendering/FoveatedRender/";
+			std::string KernelFovea_vs = Path + "KernelFovea.vs";
+			std::string KernelFovea_fs = Path + "KernelFovea.fs";
+			std::string KernelFovea_Pass2_fs = Path + "KernelFovea_pass2.fs";
+		}
 	}
 }

@@ -47,6 +47,84 @@ void VertexModel::BindVertexToBuffer(std::vector<Vertex> vertices, std::vector<u
 	//std::cout << vertexSize << std::endl;
 }
 
+void VertexModel::BindVertexToBuffer(std::vector<float> vertices, std::vector<unsigned int> offsets)
+{
+	int N = vertices.size();
+	int F = offsets.size();
+
+	//std::cout << N << " " << F << std::endl;
+
+	//生成一个VBO对象
+	glGenBuffers(1, &VBO);
+
+	//生成一个VAO对象
+	glGenVertexArrays(1, &VAO);
+
+	//绑定顶点数组对象
+	glBindVertexArray(VAO);
+
+	//把新创建的缓冲绑定到GL_ARRAY_BUFFER目标上
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+	//把用户定义的数据复制到当前绑定缓冲
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
+
+	int sum = 0;
+	for (int i = 0;i < F;i++)sum += offsets[i];
+	int k = 0;
+	for (int i = 0;i < F;i++)
+	{
+		//设置顶点属性指针
+		glVertexAttribPointer(i, offsets[i], GL_FLOAT, GL_FALSE, sum * sizeof(float), (void*)(k * sizeof(float)));
+		glEnableVertexAttribArray(i);
+		k += offsets[i];
+	}
+
+	//----------------------------------------------------------------------------
+
+	haveIndices = false;
+	indicesSize = 0;
+	vertexSize = N / sum;
+	attriPointerPos = F;
+}
+
+void VertexModel::BindVertexToBuffer(std::vector<float> vertices, std::vector<unsigned int> indices, std::vector<unsigned int> offsets)
+{
+	int N = vertices.size();
+	int M = indices.size();
+	int F = offsets.size();
+
+	//std::cout << vertices.size() * sizeof(float) << " " << M << std::endl;
+
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+
+	int sum = 0;
+	for (int i = 0;i < F;i++)sum += offsets[i];
+	int k = 0;
+	for (int i = 0;i < F;i++)
+	{
+		//设置顶点属性指针
+		glVertexAttribPointer(i, offsets[i], GL_FLOAT, GL_FALSE, sum * sizeof(float), (void*)(k * sizeof(float)));
+		glEnableVertexAttribArray(i);
+		k += offsets[i];
+	}
+
+	vertexSize = N / sum;
+	indicesSize = M;
+	attriPointerPos = F;
+	haveIndices = true;
+}
+
 void VertexModel::BindVAO()
 {
 	glBindVertexArray(VAO);

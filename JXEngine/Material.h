@@ -31,7 +31,10 @@ enum class UNIFORM_DATA_TYPE {
 enum class EngineCommands
 {
 	Depth_Func_LEQUAL,
-	Depth_Func_LESS
+	Depth_Func_LESS,
+	Depth_Clear,
+	Cull_Front,
+	Cull_Back
 };
 
 class EngineSetting
@@ -60,6 +63,9 @@ public:
 	Material(std::shared_ptr<ShaderCompiler> s);
 
 	void OnNotify(Event* event)override;
+
+	// Create a new different obj with the same setting.
+	// ...
 
 	virtual void AddTexture(std::shared_ptr<Texture> tex);
 

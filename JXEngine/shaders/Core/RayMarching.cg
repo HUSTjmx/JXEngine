@@ -1,0 +1,203 @@
+// ...
+bool solveQuadratic(float a, float b, float c, inout float x1, inout float x2)
+{
+    if(b < 0.000001)
+    {
+        // Handle special case where the two vector ray.dir and V are perpendicular
+        // with V = ray.orig - sphere.centre.
+        if(a < 0.000001) return false;
+        x1 = 0.0;
+        x2 = sqrt(-c / a);
+        return true;
+    }
+
+    float discr = b * b - 4.0 * a * c;
+
+    if(discr < 0.000001) return false;
+
+    float q = (b < 0.000001) ? -0.5 * (b - sqrt(discr)) : -0.5 * (b + sqrt(discr));
+    x1 = q / a;
+    x2 = c / q;
+    return true;
+}
+
+// Sphere intersect func
+// ...
+bool raySphereIntersect(vec3 orig, vec3 dir, float radius, inout float t0, inout float t1)
+{
+    float A = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
+    float B = 2.0 * (dir.x + orig.x + dir.y * orig.y + dir.z * orig.z);
+    float C = orig.x * orig.x + orig.y * orig.y + orig.z * orig.z - radius * radius;
+
+    if(!solveQuadratic(A, B, C, t0, t1)) return false;
+
+    if(t0 > t1)
+    {
+        float t = t1;
+        t1 = t0;
+        t0 = t;
+    }
+
+    return true;
+}
+
+
+
+// SKY MODEL.
+// ...
+// -------------------------------------------
+// -------------------------------------------
+
+#define MIE_G 0.76
+
+uniform float earthRadius;
+uniform float atmosphereRadius;
+uniform float Hr;
+uniform float Hm;
+
+uniform vec3 betaR;
+uniform vec3 betaM;
+
+
+// Rayleigh Phase Function
+// ...
+float PhaseFunc_RAYLEIGH(float mu)
+{
+    float A = 3.0 / 16.0 * PI_INV;
+    return A * (1.0 + mu * mu);
+}
+
+// Mie Phase Function.
+// <g>: control of the degree of anisotropy of the medium
+// <mu>: mu = dit(light, view)
+// ...
+float PhaseFunc_MIE(float mu, float g)
+{
+    float A = 3.0 / 8.0 * PI_INV;
+    float g2 = g * g;
+    float mu2 = mu * mu;
+
+    float numerator = (1.0 - g2) * (1.0 + mu2);
+
+    float denominator = (2.0 + g2) * pow(1.0 + g2 - 2.0 * g * mu, 1.50);
+
+    return A * numerator / denominator;
+}
+
+
+// Computer incident light of sky model.
+// ...
+vec3 computeIncidentLight(vec3 orig, vec3 dir, vec3 sunDirection, float tmin, float tmax)
+{
+    float t0 = 0.0, t1 = 0.0;
+    if(!raySphereIntersect(orig, dir, atmosphereRadius, t0, t1) || t1 < 0.000001)return vec3(0.0);
+    if(t0 > tmin && t0 > 0.000001) tmin = t0;
+    if(t1 < tmax) tmax = t1;
+
+
+
+    int numSamples = 16;
+    int numSamplesLight = 8;
+
+
+    float segmentLength = (tmax - tmin) / numSamples;
+    float tCurrent = tmin;
+    
+    // mie and rayleigh contribution
+    // ...
+    vec3 sumR = vec3(0.0), sumM = vec3(0.0);
+
+    float opticalDepthR = 0.0, opticalDepthM = 0.0;
+
+    // mu in the paper which is the cosine of the angle between the sun direction and the ray direction.
+    // ...
+    float mu = dot(dir, sunDirection);
+
+    float phaseR = PhaseFunc_RAYLEIGH(mu);
+    float phaseM = PhaseFunc_MIE(mu, MIE_G);
+
+    for(int i = 0; i < numSamples; ++i)
+    {
+        vec3 samplePosition = orig + (tCurrent + segmentLength * 0.5) * dir;
+        float height = length(samplePosition) - earthRadius;
+
+        // Compute optical depth for light
+        // ...
+        float hr = exp(-height / Hr) * segmentLength;
+        float hm = exp(-height / Hm) * segmentLength;
+        opticalDepthR += hr;
+        opticalDepthM += hm;
+
+        // light optical depth.
+        // ...
+        float t0Light, t1Light;
+        raySphereIntersect(samplePosition, sunDirection, atmosphereRadius, t0Light, t1Light);
+        float segmentLengthLight = t1Light / numSamplesLight, tCurrentLight = 0.0;
+        float opticalDepthLightR = 0.0, opticalDepthLightM = 0.0;
+        int j;
+        for(j = 0; j < numSamplesLight; ++j)
+        {
+            vec3 samplePositionLight = samplePosition + (tCurrentLight + segmentLengthLight * 0.5) * sunDirection;
+            float heightLight = length(samplePositionLight) - earthRadius;
+            if(heightLight < 0.000001)break;
+            opticalDepthLightR += exp(-heightLight / Hr) * segmentLengthLight;
+            opticalDepthLightM += exp(-heightLight / Hm) * segmentLengthLight;
+            tCurrentLight += segmentLengthLight;
+        }
+
+        if(j == numSamplesLight)
+        {
+            vec3 tau = betaR * (opticalDepthR + opticalDepthLightR) + betaM * 1.1 * (opticalDepthLightM + opticalDepthM);
+            vec3 attenuation = vec3(exp(-tau.x), exp(-tau.y), exp(-tau.z));
+            sumR += attenuation * hr;
+            sumM += attenuation * hm;
+        }
+        tCurrent += segmentLength;
+
+    }
+    //return vec3(sunDirection);
+    return (sumR * betaR * phaseR + sumM * betaM * phaseM) * 20.0;
+}
+
+// ClOUD MODEL
+// ...
+// -----------------------------------------------------
+// -----------------------------------------------------
+
+#define T iTime / 3.0
+#define CT T / 14.0
+
+// Moody clouds from Patu
+// http://www.shadertoy.com/view/4tVXRV.
+// ...
+vec3 cloud_Patu(vec3 rd)
+{
+    vec2 uv = rd.xz / (rd.y + 0.6);
+    float nz = fbm_v1(vec3(uv.yx * 1.4 + vec2(CT, 0.0), CT)) * 1.5;
+    return clamp(pow(vec3(nz), vec3(4.0)) * rd.y, 0.0, 1.0);
+}
+
+
+
+// FBM MODEL
+// ...
+// -----------------------------------
+// -----------------------------------
+
+// Mystery Mountains
+// ...
+#define F + texture(noisyTexture, .3 + p.xz * s / 3e3).xyz / (s += s) 
+vec3 MysteryMoutains_v1(sampler2D noisyTexture, vec2 uv)
+{
+    vec3 p = vec3(uv, 1.0) - 0.5, d = p, t;
+    vec3 c;
+    for(float i = 1.5; i > 0.; i-=.002)
+    {
+        float s =.5;
+        t = F F F F ;
+        c =1.+d.x-t*i; c.y-=.1;
+        if(t.x>p.y*.007 + 2.1)break;
+        p += d;
+    }
+    return c;
+}
