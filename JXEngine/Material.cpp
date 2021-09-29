@@ -118,14 +118,16 @@ void Material::SetMVP(const Camera& camera, Transform transform)
 void Material::SetVP(const Camera& camera)
 {
 	Active();
-	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX, camera.GetProjectionMatrix());
+	auto project_mat = camera.GetProjectionMatrix();
+	auto view = camera.GetViewMatrix();
+
+	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX, project_mat);
+	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX_INV, glm::inverse(project_mat));
 	//std::cout << CanMove << std::endl;
-	if(CanMove)
-		GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX, camera.GetViewMatrix());
-	else
-	{
-		GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX, MatTool::Instance().RemoveTranslation(camera.GetViewMatrix()));
-	}
+	if (!CanMove)
+		view = MatTool::Instance().RemoveTranslation(view);
+	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX, view);
+	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX_INV, glm::inverse(view));
 }
 
 void Material::SetP(Transform transform)
@@ -207,7 +209,7 @@ std::shared_ptr<Material> Material::Copy() const
 	m->metallic = metallic;
 	m->reflectance = reflectance;
 	m->roughness = roughness;
-	m->engineSetting = engineSetting;
+	//m->engineSetting = engineSetting;
 	m->textures = textures;
 	return m;
 }
@@ -231,6 +233,12 @@ void TranslateCmd(EngineCommands cmd)
 		break;
 	case EngineCommands::Cull_Back:
 		glCullFace(GL_BACK);
+		break;
+	case EngineCommands::Cull_Enable:
+		glEnable(GL_CULL_FACE);
+		break;
+	case EngineCommands::Cull_Disable:
+		glDisable(GL_CULL_FACE);
 		break;
 	default:
 		break;

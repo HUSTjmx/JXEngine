@@ -166,6 +166,11 @@ namespace ASSETS
 		{
 			extern std::string Path;
 			extern std::string Star;
+
+			// Gray Noise.
+			// ...
+			extern std::string Gray_Noise_Small;
+			extern std::string Gray_Noise_Medium;
 		}
 	}
 }
@@ -179,6 +184,16 @@ namespace SHADER_PATH
 			extern std::string Path;
 			extern std::string earthSky_vs;
 			extern std::string earthSky_fs;
+		}
+
+		namespace CLOUD
+		{
+			extern std::string Path;
+			extern std::string Cloud_01_vs;
+			extern std::string Cloud_01_fs;
+
+			extern std::string Cloud_02_vs;
+			extern std::string Cloud_02_fs;
 		}
 	}
 

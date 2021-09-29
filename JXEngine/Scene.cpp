@@ -177,3 +177,8 @@ std::vector<std::shared_ptr<Actor>>& Scene::_Actors_()
 	// TODO: 在此处插入 return 语句
 	return actors;
 }
+
+std::vector<std::shared_ptr<Light>>& Scene::_Lights_()
+{
+	return lights;
+}

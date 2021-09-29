@@ -34,7 +34,9 @@ enum class EngineCommands
 	Depth_Func_LESS,
 	Depth_Clear,
 	Cull_Front,
-	Cull_Back
+	Cull_Back,
+	Cull_Enable,
+	Cull_Disable
 };
 
 class EngineSetting

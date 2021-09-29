@@ -54,7 +54,9 @@ namespace CONFIG
 	{
 		extern const std::string MODEL_MATRIX;
 		extern const std::string PROJECTION_MATRIX;
+		extern const std::string PROJECTION_MATRIX_INV;
 		extern const std::string VIEW_MATRIX;
+		extern const std::string VIEW_MATRIX_INV;
 
 		extern const std::string TIME;
 

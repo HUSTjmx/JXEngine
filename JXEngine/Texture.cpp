@@ -109,7 +109,6 @@ void Texture::SetUniformPos(int newPos)
 void Texture::SetForShader(const ShaderCompiler& shader)
 {
 	shader.UseSelf();
-	//std::cout << uniformPos << std::endl;
 	shader.SetInt(shaderName, uniformPos);
 }
 
@@ -168,6 +167,13 @@ void Texture::Bind() const
 		break;
 	case 5:
 		glActiveTexture(GL_TEXTURE5);
+		break;
+	case 6:
+		glActiveTexture(GL_TEXTURE6);
+		break;
+	case 7:
+		glActiveTexture(GL_TEXTURE7);
+		break;
 	default:
 		break;
 	}

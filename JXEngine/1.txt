@@ -84,6 +84,11 @@ float RemapNDC(float a)
     return a * 2.0 - 1.0;
 }
 
+ vec2 ReMapNDC_V2(vec2 a)
+ {
+     return vec2(RemapNDC(a.x), RemapNDC(a.y));
+ }
+
 // Get Linear depth.
 // ...
 float LinearizeDepth(float depth, float near, float far)
@@ -302,6 +307,31 @@ float fbm_v2(vec3 x, float H, int numOctaves)
     return t;
 }
 
+// FBM v3
+// Use noisy texture.
+// ...
+float displacementSimple_FBM_v3(sampler2D noiseTexture, vec2 p)
+{
+    float f;
+    f = 0.5000 * texture(noiseTexture, p).x; p = p * 2.0;
+    f += 0.2500 * texture(noiseTexture, p).x; p = p * 2.0;
+    f += 0.1250 * texture(noiseTexture, p).x; p = p * 2.0;
+    f += 0.0625 * texture(noiseTexture, p).x; p = p * 2.0;
+    return f;
+}
+
+// FBM v4
+// Use noisy texture.
+// ...
+float displacementSimple_FBM_v4(sampler2D noiseTexture, vec3 p)
+{
+    return (displacementSimple_FBM_v3(noiseTexture, p.xy) +
+            displacementSimple_FBM_v3(noiseTexture, p.xz) +
+            displacementSimple_FBM_v3(noiseTexture, p.yz)) / 3.0;
+}
+
+
+
 
 // Some useful math functions.
 // ...
@@ -359,113 +389,472 @@ float inRange(vec2 uv){
     return 1.0;
 }
 
-
-
-// Foveated Rendering
 // ...
-uniform vec2 LowResolution;
-
-#define W Resolution.x
-#define H Resolution.y
-#define w LowResolution.x
-#define h LowResolution.y
-
-// Kernel function.
-// ...
-float K(float a){
-    //return a * a;
-    return a;
-    return 0.99 * a + 0.01 * a * a;
-    return sin(a * PI / 2.);
-    return 0.5 * a + 0.5 * a * a;
-}
-
-// Inv kernel function.
-// ...
-float K_inv(float a){
-   // return sqrt(a);
-    return a;
-}
-
-// Get Fovea Point
-// ...
-vec2 getFovea(){
-    return Resolution.xy /2.;
-    //return iMouse.xy;
-}
-
-// Tool function for fovea
-// ...
-float getL(){
-    float x = getFovea().x;
-    float y = getFovea().y;
-    
-    float l1 = L2(x ,y);
-    float l2 = L2(W - x, H - y);
-    float l3 = L2(x, H - y);
-    float l4 = L2(W - x, y);
-    return log(max4(l1, l2, l3, l4));
-}
-
-
-// Foveated Algorithm --- Pass 1.
-// ...
-vec3 FoveatedRendering_Pass_1(sampler2D frame, vec2 uv)
+vec2 csqr(vec2 a)
 {
-    uv = uv * Resolution;
-
-    float L = getL();
-    float A = L / w;
-    float B = PI2 / h;
-    
-    float k_u = K(uv.x / w) * w;
-    float A_K_u = A * k_u;
-    A_K_u = exp(A_K_u);
-    
-    float b_v = B * uv.y;
-    float cos_b = cos(b_v);
-    float sin_b = sin(b_v);
-    
-    float x = A_K_u * cos_b + getFovea().x;
-    float y = A_K_u * sin_b + getFovea().y;
-    
-    uv = vec2(x / w, y / h);
-    
-    vec3 col = texture(frame, uv).xyz;
-    
-    if(inRange(uv) < 0.0)col = vec3(0. ,0. ,0.);
-
-  //  return vec3(h);
-    return col;
+    return vec2(a.x * a.x - a.y * a.y, 2.* a.x * a.y);
 }
 
-vec3 FoveatedRendering_Pass_2(sampler2D frame, vec2 uv)
+
+struct DirLight
 {
-    uv = uv * Resolution;
+    vec3 color;
+	vec3 direction;
+    float intensity;
+};
 
-    uv = uv - getFovea();
-    
-    float dis = L2(uv.x, uv.y);
-    float L = getL();
-    dis = log(dis) / L;
-    
-    float x = K_inv(dis) * w;
-    
-    float arcyx = atan2(uv.x, uv.y);
-    
-    float y = arcyx + l(uv.y) * PI2;
-    y = y * h / (PI2);
-    
-    
-    uv = vec2(x / w, y / h);
-    
-    vec3 col = texture(frame, uv).xyz;
-    
-    if(inRange(uv) < 0.0)col = vec3(0. ,0. ,0.);
+struct PointLight
+{
+    vec3 color;
+    vec3 position;
+    float intensity;
+    float lightInvRadius;
+};
 
-    //return vec3(h);
-    return col;
+struct SpotLight
+{
+    vec3 color;
+    vec3 position;
+    vec3 direction;
+    float innerAngle;
+    float outerAngle;
+    float intensity;
+    float lightInvRaduis;
+};
+
+#define DIRECTION_LIGHT_MAX_NUM 1
+#define POINT_LIGHT_NUM 10
+#define SPOT_LIGHT_NUM 5
+
+
+uniform DirLight dirLights[DIRECTION_LIGHT_MAX_NUM];
+uniform PointLight pointLights[POINT_LIGHT_NUM];
+uniform SpotLight spotLights[SPOT_LIGHT_NUM];
+
+uniform int dirLightsNum;
+uniform int pointLightsNum;
+uniform int spotLightsNum;
+
+
+//Æ½·½Ë¥¼õº¯Êý
+float GetSquareFalloffAttenuation(vec3 posToLight, float lightInvRadius)
+{
+    float distanceSquare = dot(posToLight, posToLight);
+    float factor = distanceSquare * lightInvRadius * lightInvRadius;
+    float smoothFactor = max(1.0 - factor * factor, 0.0);
+    return (smoothFactor * smoothFactor) / max(distanceSquare, 1e-4);
 }
+
+//¾Û¹âµÆË¥¼õ
+float GetSpotAngleAttenuation(vec3 l, vec3 lightDir, float innerAngle, float outerAngle)
+{
+    float cosOuter = cos(outerAngle);
+    float spotScale = 1.0 / max(cos(innerAngle) - cosOuter, 1e-4);
+    float spotOffset = -cosOuter * spotScale;
+    
+    float cd = dot(normalize(-lightDir), l);
+    float attenuation = clamp(cd * spotScale + spotOffset, 0.0, 1.0);
+    return attenuation * attenuation;
+}
+
+float GetDirLightIllumiance(int i)
+{
+    if (i > DIRECTION_LIGHT_MAX_NUM)
+        return 0.0;
+    return dirLights[i].intensity;
+}
+
+vec3 GetDirLightColor(int i)
+{
+    if (i > DIRECTION_LIGHT_MAX_NUM)
+        return vec3(0.0);
+    return dirLights[i].color;
+}
+
+float GetPointLightIllumiance(int i, vec3 w_pos)
+{
+    if (i > POINT_LIGHT_NUM)
+        return 0.0;
+    
+    vec3 posToLight = pointLights[i].position - w_pos;
+    float attenuation = GetSquareFalloffAttenuation(posToLight, pointLights[i].lightInvRadius);
+    return pointLights[i].intensity * 0.25 * PI_INV * attenuation;
+}
+
+vec3 GetPointLightColor(int i)
+{
+    if (i > POINT_LIGHT_NUM)
+        return vec3(0.0);
+    
+    return pointLights[i].color;
+}
+
+float GetSpotLightIllumiance(int i, vec3 w_pos)
+{
+    if (i > SPOT_LIGHT_NUM)
+        return 0.0f;
+
+    vec3 posToLight = spotLights[i].position - w_pos;
+    vec3 l = normalize(posToLight);
+    
+    float attenuation;
+    attenuation = GetSquareFalloffAttenuation(posToLight, spotLights[i].lightInvRaduis);
+    attenuation *= GetSpotAngleAttenuation(l, spotLights[i].direction, spotLights[i].innerAngle, spotLights[i].outerAngle);
+    
+    return spotLights[i].intensity * attenuation;
+}
+
+vec3 GetSpotLightColor(int i)
+{
+    return spotLights[i].color;
+}
+
+// FBM MODEL
+// ...
+// -----------------------------------
+// -----------------------------------
+
+// Mystery Mountains
+// ...
+#define F + texture(noisyTexture, .3 + p.xz * s / 3e3).xyz / (s += s) 
+vec3 MysteryMoutains_v1(sampler2D noisyTexture, vec2 uv)
+{
+    vec3 p = vec3(uv, 1.0) - 0.5, d = p, t;
+    vec3 c;
+    for(float i = 1.5; i > 0.; i-=.002)
+    {
+        float s =.5;
+        t = F F F F ;
+        c =1.+d.x-t*i; c.y-=.1;
+        if(t.x>p.y*.007 + 2.1)break;
+        p += d;
+    }
+    return c;
+}
+
+// Medulla Mapping Function
+// ...
+float Medulla_Map(in vec3 p)
+{
+    float res = 0.0;
+    vec3  c = p;
+
+    for(int i = 0; i < 10; ++i)
+    {
+        p = 0.7 * abs(p) / dot(p, p) - 0.7;
+        p.yz = csqr(p.yz);
+        p = p.zxy;
+        res += exp(-20.0 * abs(dot(p, c)));
+    }
+    return res / 2.4;
+}
+
+// ...
+bool solveQuadratic(float a, float b, float c, inout float x1, inout float x2)
+{
+    if(b < 0.000001)
+    {
+        // Handle special case where the two vector ray.dir and V are perpendicular
+        // with V = ray.orig - sphere.centre.
+        if(a < 0.000001) return false;
+        x1 = 0.0;
+        x2 = sqrt(-c / a);
+        return true;
+    }
+
+    float discr = b * b - 4.0 * a * c;
+
+    if(discr < 0.000001) return false;
+
+    float q = (b < 0.000001) ? -0.5 * (b - sqrt(discr)) : -0.5 * (b + sqrt(discr));
+    x1 = q / a;
+    x2 = c / q;
+    return true;
+}
+
+// Sphere intersect func
+// ...
+bool raySphereIntersect(vec3 orig, vec3 dir, float radius, inout float t0, inout float t1)
+{
+    float A = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
+    float B = 2.0 * (dir.x + orig.x + dir.y * orig.y + dir.z * orig.z);
+    float C = orig.x * orig.x + orig.y * orig.y + orig.z * orig.z - radius * radius;
+
+    if(!solveQuadratic(A, B, C, t0, t1)) return false;
+
+    if(t0 > t1)
+    {
+        float t = t1;
+        t1 = t0;
+        t0 = t;
+    }
+
+    return true;
+}
+
+
+
+// SKY MODEL.
+// ...
+// -------------------------------------------
+// -------------------------------------------
+
+#define MIE_G 0.76
+
+uniform float earthRadius;
+uniform float atmosphereRadius;
+uniform float Hr;
+uniform float Hm;
+
+uniform vec3 betaR;
+uniform vec3 betaM;
+
+#define D_STRONG_FOG 2.0
+#define D_FOG_NOISE 1.0
+
+
+// Rayleigh Phase Function
+// ...
+float PhaseFunc_RAYLEIGH(float mu)
+{
+    float A = 3.0 / 16.0 * PI_INV;
+    return A * (1.0 + mu * mu);
+}
+
+// Mie Phase Function.
+// <g>: control of the degree of anisotropy of the medium
+// <mu>: mu = dit(light, view)
+// ...
+float PhaseFunc_MIE(float mu, float g)
+{
+    float A = 3.0 / 8.0 * PI_INV;
+    float g2 = g * g;
+    float mu2 = mu * mu;
+
+    float numerator = (1.0 - g2) * (1.0 + mu2);
+
+    float denominator = (2.0 + g2) * pow(1.0 + g2 - 2.0 * g * mu, 1.50);
+
+    return A * numerator / denominator;
+}
+
+
+// Computer incident light of sky model.
+// ...
+vec3 computeIncidentLight(vec3 orig, vec3 dir, vec3 sunDirection, float tmin, float tmax)
+{
+    float t0 = 0.0, t1 = 0.0;
+    if(!raySphereIntersect(orig, dir, atmosphereRadius, t0, t1) || t1 < 0.000001)return vec3(0.0);
+    if(t0 > tmin && t0 > 0.000001) tmin = t0;
+    if(t1 < tmax) tmax = t1;
+
+
+
+    int numSamples = 16;
+    int numSamplesLight = 8;
+
+
+    float segmentLength = (tmax - tmin) / numSamples;
+    float tCurrent = tmin;
+    
+    // mie and rayleigh contribution
+    // ...
+    vec3 sumR = vec3(0.0), sumM = vec3(0.0);
+
+    float opticalDepthR = 0.0, opticalDepthM = 0.0;
+
+    // mu in the paper which is the cosine of the angle between the sun direction and the ray direction.
+    // ...
+    float mu = dot(dir, sunDirection);
+
+    float phaseR = PhaseFunc_RAYLEIGH(mu);
+    float phaseM = PhaseFunc_MIE(mu, MIE_G);
+
+    for(int i = 0; i < numSamples; ++i)
+    {
+        vec3 samplePosition = orig + (tCurrent + segmentLength * 0.5) * dir;
+        float height = length(samplePosition) - earthRadius;
+
+        // Compute optical depth for light
+        // ...
+        float hr = exp(-height / Hr) * segmentLength;
+        float hm = exp(-height / Hm) * segmentLength;
+        opticalDepthR += hr;
+        opticalDepthM += hm;
+
+        // light optical depth.
+        // ...
+        float t0Light, t1Light;
+        raySphereIntersect(samplePosition, sunDirection, atmosphereRadius, t0Light, t1Light);
+        float segmentLengthLight = t1Light / numSamplesLight, tCurrentLight = 0.0;
+        float opticalDepthLightR = 0.0, opticalDepthLightM = 0.0;
+        int j;
+        for(j = 0; j < numSamplesLight; ++j)
+        {
+            vec3 samplePositionLight = samplePosition + (tCurrentLight + segmentLengthLight * 0.5) * sunDirection;
+            float heightLight = length(samplePositionLight) - earthRadius;
+            if(heightLight < 0.000001)break;
+            opticalDepthLightR += exp(-heightLight / Hr) * segmentLengthLight;
+            opticalDepthLightM += exp(-heightLight / Hm) * segmentLengthLight;
+            tCurrentLight += segmentLengthLight;
+        }
+
+        if(j == numSamplesLight)
+        {
+            vec3 tau = betaR * (opticalDepthR + opticalDepthLightR) + betaM * 1.1 * (opticalDepthLightM + opticalDepthM);
+            vec3 attenuation = vec3(exp(-tau.x), exp(-tau.y), exp(-tau.z));
+            sumR += attenuation * hr;
+            sumM += attenuation * hm;
+        }
+        tCurrent += segmentLength;
+
+    }
+    //return vec3(sunDirection);
+    return (sumR * betaR * phaseR + sumM * betaM * phaseM) * 20.0;
+}
+
+// ClOUD MODEL
+// ...
+// -----------------------------------------------------
+// -----------------------------------------------------
+
+#define T iTime / 3.0
+#define CT T / 14.0
+
+// Moody clouds from Patu
+// http://www.shadertoy.com/view/4tVXRV.
+// ...
+vec3 cloud_Patu(vec3 rd)
+{
+    vec2 uv = rd.xz / (rd.y + 0.6);
+    float nz = fbm_v1(vec3(uv.yx * 1.4 + vec2(CT, 0.0), CT)) * 1.5;
+    return clamp(pow(vec3(nz), vec3(4.0)) * rd.y, 0.0, 1.0);
+}
+
+
+// Tool function for Media integration Cloud.
+// ...
+void GetParticipatingMedia(sampler2D noiseTexture ,out float sigmaS, out float sigmaE, in vec3 pos, float len)
+{
+    float Fog = 1.0 + D_FOG_NOISE * 13.0 * clamp(displacementSimple_FBM_v3(noiseTexture, pos.xz * 100.5 + iTime), 0.0, 1.0);
+    Fog = 0.3 * clamp((Fog - len) * 1.0, 0.0, 1.0);
+
+    float fogFactor = 1.0 + D_STRONG_FOG * 2.0;
+
+    sigmaS = Fog * fogFactor;
+    float sigmaA = 0.0;
+    sigmaE = max(0.000001, sigmaS + sigmaA);
+} 
+
+// Tool function for Media integration Cloud.
+// ...
+float volumetricShadow(sampler2D noiseTexture, in vec3 from, in vec3 to, float sigmaS, float len)
+{
+    float numStep = 5.0;
+    float shadow = 1.0;
+    float sigmaE = sigmaS;
+
+    float dd = length(to - from) / numStep;
+    for(float s = 0.5; s < (numStep - 0.1); s += 1.0)
+    {
+        vec3 pos = from + (to - from) * (s / (numStep));
+
+        GetParticipatingMedia(noiseTexture, sigmaS, sigmaE, pos, len * 5.0);
+
+        shadow *= exp(-sigmaE * dd);
+    }
+    //return 1.0;
+    return shadow;
+}
+
+// Media integration Cloud.
+// ...
+vec4 cloud_SebH(sampler2D noiseTexture, vec3 rO, vec3 rD, float len)
+{
+    float sigmaS = 0.0;
+    float sigmaA = 0.0;
+    float sigmaE = sigmaS + sigmaA;
+
+    float transmittance = 1.0;
+
+    vec3 scatteredLight = vec3(0.0, 0.0, 0.0);
+    
+    // the distance that has moved.
+    // ...
+    float d = 0.0;
+
+    // Current march pos.
+    // ...
+    vec3 p = vec3(0.0 , 0.0, 0.0);
+
+    // Step length.
+    // ...
+    float dd = 0.01;
+
+    // Iter times.
+    // ...
+    int numIter = int(len * 0.1 / dd) + 20;
+
+    for(int i = 0; i < numIter; ++i)
+    {
+        vec3 p = rO + d * rD;
+
+        GetParticipatingMedia(noiseTexture, sigmaS, sigmaE, p, len * 5.0);
+
+        for(int j = 0; j < dirLightsNum; ++j)
+        {
+            float mu = clamp(dot(rD, normalize(dirLights[j].direction)), 0.0, 1.0);
+            vec3 S = GetDirLightIllumiance(j) * GetDirLightColor(j) * sigmaS * PhaseFunc_RAYLEIGH(mu)
+             * volumetricShadow(noiseTexture, p, p + dirLights[j].direction * 100.0, sigmaS, len);
+            vec3 Sint = (S - S * exp(-sigmaE * dd)) / sigmaE;
+            scatteredLight += transmittance * Sint;
+        }
+
+        for(int j = 0; j < pointLightsNum; ++j)
+        {
+            vec3 lightDir = normalize(pointLights[j].position - p);
+            float mu = clamp(dot(rD, -lightDir), 0.0, 1.0);
+            vec3 S = GetPointLightColor(j) * GetPointLightIllumiance(j, p) * sigmaS * PhaseFunc_RAYLEIGH(mu) 
+            * volumetricShadow(noiseTexture, p, pointLights[j].position, sigmaS, len);
+            vec3 Sint = (S - S * exp(-sigmaE * dd));
+            scatteredLight += transmittance * Sint;
+        }
+
+        float c = Medulla_Map(p);
+
+        scatteredLight = 1.1 * scatteredLight + 0.3 * scatteredLight * vec3(c * c, c * c, c * c);
+
+        transmittance *= exp(-sigmaE * dd);
+        d += dd;
+
+        //if(d > 4.0 * len) break;
+    }
+
+    return vec4(scatteredLight, transmittance);
+}
+
+// SD Function
+// ...
+// ----------------------------------------------------------
+
+float sdSphere(vec3 p, float s)
+{
+    return length(p) - s;
+}
+
+
+vec2 sphIntersect( in vec3 ro, in vec3 rd, in vec3 ce, float ra )
+{
+    vec3 oc = ro - ce;
+    float b = dot( oc, rd );
+    float c = dot( oc, oc ) - ra*ra;
+    float h = b*b - c;
+    if( h<0.0 ) return vec2(-1.0); // no intersection
+    h = sqrt( h );
+    return vec2( -b-h, -b+h );
+}
+
+
 
 
 out vec4 FragColor;
@@ -473,9 +862,148 @@ out vec4 FragColor;
 in vec2 TexCoords;
 
 uniform sampler2D screenTexture;
+uniform sampler2D FrontDepthTex;
+uniform sampler2D GrayNoiseMap_S;
+uniform mat4 view;
+uniform mat4 view_inv;
+uniform mat4 projection;
+uniform mat4 projection_inv;
+
+vec3 obj_pos = vec3(3.0);
+float r1 = 1.0;
+
+// Tool function for Media integration Cloud.
+// ...
+void getParticipatingMedia(sampler2D noiseTexture ,out float sigmaS, out float sigmaE, in vec3 pos, vec3 objPos)
+{
+    float Fog = 0.5 + D_FOG_NOISE * 1.0 * clamp(displacementSimple_FBM_v3(noiseTexture, pos.xy * 0.2  + iTime * 0.3), 0.0, 1.0);
+    Fog = 0.3 * clamp((Fog - length(objPos - pos)) / r1, 0.0, 1.0);
+
+    float fogFactor = 1.0 + D_STRONG_FOG * 6.0;
+
+    sigmaS = Fog * fogFactor;
+    float sigmaA = 0.0;
+    sigmaE = max(0.000001, sigmaS + sigmaA);
+} 
+
+float volumetricShadow2(sampler2D noiseTexture, in vec3 from, in vec3 to, vec3 obj_pos)
+{
+    float numStep = 5.0;
+    float shadow = 1.0;
+    float sigmaE , sigmaS;
+
+    float dd = length(to - from) / numStep;
+    for(float s = 0.5; s < (numStep - 0.1); s += 1.0)
+    {
+        vec3 pos = from + (to - from) * (s / (numStep));
+
+        getParticipatingMedia(noiseTexture, sigmaS, sigmaE, pos, obj_pos);
+
+        shadow *= exp(-sigmaE * dd) * 1.2;
+    }
+    //return 1.0;
+    return shadow;
+}
+
+vec3 TraceFloor(vec3 orig, vec3 rd, float depth)
+{
+    float sigmaS = 0.0;
+    float sigmaA = 0.0;
+    float sigmaE = sigmaS + sigmaA;
+
+    float transmittance = 1.0;
+
+    vec3 scatteredLight = vec3(0.0, 0.0, 0.0);
+    
+    // the distance that has moved.
+    // ...
+    float d = 0.0;
+
+    // Current march pos.
+    // ...
+    vec3 p = vec3(0.0 , 0.0, 0.0);
+
+    // Step length.
+    // ...
+    float dd = 0.0;
+
+    // Iter times.
+    // ...
+    int iternum = 100;
+    float dis = 0.0;
+
+    vec2 ce = sphIntersect( orig, rd, obj_pos, r1 );
+
+    if(ce.x == -1.0 && ce.y == -1.0) return texture(screenTexture, TexCoords).xyz;
+
+    dd = abs(ce.x - ce.y) / iternum;
+    d = min(ce.x, ce.y);
+
+    for(int i = 0; i < iternum; ++i)
+    {
+        p = orig + rd * d;
+
+        getParticipatingMedia(GrayNoiseMap_S, sigmaS, sigmaE, p, obj_pos);
+
+        for(int j = 0; j < dirLightsNum; ++j)
+        {
+            float mu = clamp(dot(rd, normalize(dirLights[j].direction)), 0.0, 1.0);
+            vec3 S = GetDirLightIllumiance(j) * GetDirLightColor(j) * sigmaS * PhaseFunc_RAYLEIGH(mu)
+             * volumetricShadow2(GrayNoiseMap_S, p, p + dirLights[j].direction * 100.0, obj_pos);
+            vec3 Sint = (S - S * exp(-sigmaE * dd)) / sigmaE;
+            scatteredLight += transmittance * Sint * 0.6;
+        }
+
+        for(int j = 0; j < pointLightsNum; ++j)
+        {
+            vec3 lightDir = normalize(pointLights[j].position - p);
+            float mu = clamp(dot(rd, -lightDir), 0.0, 1.0);
+            vec3 S = GetPointLightColor(j) * GetPointLightIllumiance(j, p) * sigmaS * PhaseFunc_RAYLEIGH(mu)
+            * volumetricShadow2(GrayNoiseMap_S, p, pointLights[j].position, obj_pos);
+            vec3 Sint = (S - S * exp(-sigmaE * dd));
+            scatteredLight += transmittance * Sint * 0.6;
+        }
+        
+        // ----------------------------------
+        vec4 temp = projection * view * vec4(p, 1.0);
+        vec3 pos = temp.xyz / temp.w;
+        pos = (pos + 1.0) / 2.0;
+        float z = LinearizeDepth(pos.z, near_plane, far_plane) / far_plane;
+        if(depth < z + 0.001) return texture(screenTexture, TexCoords).xyz;
+
+        // --------------------------------
+        d += dd;
+        if(d > 100.0)break;
+    }
+    //return vec3(dis);
+    //if(length(scatteredLight) < 0.03) return texture(screenTexture, TexCoords).xyz;
+    return mix(length(scatteredLight), GammaCorrection(scatteredLight), texture(screenTexture, TexCoords).xyz);
+}
 
 void main()
 {
-    vec3 col = FoveatedRendering_Pass_2(screenTexture, TexCoords);
-    FragColor = vec4(col.rgb, 1.0);
+    float depth = texture(FrontDepthTex, TexCoords).r;
+    depth = LinearizeDepth(depth, near_plane, far_plane) / far_plane;
+    vec3 orig = viewPosWS;
+    vec4 rd = view_inv * projection_inv * vec4(vec3(ReMapNDC_V2(TexCoords), 0.99), 1.0);
+    vec3 dir = normalize(rd.xyz / rd.w);
+
+    vec4 temp = projection * view * vec4(rd/rd.w);
+    vec3 pos = temp.xyz / temp.w;
+    pos = (pos + 1.0)/2.0;
+    //depth = texture(FrontDepthTex, pos.xy).r;
+    //depth = LinearizeDepth(depth, near_plane, far_plane) / far_plane;
+
+
+    vec3 col = TraceFloor(orig, dir, depth);
+   // col = GammaCorrection(col);
+    //col = vec3(depth);
+    //col = normalize(rd);
+    //col = uv.xxy;
+    //col = TexCoords.xxy;
+   // col = normalize(rd);
+    //col = normalize(rd);
+    //col =vec3(depth);
+    FragColor = vec4(col, 1.0);
+    //FragColor = texture(screenTexture, TexCoords);
 } 

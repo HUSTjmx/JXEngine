@@ -5,26 +5,26 @@ namespace CONFIG
 
 	namespace SCREEN_CONFIG
 	{
-		unsigned int SCR_WIDTH = 1200;
-		unsigned int SCR_HEIGHT = 900;
+		unsigned int SCR_WIDTH = 1000;
+		unsigned int SCR_HEIGHT = 800;
 
 		namespace FOVEA
 		{
-			unsigned int FOVEA_WIDTH = 1200;
-			unsigned int FOVEA_HEIGHT = 900;
+			unsigned int FOVEA_WIDTH = 999;
+			unsigned int FOVEA_HEIGHT = 799;
 		}
 	}
 
 	namespace CAMERA_CONFIG
 	{
-		float NEAR_PLANE = 0.1f;
-		float FAR_PLANE = 100.0f;
+		float NEAR_PLANE = 0.6f;
+		float FAR_PLANE = 30.0f;
 		float ASPECT = (float)SCREEN_CONFIG::SCR_WIDTH / (float)SCREEN_CONFIG::SCR_HEIGHT;
 		
 		namespace SHADER {
-			std::string VIEW_POS_IN_WORLD = "ViewPosWS";
-			std::string FAR_PLANE = "near_plane";
-			std::string NEAR_PLANE = "far_plane";
+			std::string VIEW_POS_IN_WORLD = "viewPosWS";
+			std::string FAR_PLANE = "far_plane";
+			std::string NEAR_PLANE = "near_plane";
 		}
 	}
 
@@ -48,7 +48,9 @@ namespace CONFIG
 	{
 		const std::string MODEL_MATRIX = "model";
 		const std::string PROJECTION_MATRIX = "projection";
+		const std::string PROJECTION_MATRIX_INV = "projection_inv";
 		const std::string VIEW_MATRIX = "view";
+		const std::string VIEW_MATRIX_INV = "view_inv";
 
 		const std::string TIME = "iTime";
 

@@ -363,8 +363,9 @@ Scene OPENGL_SCENE::TestScene::GetScene_ShadowMap_09()
 
 
 	MaterialPtr shadowMap_mat = std::make_shared<Material>(shadowMap_sh);
-	shadowMap_mat->engineSetting->AddInitCmds(EngineCommands::Cull_Front);
-	shadowMap_mat->engineSetting->AddEndCmds(EngineCommands::Cull_Back);
+	//shadowMap_mat->engineSetting->AddInitCmds(EngineCommands::Cull_Enable);
+	//shadowMap_mat->engineSetting->AddInitCmds(EngineCommands::Cull_Front);
+	//shadowMap_mat->engineSetting->AddEndCmds(EngineCommands::Cull_Disable);
 
 	VertexModelPtr cube = std::make_shared<VertexModel>();
 	cube->BindVertexToBuffer(LEARN_OPENGL_VERTICE::START_01::Cube_vertices, LEARN_OPENGL_VERTICE::START_01::Cube_Offsets);
@@ -399,12 +400,88 @@ Scene OPENGL_SCENE::TestScene::GetScene_ShadowMap_09()
 	return scene;
 }
 
+Scene OPENGL_SCENE::TestScene::GetScene_BackFaceDepth_09_01()
+{
+
+	Scene scene(INPUT::inputCamera);
+
+	ShaderPtr shadowMap_sh = std::make_shared<ShaderCompiler>(LEARN_OPENGL_SHADER::HighLight_10_ShadowMapGet_vs.c_str(), LEARN_OPENGL_SHADER::HighLight_10_ShadowMapGet_fs.c_str());
+	shadowMap_sh->Compile();
+
+
+	MaterialPtr shadowMap_mat = std::make_shared<Material>(shadowMap_sh);
+	shadowMap_mat->engineSetting->AddInitCmds(EngineCommands::Cull_Enable);
+	shadowMap_mat->engineSetting->AddInitCmds(EngineCommands::Cull_Front);
+	shadowMap_mat->engineSetting->AddEndCmds(EngineCommands::Cull_Disable);
+
+	VertexModelPtr cube = std::make_shared<VertexModel>();
+	cube->BindVertexToBuffer(LEARN_OPENGL_VERTICE::START_01::Cube_vertices, LEARN_OPENGL_VERTICE::START_01::Cube_Offsets);
+
+	ActorPtr a1 = std::make_shared<Actor>(cube, shadowMap_mat);
+	std::vector<glm::vec3> vegetation
+	{
+		glm::vec3(-1.5f, 0.0f, -0.48f),
+		glm::vec3(1.5f, 0.0f, 0.51f),
+		glm::vec3(0.0f, 1.0f, 0.7f),
+		glm::vec3(-0.3f, 0.0f, -2.3f),
+		glm::vec3(0.5f, 1.0f, -0.6f)
+	};
+	a1->SetPostionsArray(vegetation);
+
+	scene.AddActor(a1);
+
+//	CONFIG::SHADOW_MAP::DIR_LIGHT_CAMERA = scene.MainCamera();
+//	CONFIG::SHADOW_MAP::LIGHT_SPACE_MAT = CONFIG::SHADOW_MAP::DIR_LIGHT_CAMERA.GetProjectionMatrix() * CONFIG::SHADOW_MAP::DIR_LIGHT_CAMERA.GetViewMatrix();
+
+	return scene;
+}
+
+Scene OPENGL_SCENE::TestScene::GetScene_FrontFaceDepth_09_02()
+{
+	Scene scene(INPUT::inputCamera);
+
+	ShaderPtr shadowMap_sh = std::make_shared<ShaderCompiler>(LEARN_OPENGL_SHADER::HighLight_10_ShadowMapGet_vs.c_str(), LEARN_OPENGL_SHADER::HighLight_10_ShadowMapGet_fs.c_str());
+	shadowMap_sh->Compile();
+
+
+	MaterialPtr shadowMap_mat = std::make_shared<Material>(shadowMap_sh);
+	
+	VertexModelPtr cube = std::make_shared<VertexModel>();
+	cube->BindVertexToBuffer(LEARN_OPENGL_VERTICE::START_01::Cube_vertices, LEARN_OPENGL_VERTICE::START_01::Cube_Offsets);
+
+	VertexModelPtr plane = std::make_shared<VertexModel>();
+	plane->BindVertexToBuffer(LEARN_OPENGL_VERTICE::HIGH_LIGHT_04::PlaneVertices, LEARN_OPENGL_VERTICE::HIGH_LIGHT_04::PlaneOffsets);
+
+
+	ActorPtr a1 = std::make_shared<Actor>(cube, shadowMap_mat);
+	std::vector<glm::vec3> vegetation
+	{
+		glm::vec3(-1.5f, 0.0f, -0.48f),
+		glm::vec3(1.5f, 0.0f, 0.51f),
+		glm::vec3(0.0f, 1.0f, 0.7f),
+		glm::vec3(-0.3f, 0.0f, -2.3f),
+		glm::vec3(0.5f, 1.0f, -0.6f)
+	};
+	a1->SetPostionsArray(vegetation);
+
+	ActorPtr a2 = std::make_shared<Actor>(plane, shadowMap_mat);
+
+	scene.AddActor(a1);
+	scene.AddActor(a2);
+
+	//CONFIG::SHADOW_MAP::DIR_LIGHT_CAMERA = scene.MainCamera();
+	//CONFIG::SHADOW_MAP::LIGHT_SPACE_MAT = CONFIG::SHADOW_MAP::DIR_LIGHT_CAMERA.GetProjectionMatrix() * CONFIG::SHADOW_MAP::DIR_LIGHT_CAMERA.GetViewMatrix();
+
+	return scene;
+}
+
 Scene OPENGL_SCENE::TestScene::GetScene_ShadowDebug_10()
 {
 
 	Scene scene(INPUT::inputCamera);
 
 	ShaderPtr debug_sh = std::make_shared<ShaderCompiler>(LEARN_OPENGL_SHADER::HighLight_10_ShadowMapDebug_vs.c_str(), LEARN_OPENGL_SHADER::HighLight_10_ShadowMapDebug_fs.c_str());
+	debug_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
 	debug_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
 	debug_sh->Compile();
 
@@ -417,6 +494,123 @@ Scene OPENGL_SCENE::TestScene::GetScene_ShadowDebug_10()
 
 	scene.AddActor(a);
 
+	return scene;
+}
+
+Scene OPENGL_SCENE::TestScene::GetScene_Cloud_11_01()
+{
+	glm::vec3 lightPos(0.2f, 0.01f, 1.0f);
+	Scene scene(INPUT::inputCamera);
+
+	ShaderPtr shadowMap_sh = std::make_shared<ShaderCompiler>(LEARN_OPENGL_SHADER::HighLight_11_BaseShadow_vs.c_str(), LEARN_OPENGL_SHADER::HighLight_11_BaseShadow_fs.c_str());
+	shadowMap_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	shadowMap_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::SHADOW);
+	shadowMap_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	shadowMap_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	shadowMap_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	shadowMap_sh->Compile();
+
+	ShaderPtr sky_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::SKY::earthSky_vs.c_str(), SHADER_PATH::RAY_MARCHING::SKY::earthSky_fs.c_str());
+	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	sky_sh->Compile();
+
+	ShaderPtr Cloud_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::CLOUD::Cloud_01_vs.c_str(), SHADER_PATH::RAY_MARCHING::CLOUD::Cloud_01_fs.c_str());
+	Cloud_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	Cloud_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	Cloud_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	Cloud_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	Cloud_sh->Compile();
+
+	Texture t1(0, LEARN_OPENGL_TEXTURE::START_01::Start_01_container.c_str(), LEARN_OPENGL_SHADER::TEXTURE_NAME::texture_name1, GL_REPEAT);
+	Texture t2(1, LEARN_OPENGL_TEXTURE::START_01::Start_01_wall.c_str(), LEARN_OPENGL_SHADER::TEXTURE_NAME::texture_name2, GL_REPEAT);
+	Texture t3(0, ASSETS::TEXTURE::NOISY::Gray_Noise_Small.c_str(), std::string("GrayNoiseMap_S"), GL_REPEAT);
+	t1.SetType("diffuseTexture");
+	t2.SetType("diffuseTexture");
+
+
+
+	MaterialPtr shadowMap_mat = std::make_shared<Material>(shadowMap_sh);
+	shadowMap_mat->AddTexture(std::make_shared<Texture>(t2));
+	shadowMap_mat->LinkTextureForShader();
+	shadowMap_mat->GetShader()->SetMat4(CONFIG::SHADOW_MAP::SHADER_NAME::LIGHT_SPACE_MAT_NAME, CONFIG::SHADOW_MAP::LIGHT_SPACE_MAT);
+	//shadowMap_mat->engineSetting->AddInitCmds(EngineCommands::Cull_Enable);
+	//shadowMap_mat->engineSetting->AddInitCmds(EngineCommands::Cull_Front);
+	//shadowMap_mat->engineSetting->AddEndCmds(EngineCommands::Cull_Disable);
+
+	MaterialPtr sky_mat = std::make_shared<Material>(sky_sh);
+	sky_mat->AddTexture(std::make_shared<Texture>(t3));
+	sky_mat->LinkTextureForShader();
+	sky_mat->engineSetting->AddInitCmds(EngineCommands::Depth_Func_LEQUAL);
+	sky_mat->engineSetting->AddEndCmds(EngineCommands::Depth_Func_LESS);
+
+	MaterialPtr Cloud_mat = std::make_shared<Material>(Cloud_sh);
+	Cloud_mat->AddTexture(std::make_shared<Texture>(t3));
+	Cloud_mat->LinkTextureForShader();
+	Cloud_mat->GetShader()->SetMat4(CONFIG::SHADOW_MAP::SHADER_NAME::LIGHT_SPACE_MAT_NAME, CONFIG::SHADOW_MAP::LIGHT_SPACE_MAT);
+	
+	VertexModelPtr cube = std::make_shared<VertexModel>();
+	cube->BindVertexToBuffer(LEARN_OPENGL_VERTICE::START_01::Cube_vertices, LEARN_OPENGL_VERTICE::START_01::Cube_Offsets);
+	//cube->BindVertexToBuffer(v_d, indices, offsets);
+	//std::cout << v_d.size() << "  " << offsets.size();
+
+	VertexModelPtr plane = std::make_shared<VertexModel>();
+	plane->BindVertexToBuffer(LEARN_OPENGL_VERTICE::HIGH_LIGHT_04::PlaneVertices, LEARN_OPENGL_VERTICE::HIGH_LIGHT_04::PlaneOffsets);
+
+	ActorPtr a1 = std::make_shared<Actor>(cube, Cloud_mat);
+	//a1->ScaleTo(glm::vec3(0.2));
+	std::vector<glm::vec3> vegetation
+	{
+		glm::vec3(-1.5f, 0.0f, -0.48f),
+		glm::vec3(1.5f, 0.0f, 0.51f),
+		glm::vec3(0.0f, 1.0f, 0.7f),
+		glm::vec3(-0.3f, 0.0f, -2.3f),
+		glm::vec3(0.5f, 1.0f, -0.6f)
+	};
+	a1->SetPostionsArray(vegetation);
+
+	ActorPtr a2 = std::make_shared<Actor>(plane, shadowMap_mat);
+
+	ActorPtr a3 = std::make_shared<Atmosphere>(sky_mat);
+	a3->_ActorType_().SetMobility(ActorType::Mobility::STATIC);
+	a3->LoadInfoToShader();
+
+	scene.AddActor(a1);
+	scene.AddActor(a2);
+	//scene.AddActor(a3);
+
+	LightPtr dir1 = std::make_shared<DirectionalLight>(-lightPos);
+	dir1->color = glm::vec3(1.0, 1.0, 0.8);
+	dir1->value = 1.6;
+	
+	LightPtr point1 = std::make_shared<PointLight>(glm::vec3(-3.0, 2.0, 0.0));
+	point1->SetColor(glm::vec3(1.0, 0.0, 0.0));
+	point1->SetRadius(100.0);
+	point1->SetValue(500.0);
+
+	LightPtr point2 = std::make_shared<PointLight>(glm::vec3(3.0, 2.0, 0.0));
+	point2->SetColor(glm::vec3(0.0, 0.0, 1.0));
+	point2->SetRadius(60.0);
+	point2->SetValue(800.0);
+
+	LightPtr point3 = std::make_shared<PointLight>(glm::vec3(0.0, 2.0, 3.0));
+	point3->SetColor(glm::vec3(0.0, 1.0, 0.0));
+	point3->SetRadius(160.0);
+	point3->SetValue(700.0);
+
+	LightPtr point4 = std::make_shared<PointLight>(glm::vec3(0.0, 2.0, -3.0));
+	point4->SetColor(glm::vec3(1.0, 1.0, 0.0));
+	point4->SetRadius(40.0);
+	point4->SetValue(600.0);
+
+	//
+	//scene.AddLight(dir1);
+	scene.AddLight(point1);
+	scene.AddLight(point2);
+	scene.AddLight(point3);
+	scene.AddLight(point4);
 	return scene;
 }
 
@@ -452,6 +646,7 @@ Scene OPENGL_SCENE::TestScene::GetScene_ShadowBase_11()
 	shadowMap_mat->AddTexture(std::make_shared<Texture>(t1));
 	shadowMap_mat->LinkTextureForShader();
 	shadowMap_mat->GetShader()->SetMat4(CONFIG::SHADOW_MAP::SHADER_NAME::LIGHT_SPACE_MAT_NAME, CONFIG::SHADOW_MAP::LIGHT_SPACE_MAT);
+	
 
 	MaterialPtr sky_mat = std::make_shared<Material>(sky_sh);
 	sky_mat->AddTexture(std::make_shared<Texture>(t3));
@@ -459,7 +654,7 @@ Scene OPENGL_SCENE::TestScene::GetScene_ShadowBase_11()
 	sky_mat->engineSetting->AddInitCmds(EngineCommands::Depth_Func_LEQUAL);
 	sky_mat->engineSetting->AddEndCmds(EngineCommands::Depth_Func_LESS);
 
-	
+
 	VertexModelPtr cube = std::make_shared<VertexModel>();
 	cube->BindVertexToBuffer(LEARN_OPENGL_VERTICE::START_01::Cube_vertices, LEARN_OPENGL_VERTICE::START_01::Cube_Offsets);
 	//cube->BindVertexToBuffer(v_d, indices, offsets);
@@ -486,7 +681,6 @@ Scene OPENGL_SCENE::TestScene::GetScene_ShadowBase_11()
 	shadowMap_mat->LinkTextureForShader();
 	ActorPtr a2 = std::make_shared<Actor>(plane, mat2);
 
-	std::cout << sky_mat->GetShader()->ID << std::endl;
 	ActorPtr a3 = std::make_shared<Atmosphere>(sky_mat);
 	a3->_ActorType_().SetMobility(ActorType::Mobility::STATIC);
 	a3->LoadInfoToShader();
@@ -530,7 +724,6 @@ Scene OPENGL_SCENE::TestScene::GetScene_FoveatedRender_12()
 
 	return scene;
 }
-
 
 Pass OPENGL_SCENE::TestPass::GetPass_FrameTest_04()
 {
@@ -606,6 +799,32 @@ Pass OPENGL_SCENE::TestPass::GetPass_ShadowMap_09()
 	return pass;
 }
 
+Pass OPENGL_SCENE::TestPass::GetPass_BackFaceDepth_09_01()
+{
+	Scene scene = OPENGL_SCENE::TestScene::Instance().GetScene_BackFaceDepth_09_01();
+	FrameBufferPtr frame = std::make_shared<FrameBuffer>(CONFIG::SHADOW_MAP::SHADOW_WIDTH, CONFIG::SHADOW_MAP::SHADOW_HEIGHT);
+	frame->AddTexture(GL_DEPTH_COMPONENT);
+
+
+	Pass pass;
+	pass.UpdateInput(std::make_shared<Scene>(scene));
+	pass.UpdateOutput(frame);
+	return pass;
+}
+
+Pass OPENGL_SCENE::TestPass::GetPass_FrontFaceDepth_09_02()
+{
+	Scene scene = OPENGL_SCENE::TestScene::Instance().GetScene_FrontFaceDepth_09_02();
+	FrameBufferPtr frame = std::make_shared<FrameBuffer>(CONFIG::SHADOW_MAP::SHADOW_WIDTH, CONFIG::SHADOW_MAP::SHADOW_HEIGHT);
+	frame->AddTexture(GL_DEPTH_COMPONENT);
+
+
+	Pass pass;
+	pass.UpdateInput(std::make_shared<Scene>(scene));
+	pass.UpdateOutput(frame);
+	return pass;
+}
+
 Pass OPENGL_SCENE::TestPass::GetPass_ShadowDebug_10(Pass& p)
 {
 	Scene scene2 = OPENGL_SCENE::TestScene::Instance().GetScene_ShadowDebug_10();
@@ -635,9 +854,29 @@ Pass OPENGL_SCENE::TestPass::GetPass_BaseShadow_11(Pass& p)
 	return pass2;
 }
 
+Pass OPENGL_SCENE::TestPass::GetPass_Cloud_11_01(Pass& shadow, Pass& depth)
+{
+	Scene scene2 = OPENGL_SCENE::TestScene::Instance().GetScene_Cloud_11_01();
+	shadow.GetOutput()->textureBuffers[0]->SetType(CONFIG::SHADOW_MAP::SHADER_NAME::SHADOW_MAP_NAME);
+	depth.GetOutput()->textureBuffers[0]->SetType(std::string("BackDepthMap"));
+
+	auto func = [&shadow, &depth](std::shared_ptr<Actor> a)
+	{
+		a->AddTextureForMaterial_A(shadow.GetOutput()->textureBuffers[0]);
+		a->AddTextureForMaterial_A(depth.GetOutput()->textureBuffers[0]);
+	};
+
+	std::for_each(scene2._Actors_().begin(), scene2._Actors_().end(), func);
+
+	Pass pass2;
+	pass2.UpdateInput(std::make_shared<Scene>(scene2));
+
+	return pass2;
+}
+
 Pass OPENGL_SCENE::TestPass::GetPass_FoveatedRendering_12(Pass& p)
 {
-	std::shared_ptr<FrameBuffer> frame = std::make_shared<FrameBuffer>(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+	std::shared_ptr<FrameBuffer> frame = std::make_shared<FrameBuffer>(CONFIG::SCREEN_CONFIG::FOVEA::FOVEA_WIDTH, CONFIG::SCREEN_CONFIG::FOVEA::FOVEA_HEIGHT);
 	frame->AddTexture(GL_RGB, "screenTexture", false);
 	frame->NotifyGL();
 	frame->AddRenderObject(true);
@@ -686,6 +925,48 @@ Pass OPENGL_SCENE::TestPass::GetPass_FoveatedRendering_Pass2_13(Pass& p)
 	return pass2;
 }
 
+Pass OPENGL_SCENE::TestPass::GetPass_RayMarchingRendering(Pass& main_tex, Pass& backDepth, Pass& frontDepth)
+{
+	//backDepth.GetOutput()->textureBuffers[0]->SetType(CONFIG::SHADOW_MAP::SHADER_NAME::SHADOW_MAP_NAME);
+	frontDepth.GetOutput()->textureBuffers[0]->SetType(std::string("FrontDepthTex"));
+
+	std::shared_ptr<FrameBuffer> frame = std::make_shared<FrameBuffer>(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+	frame->AddTexture(GL_RGB, "screenTexture", false);
+	frame->NotifyGL();
+	frame->AddRenderObject(true);
+	main_tex.UpdateOutput(frame);
+
+	Scene scene2 = TestScene::Instance().GetScene_FoveatedRender_12();
+
+	ShaderPtr postShader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::CLOUD::Cloud_02_vs.c_str(), 
+		SHADER_PATH::RAY_MARCHING::CLOUD::Cloud_02_fs.c_str());
+	postShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	postShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	postShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	postShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	postShader->Compile();
+
+	MaterialPtr postMat = std::make_shared<Material>(postShader);
+	Texture t3(0, ASSETS::TEXTURE::NOISY::Gray_Noise_Small.c_str(), std::string("GrayNoiseMap_S"), GL_REPEAT);
+
+	Pass pass2;
+	pass2.UpdateInput(std::make_shared<Scene>(scene2));
+	pass2.UpdateGlobalMat(postMat);
+	pass2.GetMat()->AddTexture(main_tex.GetOutput()->textureBuffers[0]);
+	pass2.GetMat()->AddTexture(frontDepth.GetOutput()->textureBuffers[0]);
+	pass2.GetMat()->AddTexture(std::make_shared<Texture>(t3));
+	pass2.GetMat()->LinkTextureForShader();
+
+	auto func = [&pass2](std::shared_ptr<Light>& a)
+	{
+		pass2.scene->AddLight(a);
+	};
+
+	std::for_each(main_tex.scene->_Lights_().begin(), main_tex.scene->_Lights_().end(), func);
+
+	return pass2;
+}
+
 void OPENGL_SCENE::TestPass::Draw_FrameTest_04(Pass& p1, Pass& p2)
 {
 	p1.BindOutput();
@@ -701,7 +982,6 @@ void OPENGL_SCENE::TestPass::Draw_FrameTest_04(Pass& p1, Pass& p2)
 	glClear(GL_COLOR_BUFFER_BIT);
 	p2.Draw();
 }
-
 void OPENGL_SCENE::TestPass::DrawShadowTest_05(Pass& p1, Pass& p2)
 {
 	glEnable(GL_CULL_FACE);
@@ -719,7 +999,6 @@ void OPENGL_SCENE::TestPass::DrawShadowTest_05(Pass& p1, Pass& p2)
 
 	p2.Draw();
 }
-
 void OPENGL_SCENE::TestPass::DrawBaseShadow_06(Pass& p1, Pass& p2)
 {
 	//OPENGL_SCENE::TestPass::Intance().Draw_FrameTest_04(p1, p2);
@@ -737,13 +1016,16 @@ void OPENGL_SCENE::TestPass::DrawBaseShadow_06(Pass& p1, Pass& p2)
 }
 void OPENGL_SCENE::TestPass::DrawFoveated_07(Pass& p1, Pass& p2, Pass& p3)
 {
+
+
 	//OPENGL_SCENE::TestPass::Intance().Draw_FrameTest_04(p1, p2);
 	glViewport(0, 0, CONFIG::SHADOW_MAP::SHADOW_WIDTH, CONFIG::SHADOW_MAP::SHADOW_HEIGHT);
 	p1.BindOutput();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	p1.Draw();
-
 	
+
+
 	//// reset viewport
 	p2.BindOutput();
 	glViewport(0, 0, CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
@@ -758,8 +1040,6 @@ void OPENGL_SCENE::TestPass::DrawFoveated_07(Pass& p1, Pass& p2, Pass& p3)
 	glClear(GL_DEPTH_BUFFER_BIT);
 	p3.Draw();
 }
-
-
 void OPENGL_SCENE::TestPass::DrawFoveated_Comp_08(Pass& p1, Pass& p2, Pass& p3, Pass& p4)
 {
 	//OPENGL_SCENE::TestPass::Intance().Draw_FrameTest_04(p1, p2);
@@ -778,6 +1058,8 @@ void OPENGL_SCENE::TestPass::DrawFoveated_Comp_08(Pass& p1, Pass& p2, Pass& p3, 
 
 	//glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
 	// clear all relevant buffers
+	
+
 	p3.BindOutput();
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
 	glClear(GL_DEPTH_BUFFER_BIT);
@@ -786,6 +1068,61 @@ void OPENGL_SCENE::TestPass::DrawFoveated_Comp_08(Pass& p1, Pass& p2, Pass& p3, 
 	p4.BindOutput();
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
 	glClear(GL_DEPTH_BUFFER_BIT);
+	p4.Draw();
+}
+
+float angle = 10.0;
+void OPENGL_SCENE::TestPass::DrawFoveated_Comp_09(Pass& p0, Pass& p1, Pass& p2, Pass& p3, Pass& p4)
+{
+	//glEnable(GL_DEPTH_TEST);
+
+	glViewport(0, 0, CONFIG::SHADOW_MAP::SHADOW_WIDTH, CONFIG::SHADOW_MAP::SHADOW_HEIGHT);
+	p0.BindOutput();
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	p0.Draw();
+
+	//glDisable(GL_CULL_FACE);
+
+	//OPENGL_SCENE::TestPass::Intance().Draw_FrameTest_04(p1, p2);
+	p1.BindOutput();
+	glViewport(0, 0, CONFIG::SHADOW_MAP::SHADOW_WIDTH, CONFIG::SHADOW_MAP::SHADOW_HEIGHT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	p1.Draw();
+
+
+	//// reset viewport
+	p2.BindOutput();
+	glViewport(0, 0, CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	p2.Draw();
+
+
+	//glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
+	// clear all relevant buffers
+	for (auto i = p3.scene->_Lights_().begin(); i != p3.scene->_Lights_().end(); ++i)
+	{
+		auto light = std::dynamic_pointer_cast<PointLight>(*i);
+		auto pos = light->GetPos();
+		auto mat = glm::rotate(glm::mat4(1.0), glm::radians(angle), glm::vec3(0.0, 1.0, 0.0));
+		pos = mat * glm::vec4(pos, 1.0);
+		light->SetPos(pos);
+	}
+	/*auto sky = std::dynamic_pointer_cast<DirectionalLight>(p3.scene->_Lights_()[0]);
+	auto dir = sky->GetDirection();
+	if (dir.y < -3.3) angle = -angle;
+	auto mat = glm::rotate(glm::mat4(1.0), glm::radians(angle), glm::vec3(1.0, 0.0, 0.0));
+	dir = mat * glm::vec4(dir, 1.0);
+	sky->SetDirection(glm::vec3(dir));*/
+	//glClearColor(0.0f, 1.0f, 1.0f, 1.0f); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
+	p3.BindOutput();
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	p3.Draw();
+
+	
+	//glEnable(GL_DEPTH_TEST);
+	p4.BindOutput();
+	glClearColor(0.3f, 0.3f, 0.3f, 1.0f); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	p4.Draw();
 }
 // 

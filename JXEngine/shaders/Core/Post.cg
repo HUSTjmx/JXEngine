@@ -12,7 +12,7 @@ uniform vec2 LowResolution;
 // Kernel function.
 // ...
 float K(float a){
-    //return a * a;
+    return a * a;
     return a;
     return 0.99 * a + 0.01 * a * a;
     return sin(a * PI / 2.);
@@ -22,7 +22,7 @@ float K(float a){
 // Inv kernel function.
 // ...
 float K_inv(float a){
-   // return sqrt(a);
+    return sqrt(a);
     return a;
 }
 

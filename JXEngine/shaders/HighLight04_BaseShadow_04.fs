@@ -12,7 +12,6 @@ uniform sampler2D diffuseTexture;
 uniform sampler2D shadowMap;
 
 
-
 void main()
 {   
     vec3 d_color = texture(diffuseTexture, fs_in.TexCoords).rgb * baseColor;
@@ -38,6 +37,13 @@ void main()
 		result += ShadowCalculation_PCSS_v1(fs_in.FragPosLightSpace, shadowMap, NoL) * GetDirLightColor(i) * GetDirLightIllumiance(i) 
 		* Standard_BRDF_Torrance_DVF(diffuse_color, viewDir, -dirLights[i].direction, norm, r, f0, 1.0) * NoL;
 	}
+
+    for(int j = 0; j < pointLightsNum; ++j)
+    {
+        NoL = clamp(dot(norm, normalize(pointLights[j].position - fs_in.FragPos)), 0.0, 1.0);
+        result += GetPointLightIllumiance(j, fs_in.FragPos) * GetPointLightColor(j) 
+        * Standard_BRDF_Torrance_DVF(diffuse_color, viewDir, normalize(pointLights[j].position - fs_in.FragPos), norm, r, f0, 1.0) * NoL;
+    }
 
     result = GammaCorrection(result);
     FragColor = vec4(result, 1.0);

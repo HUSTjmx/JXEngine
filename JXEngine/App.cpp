@@ -146,15 +146,22 @@ void Loop(GLFWwindow* window)
 	glEnable(GL_MULTISAMPLE);
 #endif // MSAA
 
-	auto p = OPENGL_SCENE::TestPass::Intance().GetPass_ShadowMap_09();
+	//glEnable(GL_CULL_FACE);
+	auto p0 = OPENGL_SCENE::TestPass::Intance().GetPass_BackFaceDepth_09_01();
 
-	auto p2 = OPENGL_SCENE::TestPass::Intance().GetPass_BaseShadow_11(p);
+	auto p0_1 = OPENGL_SCENE::TestPass::Intance().GetPass_FrontFaceDepth_09_02();
 
-	auto p3 = OPENGL_SCENE::TestPass::Intance().GetPass_FoveatedRendering_12(p2);
+	auto p1 = OPENGL_SCENE::TestPass::Intance().GetPass_ShadowMap_09();
 
-	auto p4 = OPENGL_SCENE::TestPass::Intance().GetPass_FoveatedRendering_Pass2_13(p3);
-	//auto p1 = OPENGL_SCENE::TestPass::Intance().GetPass_FrameTest_04();
-	//auto p2 = OPENGL_SCENE::TestPass::Intance().GetPass2_FrameTest_04(p1);
+	auto p2 = OPENGL_SCENE::TestPass::Intance().GetPass_Cloud_11_01(p1, p0);
+
+	auto p3 = OPENGL_SCENE::TestPass::Intance().GetPass_RayMarchingRendering(p2, p0, p0_1);
+
+	//auto p3 = OPENGL_SCENE::TestPass::Intance().GetPass_FoveatedRendering_12(p2);
+
+	//auto p4 = OPENGL_SCENE::TestPass::Intance().GetPass_FoveatedRendering_Pass2_13(p3);
+
+	//auto p_debug = OPENGL_SCENE::TestPass::Intance().GetPass_ShadowDebug_10(p0);
 
 	//时钟重置，开始计时
 	Clock.Reset();
@@ -177,10 +184,11 @@ void Loop(GLFWwindow* window)
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-		OPENGL_SCENE::TestPass::Intance().DrawFoveated_Comp_08(p, p2, p3, p4);
-		//OPENGL_SCENE::TestPass::Intance().DrawFoveated_07(p, p2, p3);
-		//OPENGL_SCENE::TestPass::Intance().DrawBaseShadow_06(p, p2);
+		OPENGL_SCENE::TestPass::Intance().DrawFoveated_Comp_09(p0, p0_1, p1, p2, p3);
+		//OPENGL_SCENE::TestPass::Intance().DrawFoveated_07(p0, p1, p2);
+		//OPENGL_SCENE::TestPass::Intance().DrawBaseShadow_06(p1, p2);
 		//OPENGL_SCENE::TestPass::Intance().Draw_FrameTest_04(p1, p2);
+		//OPENGL_SCENE::TestPass::Intance().DrawShadowTest_05(p0, p_debug);
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------

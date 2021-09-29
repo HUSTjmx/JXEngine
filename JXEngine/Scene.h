@@ -47,8 +47,11 @@ public:
 	//...
 	int FindUniformBuffer(const std::string& name);
 
-	//...
+	// ...
 	std::vector<std::shared_ptr<Actor>>& _Actors_();
+
+	// ...
+	std::vector<std::shared_ptr<Light>>& _Lights_();
 
 	unsigned int ubo;
 
@@ -61,7 +64,7 @@ private:
 	std::vector<std::shared_ptr<Light>> lights;
 
 	// Uniform buffer blocks in shader.
-	// .
+	// ...
 	std::vector<std::shared_ptr<UniformBuffer>> uniformBuffers;
 
 };

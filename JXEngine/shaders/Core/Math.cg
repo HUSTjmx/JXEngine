@@ -12,6 +12,11 @@ float RemapNDC(float a)
     return a * 2.0 - 1.0;
 }
 
+ vec2 ReMapNDC_V2(vec2 a)
+ {
+     return vec2(RemapNDC(a.x), RemapNDC(a.y));
+ }
+
 // Get Linear depth.
 // ...
 float LinearizeDepth(float depth, float near, float far)
@@ -230,6 +235,31 @@ float fbm_v2(vec3 x, float H, int numOctaves)
     return t;
 }
 
+// FBM v3
+// Use noisy texture.
+// ...
+float displacementSimple_FBM_v3(sampler2D noiseTexture, vec2 p)
+{
+    float f;
+    f = 0.5000 * texture(noiseTexture, p).x; p = p * 2.0;
+    f += 0.2500 * texture(noiseTexture, p).x; p = p * 2.0;
+    f += 0.1250 * texture(noiseTexture, p).x; p = p * 2.0;
+    f += 0.0625 * texture(noiseTexture, p).x; p = p * 2.0;
+    return f;
+}
+
+// FBM v4
+// Use noisy texture.
+// ...
+float displacementSimple_FBM_v4(sampler2D noiseTexture, vec3 p)
+{
+    return (displacementSimple_FBM_v3(noiseTexture, p.xy) +
+            displacementSimple_FBM_v3(noiseTexture, p.xz) +
+            displacementSimple_FBM_v3(noiseTexture, p.yz)) / 3.0;
+}
+
+
+
 
 // Some useful math functions.
 // ...
@@ -285,4 +315,10 @@ float inRange(vec2 uv){
     if(uv.x < 0.0 || uv.x > 1.0)return -1.0;
     if(uv.y < 0.0 || uv.y > 1.0)return -1.0;
     return 1.0;
+}
+
+// ...
+vec2 csqr(vec2 a)
+{
+    return vec2(a.x * a.x - a.y * a.y, 2.* a.x * a.y);
 }

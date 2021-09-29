@@ -135,9 +135,6 @@ void ShaderCompiler::AddIncludeFile(const std::string& filePath)
 		fragmentShader = content.str() + "\n" + fragmentShader;
 		fragmentShader = FILE_HEAD + "\n" + fragmentShader;
 
-		std::ofstream outFile("1.txt");
-		outFile << fragmentShader;
-		outFile.close();
 	}
 	catch (std::ifstream::failure e)
 	{
@@ -227,6 +224,9 @@ void ShaderCompiler::CheckCompileErrors(GLuint shader, std::string type) const
 		if (!success)
 		{
 			glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+			std::ofstream outFile("1.txt");
+			outFile << fragmentShader;
+			outFile.close();
 			std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
 		}
 	}

@@ -32,9 +32,15 @@ namespace OPENGL_SCENE
 
 		Scene GetScene_ShadowMap_09();
 
+		Scene GetScene_BackFaceDepth_09_01();
+
+		Scene GetScene_FrontFaceDepth_09_02();
+
 		Scene GetScene_ShadowDebug_10();
 
 		Scene GetScene_ShadowBase_11();
+
+		Scene GetScene_Cloud_11_01();
 
 		Scene GetScene_FoveatedRender_12();
 
@@ -65,13 +71,21 @@ namespace OPENGL_SCENE
 
 		Pass GetPass_ShadowMap_09();
 
+		Pass GetPass_BackFaceDepth_09_01();
+
+		Pass GetPass_FrontFaceDepth_09_02();
+
 		Pass GetPass_ShadowDebug_10(Pass &p);
 
 		Pass GetPass_BaseShadow_11(Pass& p);
 
+		Pass GetPass_Cloud_11_01(Pass& shadow, Pass& depth);
+
 		Pass GetPass_FoveatedRendering_12(Pass& p);
 
 		Pass GetPass_FoveatedRendering_Pass2_13(Pass& p);
+
+		Pass GetPass_RayMarchingRendering(Pass& main_tex, Pass& backDepth, Pass& frontDepth);
 
 		void Draw_FrameTest_04(Pass& p1, Pass& p2);
 
@@ -82,7 +96,8 @@ namespace OPENGL_SCENE
 		void DrawFoveated_07(Pass& p1, Pass& p2, Pass& p3);
 
 		void DrawFoveated_Comp_08(Pass& p1, Pass& p2, Pass& p3, Pass& p4);
-	
+
+		void DrawFoveated_Comp_09(Pass& p0, Pass& p1, Pass& p2, Pass& p3, Pass& p4);
 
 	private:
 		TestPass() {}

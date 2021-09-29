@@ -70,6 +70,8 @@ public:
 
 	void SetDirection(glm::vec3 d);
 
+	glm::vec3 GetDirection() { return direction; };
+
 	using Counted<DirectionalLight>::ObjectCount;
 	using Counted<DirectionalLight>::TooManyObjects;
 	using Counted<DirectionalLight>::Index;
@@ -89,6 +91,10 @@ public:
 	PointLight(glm::vec3 p) : Light(15.0f), position(p) {}
 
 	virtual void LoadInfoToShader(std::shared_ptr<ShaderCompiler> shader) override;
+
+	void SetPos(glm::vec3 p) { position = p; }
+
+	glm::vec3 GetPos() { return position; }
 
 	using Counted<PointLight>::ObjectCount;
 	using Counted<PointLight>::TooManyObjects;
