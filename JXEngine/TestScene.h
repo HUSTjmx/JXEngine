@@ -102,5 +102,32 @@ namespace OPENGL_SCENE
 	private:
 		TestPass() {}
 	};
+
+	// The class is used to create post-process pass object.
+	// Use Singleton Pattern, so can use anywhere, 
+	// and you can not create any object of this class outside it 
+	// ...
+	class PostPassFactory
+	{
+	public:
+
+		// Return this only instance of the class.
+		// ...
+		static PostPassFactory& Instance()
+		{
+			static PostPassFactory* instance_ = new PostPassFactory();
+			return *instance_;
+		}
+
+		using MaterialPtr = std::shared_ptr<Material>;
+
+		// Create a post-process obj by transporting a post-material.
+		// .../
+		Pass CreateOne(MaterialPtr mat);
+
+
+	private:
+		PostPassFactory() {}
+	};
 }
 
