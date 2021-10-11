@@ -1,4 +1,6 @@
 #pragma once
+#include "std.h"
+
 class Material;
 class Scene;
 class Pass;
@@ -111,6 +113,9 @@ namespace OPENGL_SCENE
 	{
 	public:
 
+		using MaterialPtr = std::shared_ptr<Material>;
+		using PassPtr = std::shared_ptr<Pass>;
+
 		// Return this only instance of the class.
 		// ...
 		static PostPassFactory& Instance()
@@ -119,11 +124,16 @@ namespace OPENGL_SCENE
 			return *instance_;
 		}
 
-		using MaterialPtr = std::shared_ptr<Material>;
+		// Create a post-process obj by transporting a post-material.
+		// But this is a special case, because here we do not think about 
+		// pre-frame, so we usually use it for ray marching.
+		// ...
+		PassPtr CreateOne(MaterialPtr mat);
 
 		// Create a post-process obj by transporting a post-material.
-		// .../
-		Pass CreateOne(MaterialPtr mat);
+		// This is the most used, normal case, e.g. bloom, blur etc.
+		// ...
+		PassPtr CreateOne(PassPtr pre_frame, MaterialPtr mat);
 
 
 	private:

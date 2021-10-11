@@ -260,8 +260,6 @@ inline std::shared_ptr<glm::mat4> MatTool::GenerateModelMat_R(float radius, floa
 }
 
 
-
-
 // Sphere Creator.
 // ...
 class SphereCreator 
@@ -328,3 +326,24 @@ private:
 	// ...
 	std::map<_int64, int> m_cache;
 };
+
+
+// Create random samples.
+// Use Singleton Pattern, so can use anywhere, 
+// and you can not create any object of this class outside it
+// ...
+class RandomTool
+{
+public:
+
+	static RandomTool& Instance()
+	{
+		static RandomTool* instance_ = new RandomTool();
+		return *instance_;
+	}
+
+private:
+
+	RandomTool() {}
+};
+

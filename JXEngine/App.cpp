@@ -147,6 +147,8 @@ void Loop(GLFWwindow* window)
 #endif // MSAA
 
 	//glEnable(GL_CULL_FACE);
+
+	// --------------------------------«∞œÚ‰÷»æ + RayMarching-------------------------------------
 	auto p0 = OPENGL_SCENE::TestPass::Intance().GetPass_BackFaceDepth_09_01();
 
 	auto p0_1 = OPENGL_SCENE::TestPass::Intance().GetPass_FrontFaceDepth_09_02();
@@ -156,6 +158,19 @@ void Loop(GLFWwindow* window)
 	auto p2 = OPENGL_SCENE::TestPass::Intance().GetPass_Cloud_11_01(p1, p0);
 
 	auto p3 = OPENGL_SCENE::TestPass::Intance().GetPass_RayMarchingRendering(p2, p0, p0_1);
+	// -------------------------------------------------------------------------------------------
+	
+
+	// ------------------------------- only RayMarching -------------------------------------------
+	auto cloud_shader_01 = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_01_vs.c_str(),
+		SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_01_fs.c_str());
+	cloud_shader_01->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	cloud_shader_01->Compile();
+	auto cloud_mat_01 = std::make_shared<Material>(cloud_shader_01);
+	auto cloud_p_01 = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(cloud_mat_01);
+	// --------------------------------------------------------------------------------------------
+
+
 
 	//auto p3 = OPENGL_SCENE::TestPass::Intance().GetPass_FoveatedRendering_12(p2);
 
@@ -174,6 +189,7 @@ void Loop(GLFWwindow* window)
 	while (!glfwWindowShouldClose(window))
 	{
 		Clock.Timing();
+		Clock.FPS();
 
 		// input
 		// -----
@@ -181,10 +197,12 @@ void Loop(GLFWwindow* window)
 
 		// render
 		// ------
+		cloud_p_01->BindOutput();
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		cloud_p_01->Draw();
 		
-		OPENGL_SCENE::TestPass::Intance().DrawFoveated_Comp_09(p0, p0_1, p1, p2, p3);
+		//OPENGL_SCENE::TestPass::Intance().DrawFoveated_Comp_09(p0, p0_1, p1, p2, p3);
 		//OPENGL_SCENE::TestPass::Intance().DrawFoveated_07(p0, p1, p2);
 		//OPENGL_SCENE::TestPass::Intance().DrawBaseShadow_06(p1, p2);
 		//OPENGL_SCENE::TestPass::Intance().Draw_FrameTest_04(p1, p2);

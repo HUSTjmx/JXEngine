@@ -160,5 +160,6 @@ namespace CONFIG
 		const std::string SHADOW = address + "Shadow.cg";
 		const std::string RAY_MARCHING = address + "RayMarching.cg";
 		const std::string POST_PROCESSING = address + "Post.cg";
+		const std::string COLOR = address + "Color.cg"; 
 	}
 }

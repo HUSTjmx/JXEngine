@@ -1,75 +1,4 @@
-#version 430 core
-uniform vec2 Resolution;
-
-uniform float iTime;
-
-uniform vec3 viewPosWS;
-uniform float near_plane;
-uniform float far_plane;
-
-//��׼����
-uniform vec3 baseColor;
-uniform float metallic;
-uniform float roughness;
-uniform float reflectance;
-uniform vec3 emissive;
-
-
-uniform sampler2D texture_albedo1;
-uniform sampler2D texture_normal1;
-
-
-//��ɫ��ӳ��
-//diffuse color
-vec3 BaseColorReMap(vec3 color, float metallic)
-{
-    return (1.0 - metallic) * color;
-}
-
-//��������ӳ��
-//Fresnel��������f0�����ҶԵ���ʶ����ǵ�ɫ��
-vec3 ReflectanceReMap(float reflec)
-{
-    return 0.16 * reflec * reflec;
-}
-
-//���������ʼ���Fresnel������f0
-float GetF0WithIOR(float n)
-{
-    float a = n - 1.0;
-    float b = n + 1.0;
-    return a * a / (b * b);
-}
-
-//����̣�����f0����������
-float GetIORWithF0(float f0)
-{
-    float a = 1.0 - sqrt(f0);
-    return 2.0 / a - 1.0;
-}
-
-
-//��ȡF90�������棬һ����1
-float GetF90_C()
-{
-    return 1.0;
-}
-
-
-//�������ʺͽ������ʵ�f0, ���淴�����ɫ���Խ����Ļ�ɫ
-vec3 GetF0_All(vec3 base_color, float metal, float reflec)
-{
-    return ReflectanceReMap(reflec) * (1.0 - metal) + base_color * metal;
-}
-
-
-//�ֲڶ���ӳ�� 
-//a = roughness * roughness
-float RoughnessReMap(float rough)
-{
-    return rough * rough;
-}
-
+#version 330 core
 out vec4 FragColor;
 
 in vec2 TexCoords;
@@ -116,16 +45,16 @@ float HSV_PDF(float e)
 }
 
 
-vec4 render( in vec3 ro, in vec3 rd, float time, float e, vec2 uv)
+vec4 render( in vec3 ro, in vec3 rd, float time, float e, vec2 p)
 {
-    if(abs(p.x) - 0.05 > 0.0)return vec4(0.0, 0.0, 0.0, 1.0);
+    if(abs(p.x) - 0.001 < 0.0)return vec4(0.0, 0.0, 0.0, 1.0);
 	vec4 rez = vec4(0);
     const float ldst = 8.;
 	vec3 lpos = vec3(disp(time + ldst)*0.5, time + ldst);
 	float t = 1.5;
 	float fogT = 0.;
 
-    int times = int(90.0 * HSV_PDF(e) + 30.0);
+    int times = int(110.0 * HSV_PDF(e) + 10.0);
     if(p.x > 0.0)times = 120;
 
 	for(int i=0; i<times; i++)

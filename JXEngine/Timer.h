@@ -28,6 +28,10 @@ public:
 	// ...
 	float GetCurrentTime()const;
 
+	// Get the FPS.
+	// ...
+	float FPS()const;
+
 private:
 
 	Timer() : deltaTime(0.0), lastFrame(0.0), currentFrame(0.0) {}

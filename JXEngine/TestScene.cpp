@@ -1070,7 +1070,6 @@ void OPENGL_SCENE::TestPass::DrawFoveated_Comp_08(Pass& p1, Pass& p2, Pass& p3, 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	p4.Draw();
 }
-
 float angle = 10.0;
 void OPENGL_SCENE::TestPass::DrawFoveated_Comp_09(Pass& p0, Pass& p1, Pass& p2, Pass& p3, Pass& p4)
 {
@@ -1136,5 +1135,16 @@ void OPENGL_SCENE::TestPass::DrawFoveated_Comp_09(Pass& p0, Pass& p1, Pass& p2, 
 // 
 // }
 
+OPENGL_SCENE::PostPassFactory::PassPtr OPENGL_SCENE::PostPassFactory::CreateOne(OPENGL_SCENE::PostPassFactory::MaterialPtr mat)
+{
+	Scene scene = TestScene::Instance().GetScene_FoveatedRender_12();
+	Pass p;
+	p.UpdateGlobalMat(mat);
+	p.UpdateInput(std::make_shared<Scene>(scene));
+	return std::make_shared<Pass>(p);
+}
 
-
+OPENGL_SCENE::PostPassFactory::PassPtr OPENGL_SCENE::PostPassFactory::CreateOne(OPENGL_SCENE::PostPassFactory::PassPtr pre_frame, OPENGL_SCENE::PostPassFactory::MaterialPtr mat)
+{
+	return std::make_shared<Pass>(Pass());
+}

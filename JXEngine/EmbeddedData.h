@@ -195,6 +195,13 @@ namespace SHADER_PATH
 			extern std::string Cloud_02_vs;
 			extern std::string Cloud_02_fs;
 		}
+
+		namespace PURE_CLOUD
+		{
+			extern std::string Path;
+			extern std::string Cloud_01_vs;
+			extern std::string Cloud_01_fs;
+		}
 	}
 
 	namespace POST_RENDER

@@ -341,6 +341,13 @@ namespace SHADER_PATH
 			std::string Cloud_02_vs = Path + "CloudFloor_01.vs";
 			std::string Cloud_02_fs = Path + "CloudFloor_01.fs";
 		}
+
+		namespace PURE_CLOUD
+		{
+			std::string Path = "shaders/RayMarching/Cloud/";
+			std::string Cloud_01_vs = Path + "Cloud_1.vs";
+			std::string Cloud_01_fs = Path + "Cloud_1.fs";
+		}
 	}
 
 	namespace POST_RENDER

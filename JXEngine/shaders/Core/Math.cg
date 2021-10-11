@@ -322,3 +322,14 @@ vec2 csqr(vec2 a)
 {
     return vec2(a.x * a.x - a.y * a.y, 2.* a.x * a.y);
 }
+
+// Compute the angle between two ray.
+// ...
+float GetAngle_2Ray(vec3 ray1, vec3 ray2)
+{
+    float n = dot(ray1, ray2);
+    float a = length(ray1);
+    float b = length(ray2);
+    return n / ( a * b );
+}
+

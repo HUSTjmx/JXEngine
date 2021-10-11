@@ -150,6 +150,7 @@ namespace CONFIG
 		extern const std::string SHADOW;
 		extern const std::string RAY_MARCHING;
 		extern const std::string POST_PROCESSING;
+		extern const std::string COLOR;
 
 	}
 }
