@@ -19,6 +19,7 @@
 #include "Material.h"
 #include "ShaderCompiler.h"
 #include "VertexModel.h"
+#include "Light.h"
 
 //#define  __MSAA__ 1
 
@@ -41,7 +42,8 @@ int main()
 	
 	GLFWwindow* window = glfwCreateWindow(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
 
-	std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(0.0f, 0.8f, -5.0f));
+	//std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(20.0, 18.0, -40.0));
+	std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(0.0, 0.0, -12.0));
 	camera->Front = glm::vec3(0, 0, 1);
 
 	INPUT::SET_CAMERA(camera);
@@ -138,6 +140,15 @@ void LoadOpenGLFuncPoint()
 	}
 }
 
+void SET_LIGHT(Scene& scene)
+{
+	auto pointLight0 = std::make_shared<PointLight>(glm::vec3(0.0, 2.0, -2.5));
+	pointLight0->SetColor(glm::vec3(1.0, 0.9, 0.5));
+	pointLight0->SetRadius(10.0);
+	pointLight0->SetValue(200.0);
+	scene.AddLight(pointLight0);
+}
+
 void Loop(GLFWwindow* window)
 {
 	glEnable(GL_DEPTH_TEST);
@@ -149,7 +160,7 @@ void Loop(GLFWwindow* window)
 	//glEnable(GL_CULL_FACE);
 
 	// --------------------------------前向渲染 + RayMarching-------------------------------------
-	auto p0 = OPENGL_SCENE::TestPass::Intance().GetPass_BackFaceDepth_09_01();
+	/*auto p0 = OPENGL_SCENE::TestPass::Intance().GetPass_BackFaceDepth_09_01();
 
 	auto p0_1 = OPENGL_SCENE::TestPass::Intance().GetPass_FrontFaceDepth_09_02();
 
@@ -157,26 +168,135 @@ void Loop(GLFWwindow* window)
 
 	auto p2 = OPENGL_SCENE::TestPass::Intance().GetPass_Cloud_11_01(p1, p0);
 
-	auto p3 = OPENGL_SCENE::TestPass::Intance().GetPass_RayMarchingRendering(p2, p0, p0_1);
+	auto p3 = OPENGL_SCENE::TestPass::Intance().GetPass_RayMarchingRendering(p2, p0, p0_1);*/
 	// -------------------------------------------------------------------------------------------
 	
 
 	// ------------------------------- only RayMarching -------------------------------------------
-	auto cloud_shader_01 = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_01_vs.c_str(),
-		SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_01_fs.c_str());
+	auto noisyTex = std::make_shared<Texture>(0, ASSETS::TEXTURE::NOISY::Gray_Noise_Medium.c_str(), "noisyTexture", GL_REPEAT);
+	auto preTex = std::make_shared<Texture>("preTexture");
+
+	auto frame = std::make_shared<FrameBuffer>(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+	frame->AddTexture(GL_RGB, "screenTexture", false);
+	frame->AddTexture(GL_RGB, "preTexture", false);
+	frame->AddTexture(GL_RGBA, "scatterTex", false);
+	frame->AddTexture(GL_RGBA, "posTex", false);
+	frame->NotifyGL();
+	frame->AddRenderObject(true);
+
+#pragma region CloudScene_MAT_0
+	auto cloud_shader_01 = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_02_vs.c_str(),
+		SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_02_fs.c_str());
+	cloud_shader_01->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
 	cloud_shader_01->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
 	cloud_shader_01->Compile();
 	auto cloud_mat_01 = std::make_shared<Material>(cloud_shader_01);
-	auto cloud_p_01 = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(cloud_mat_01);
+	cloud_mat_01->AddTexture(noisyTex);
+	cloud_mat_01->AddTexture(frame->textureBuffers[1]);
+	cloud_mat_01->AddTexture(frame->textureBuffers[2]);
+	cloud_mat_01->AddTexture(frame->textureBuffers[3]);
+	cloud_mat_01->LinkTextureForShader();
+	cloud_mat_01->SetJitter(true);
+#pragma endregion
+
+#pragma region MysteryMountains_MAT
+	auto MysteryMoutains_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::FBM_GREAT_EFFECT::MysteryMoutains_vs.c_str(),
+		SHADER_PATH::RAY_MARCHING::FBM_GREAT_EFFECT::MysteryMoutains_fs.c_str());
+	MysteryMoutains_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	MysteryMoutains_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	MysteryMoutains_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	MysteryMoutains_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	MysteryMoutains_shader->Compile();
+	auto MysteryMoutains_mat = std::make_shared<Material>(MysteryMoutains_shader);
+	MysteryMoutains_mat->AddTexture(noisyTex);
+	MysteryMoutains_mat->AddTexture(preTex);
+	MysteryMoutains_mat->LinkTextureForShader();
+#pragma endregion
+
+#pragma region PlayingMarble
+	auto PlayingMarble_Shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::MEDIA::PlayingMarble_vs.c_str(),
+		SHADER_PATH::RAY_MARCHING::MEDIA::PlayingMarble_fs.c_str());
+	PlayingMarble_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	PlayingMarble_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	PlayingMarble_Shader->Compile();
+	auto PlayingMarble_mat = std::make_shared<Material>(PlayingMarble_Shader);
+	// Todo. Add history texture.
+	cloud_mat_01->AddTexture(frame->textureBuffers[1]);
+	cloud_mat_01->AddTexture(frame->textureBuffers[2]);
+	cloud_mat_01->AddTexture(frame->textureBuffers[3]);
+	PlayingMarble_mat->LinkTextureForShader();
+	PlayingMarble_mat->SetJitter(false);
+#pragma endregion
+
+#pragma region StaicScene_01
+	auto StaticScene_01_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PAPER::StaticScene_01_vs.c_str(),
+		SHADER_PATH::RAY_MARCHING::PAPER::StaticScene_01_fs.c_str());
+	StaticScene_01_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	StaticScene_01_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	StaticScene_01_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	StaticScene_01_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	StaticScene_01_shader->Compile();
+	auto StaticScene_01_Mat = std::make_shared<Material>(StaticScene_01_shader);
+	StaticScene_01_Mat->AddTexture(frame->textureBuffers[1]);
+	StaticScene_01_Mat->AddTexture(frame->textureBuffers[2]);
+	StaticScene_01_Mat->AddTexture(frame->textureBuffers[3]);
+	StaticScene_01_Mat->LinkTextureForShader();
+	StaticScene_01_Mat->SetJitter(false);
+#pragma endregion
+
+	auto cloud_p_01 = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(StaticScene_01_Mat);
+	cloud_p_01->UpdateOutput(frame);
+	SET_LIGHT(*cloud_p_01->scene);
+
+
+#pragma region Foveated
+
+	auto Foveated_P1_Shader = std::make_shared<ShaderCompiler>(SHADER_PATH::POST_RENDER::FOVEA::KernelFovea_vs.c_str(), SHADER_PATH::POST_RENDER::FOVEA::KernelFovea_fs.c_str());
+	Foveated_P1_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::POST_PROCESSING);
+	Foveated_P1_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	Foveated_P1_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	Foveated_P1_Shader->Compile();
+	Foveated_P1_Shader->UseSelf();
+	glm::vec2 re = glm::vec2((float)CONFIG::SCREEN_CONFIG::FOVEA::FOVEA_WIDTH, (float)CONFIG::SCREEN_CONFIG::FOVEA::FOVEA_HEIGHT);
+	Foveated_P1_Shader->SetVec2(CONFIG::MATERIAL_SETTINGS::FOVEA_RENDER::RESOLUTION_NAME, re);
+	auto Foveated_P1_mat = std::make_shared<Material>(Foveated_P1_Shader);
+	Foveated_P1_mat->LinkTextureForShader();
+	auto Foveated_pass_1 = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(cloud_p_01, Foveated_P1_mat);
+
+	auto Foveated_P2_Shader = std::make_shared<ShaderCompiler>(SHADER_PATH::POST_RENDER::FOVEA::KernelFovea_vs.c_str(), SHADER_PATH::POST_RENDER::FOVEA::KernelFovea_Pass2_fs.c_str());
+	Foveated_P2_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::POST_PROCESSING);
+	Foveated_P2_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	Foveated_P2_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	Foveated_P2_Shader->Compile();
+	Foveated_P2_Shader->UseSelf();
+	Foveated_P2_Shader->SetVec2(CONFIG::MATERIAL_SETTINGS::FOVEA_RENDER::RESOLUTION_NAME, re);
+	auto Foveated_P2_mat = std::make_shared<Material>(Foveated_P2_Shader);
+	Foveated_P2_mat->LinkTextureForShader();
+	auto Foveated_pass_2 = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(Foveated_pass_1, Foveated_P2_mat);
+#pragma endregion
+
+
+#pragma region Blur
+	// ------------------------------- Foveated Blur ----------------------------------------------
+	auto foveated_blur_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::POST_RENDER::BLUR::FoveatedBlur_vs.c_str(), SHADER_PATH::POST_RENDER::BLUR::FoveatedBlur_fs.c_str());
+	foveated_blur_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::POST_PROCESSING);
+	foveated_blur_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	foveated_blur_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	foveated_blur_shader->Compile();
+	foveated_blur_shader->SetInt("blurDir", 1);
+	auto foveated_blur_mat = std::make_shared<Material>(foveated_blur_shader);
+	foveated_blur_mat->LinkTextureForShader();
+	auto foveated_blur_pass_X = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(Foveated_pass_2, foveated_blur_mat);
+	auto foveated_blur_mat_2 = foveated_blur_mat->Copy();
+	auto foveated_blur_pass_Y = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(foveated_blur_pass_X, foveated_blur_mat_2);
+
+	auto frame2 = std::make_shared<FrameBuffer>(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+	frame2->AddTexture(GL_RGB, "screenTexture", false);
+	frame2->NotifyGL();
+	frame2->AddRenderObject(true);
+	foveated_blur_pass_Y->UpdateOutput(frame2);
 	// --------------------------------------------------------------------------------------------
-
-
-
-	//auto p3 = OPENGL_SCENE::TestPass::Intance().GetPass_FoveatedRendering_12(p2);
-
-	//auto p4 = OPENGL_SCENE::TestPass::Intance().GetPass_FoveatedRendering_Pass2_13(p3);
-
-	//auto p_debug = OPENGL_SCENE::TestPass::Intance().GetPass_ShadowDebug_10(p0);
+#pragma endregion
 
 	//时钟重置，开始计时
 	Clock.Reset();
@@ -184,12 +304,15 @@ void Loop(GLFWwindow* window)
 	//
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+	const int blurTimes = 0;
+
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
 	{
 		Clock.Timing();
-		Clock.FPS();
+		COUNTER(0);
+		//Clock.FPS();
 
 		// input
 		// -----
@@ -197,11 +320,49 @@ void Loop(GLFWwindow* window)
 
 		// render
 		// ------
+		//std::cout << Counter<0>::times<< std::endl;
 		cloud_p_01->BindOutput();
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		cloud_p_01->GetMat()->GetShader()->SetInt("IsFirstFrame", Counter<0>::times);
+		glClear(GL_DEPTH_BUFFER_BIT);
 		cloud_p_01->Draw();
+
+		//cloud_p_01->GetOutput()->CopyColorAttachmentToTex(preTex->Self(), 1);
+
+		Foveated_pass_1->BindOutput();
+		glClear(GL_DEPTH_BUFFER_BIT);
+		Foveated_pass_1->Draw();
 		
+		Foveated_pass_2->BindOutput();
+		glClear(GL_DEPTH_BUFFER_BIT);
+		Foveated_pass_2->Draw();
+
+		foveated_blur_pass_X->BindOutput();
+		foveated_blur_pass_X->GetMat()->GetShader()->SetInt("blurDir", 1);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		foveated_blur_pass_X->Draw();
+		
+		for (int i = 0;i < blurTimes;++i)
+		{
+			if (i % 2 == 0)
+			{
+				foveated_blur_pass_Y->BindOutput(foveated_blur_pass_X->GetOutput());
+				foveated_blur_pass_Y->GetMat()->GetShader()->SetInt("blurDir", 0);
+				glClear(GL_DEPTH_BUFFER_BIT);
+				foveated_blur_pass_Y->Draw();
+			}
+			else {
+				foveated_blur_pass_X->BindOutput(foveated_blur_pass_Y->GetOutput());
+				foveated_blur_pass_X->GetMat()->GetShader()->SetInt("blurDir", 1);
+				glClear(GL_DEPTH_BUFFER_BIT);
+				foveated_blur_pass_X->Draw();
+			}
+		}
+
+		foveated_blur_pass_Y->BindOutput(0);
+		foveated_blur_pass_Y->GetMat()->GetShader()->SetInt("blurDir", 0);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		foveated_blur_pass_Y->Draw();
+
 		//OPENGL_SCENE::TestPass::Intance().DrawFoveated_Comp_09(p0, p0_1, p1, p2, p3);
 		//OPENGL_SCENE::TestPass::Intance().DrawFoveated_07(p0, p1, p2);
 		//OPENGL_SCENE::TestPass::Intance().DrawBaseShadow_06(p1, p2);
@@ -210,277 +371,10 @@ void Loop(GLFWwindow* window)
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
+		INPUT::inputCamera->UpdatePreMat();
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+
 	}
 }
 
-
-//#include <glad/glad.h>
-//#include <GLFW/glfw3.h>
-//#include <stb_image.h>
-//
-//#include <glm/glm.hpp>
-//#include <glm/gtc/matrix_transform.hpp>
-//#include <glm/gtc/type_ptr.hpp>
-//
-//#include "learnopengl/shader_m.h"
-//#include "learnopengl/camera.h"
-//#include "learnopengl/model.h"
-//
-//#include "ShaderCompiler.h"
-//#include "UniformBuffer.h"
-//#include "Config.h"
-//#include "VertexModel.h"
-//#include "EmbeddedData.h"
-//#include "Material.h"
-//#include "Actor.h"
-//#include <iostream>
-//
-//using VertexModelPtr = std::shared_ptr<VertexModel>;
-//using MaterialPtr = std::shared_ptr<Material>;
-//using ActorPtr = std::shared_ptr<Actor>;
-//
-//void framebuffer_size_callback2(GLFWwindow* window, int width, int height);
-//void mouse_callback2(GLFWwindow* window, double xpos, double ypos);
-//void processInput2(GLFWwindow* window);
-//
-//// settings
-//const unsigned int SCR_WIDTH = 800;
-//const unsigned int SCR_HEIGHT = 600;
-//
-//// camera
-//Camera2 camera(glm::vec3(0.0f, 0.0f, 3.0f));
-//float lastX = (float)SCR_WIDTH / 2.0;
-//float lastY = (float)SCR_HEIGHT / 2.0;
-//bool firstMouse = true;
-//
-//// timing
-//float deltaTime = 0.0f;
-//float lastFrame = 0.0f;
-//
-//int main()
-//{
-//	// glfw: initialize and configure
-//	// ------------------------------
-//	glfwInit();
-//	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-//	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-//	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-//
-//#ifdef __APPLE__
-//	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-//#endif
-//
-//	// glfw window creation
-//	// --------------------
-//	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
-//	if (window == NULL)
-//	{
-//		std::cout << "Failed to create GLFW window" << std::endl;
-//		glfwTerminate();
-//		return -1;
-//	}
-//	glfwMakeContextCurrent(window);
-//	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback2);
-//	glfwSetCursorPosCallback(window, mouse_callback2);
-//
-//	// tell GLFW to capture our mouse
-//	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-//
-//	// glad: load all OpenGL function pointers
-//	// ---------------------------------------
-//	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-//	{
-//		std::cout << "Failed to initialize GLAD" << std::endl;
-//		return -1;
-//	}
-//
-//	// configure global opengl state
-//	// -----------------------------
-//	glEnable(GL_DEPTH_TEST);
-//
-//	Shader asteroidShader("10.3.asteroids.vs", "10.3.asteroids.fs");
-//	Shader planetShader("10.3.planet.vs", "10.3.planet.fs");
-//
-//	// load models
-//	// -----------
-//	Model rock(FileSystem::getPath("resources/objects/rock/rock.obj"));
-//	Model planet(FileSystem::getPath("resources/objects/planet/planet.obj"));
-//
-//	// generate a large list of semi-random model transformation matrices
-//	// ------------------------------------------------------------------
-//	unsigned int amount = 100000;
-//	glm::mat4* modelMatrices;
-//	modelMatrices = new glm::mat4[amount];
-//	srand(glfwGetTime()); // initialize random seed	
-//	float radius = 150.0;
-//	float offset = 25.0f;
-//	for (unsigned int i = 0; i < amount; i++)
-//	{
-//		glm::mat4 model = glm::mat4(1.0f);
-//		// 1. translation: displace along circle with 'radius' in range [-offset, offset]
-//		float angle = (float)i / (float)amount * 360.0f;
-//		float displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
-//		float x = sin(angle) * radius + displacement;
-//		displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
-//		float y = displacement * 0.4f; // keep height of asteroid field smaller compared to width of x and z
-//		displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
-//		float z = cos(angle) * radius + displacement;
-//		model = glm::translate(model, glm::vec3(x, y, z));
-//
-//		// 2. scale: Scale between 0.05 and 0.25f
-//		float scale = (rand() % 20) / 100.0f + 0.05;
-//		model = glm::scale(model, glm::vec3(scale));
-//
-//		// 3. rotation: add random rotation around a (semi)randomly picked rotation axis vector
-//		float rotAngle = (rand() % 360);
-//		model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
-//
-//		// 4. now add to list of matrices
-//		modelMatrices[i] = model;
-//	}
-//
-//	// configure instanced array
-//	// -------------------------
-//	unsigned int buffer;
-//	glGenBuffers(1, &buffer);
-//	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-//	glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
-//
-//	// set transformation matrices as an instance vertex attribute (with divisor 1)
-//	// note: we're cheating a little by taking the, now publicly declared, VAO of the model's mesh(es) and adding new vertexAttribPointers
-//	// normally you'd want to do this in a more organized fashion, but for learning purposes this will do.
-//	// -----------------------------------------------------------------------------------------------------------------------------------
-//	for (unsigned int i = 0; i < rock.meshes.size(); i++)
-//	{
-//		unsigned int VAO = rock.meshes[i].VAO;
-//		glBindVertexArray(VAO);
-//		// set attribute pointers for matrix (4 times vec4)
-//		glEnableVertexAttribArray(3);
-//		glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
-//		glEnableVertexAttribArray(4);
-//		glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
-//		glEnableVertexAttribArray(5);
-//		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
-//		glEnableVertexAttribArray(6);
-//		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
-//
-//		glVertexAttribDivisor(3, 1);
-//		glVertexAttribDivisor(4, 1);
-//		glVertexAttribDivisor(5, 1);
-//		glVertexAttribDivisor(6, 1);
-//
-//		glBindVertexArray(0);
-//	}
-//
-//
-//	
-//	// render loop
-//	// -----------
-//	while (!glfwWindowShouldClose(window))
-//	{
-//		// per-frame time logic
-//		// --------------------
-//		float currentFrame = glfwGetTime();
-//		deltaTime = currentFrame - lastFrame;
-//		lastFrame = currentFrame;
-//
-//		// input
-//		// -----
-//		processInput2(window);
-//
-//		// render
-//		// ------
-//		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-//		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//
-//		// configure transformation matrices
-//		glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
-//		glm::mat4 view = camera.GetViewMatrix();
-//		asteroidShader.use();
-//		asteroidShader.setMat4("projection", projection);
-//		asteroidShader.setMat4("view", view);
-//		planetShader.use();
-//		planetShader.setMat4("projection", projection);
-//		planetShader.setMat4("view", view);
-//
-//		// draw planet
-//		glm::mat4 model = glm::mat4(1.0f);
-//		model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
-//		model = glm::scale(model, glm::vec3(4.0f, 4.0f, 4.0f));
-//		planetShader.setMat4("model", model);
-//		planet.Draw(planetShader);
-//
-//		// draw meteorites
-//		asteroidShader.use();
-//		asteroidShader.setInt("texture_diffuse1", 0);
-//		glActiveTexture(GL_TEXTURE0);
-//		glBindTexture(GL_TEXTURE_2D, rock.textures_loaded[0].id); // note: we also made the textures_loaded vector public (instead of private) from the model class.
-//		for (unsigned int i = 0; i < rock.meshes.size(); i++)
-//		{
-//			glBindVertexArray(rock.meshes[i].VAO);
-//			glDrawElementsInstanced(GL_TRIANGLES, rock.meshes[i].indices.size(), GL_UNSIGNED_INT, 0, amount);
-//			glBindVertexArray(0);
-//		}
-//	    
-//
-//		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-//		// -------------------------------------------------------------------------------
-//		glfwSwapBuffers(window);
-//		glfwPollEvents();
-//	}
-//
-//	// optional: de-allocate all resources once they've outlived their purpose:
-//	// ------------------------------------------------------------------------
-//	
-//
-//	glfwTerminate();
-//	return 0;
-//}
-//
-//// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-//// ---------------------------------------------------------------------------------------------------------
-//void processInput2(GLFWwindow* window)
-//{
-//	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-//		glfwSetWindowShouldClose(window, true);
-//
-//	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-//		camera.ProcessKeyboard(FORWARD, deltaTime);
-//	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-//		camera.ProcessKeyboard(BACKWARD, deltaTime);
-//	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-//		camera.ProcessKeyboard(LEFT, deltaTime);
-//	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-//		camera.ProcessKeyboard(RIGHT, deltaTime);
-//}
-//
-//// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-//// ---------------------------------------------------------------------------------------------
-//void framebuffer_size_callback2(GLFWwindow* window, int width, int height)
-//{
-//	// make sure the viewport matches the new window dimensions; note that width and 
-//	// height will be significantly larger than specified on retina displays.
-//	glViewport(0, 0, width, height);
-//}
-//
-//// glfw: whenever the mouse moves, this callback is called
-//// -------------------------------------------------------
-//void mouse_callback2(GLFWwindow* window, double xpos, double ypos)
-//{
-//	if (firstMouse)
-//	{
-//		lastX = xpos;
-//		lastY = ypos;
-//		firstMouse = false;
-//	}
-//
-//	float xoffset = xpos - lastX;
-//	float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
-//
-//	lastX = xpos;
-//	lastY = ypos;
-//
-//	camera.ProcessMouseMovement(xoffset, yoffset);
-//}

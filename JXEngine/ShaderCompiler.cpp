@@ -62,7 +62,25 @@ ShaderCompiler::ShaderCompiler(const char* vertexCode, const char* fragmentCode,
 
 	vertexShader = vertexCode;
 
-	fragmentShader = fragmentShader;
+	fragmentShader = fragmentCode;
+}
+
+ShaderCompiler::ShaderCompiler(const char* vertexCode, const char* fragmentCode, const char* geometryCode, int xx)
+{
+	vertexShader = vertexCode;
+
+	geometryShader = geometryCode;
+
+	fragmentShader = fragmentCode;
+}
+
+ShaderCompiler::ShaderCompiler(const ShaderCompiler& other)
+{
+	vertexShader = other.vertexShader;
+	geometryShader = other.geometryShader;
+	hasGeometry = other.hasGeometry;
+	fragmentShader = other.fragmentShader;
+	
 }
 
 void ShaderCompiler::Compile()
@@ -145,61 +163,73 @@ void ShaderCompiler::AddIncludeFile(const std::string& filePath)
 
 void ShaderCompiler::SetBool(const std::string& name, bool value) const
 {
+	UseSelf();
 	glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
 }
 
 void ShaderCompiler::SetInt(const std::string& name, int value) const
 {
+	UseSelf();
 	glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
 }
 
 void ShaderCompiler::SetFloat(const std::string& name, float value) const
 {
+	UseSelf();
 	glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
 }
 
 void ShaderCompiler::SetVec2(const std::string& name, const glm::vec2& value) const
 {
+	UseSelf();
 	glUniform2fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]);
 }
 
 void ShaderCompiler::SetVec2(const std::string& name, float x, float y) const
 {
+	UseSelf();
 	glUniform2f(glGetUniformLocation(ID, name.c_str()), x, y);
 }
 
 void ShaderCompiler::SetVec3(const std::string& name, const glm::vec3& value) const
 {
+	UseSelf();
 	glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]);
 }
 
 void ShaderCompiler::SetVec3(const std::string& name, float x, float y, float z) const
 {
+	UseSelf();
 	glUniform3f(glGetUniformLocation(ID, name.c_str()), x, y, z);
 }
 
 void ShaderCompiler::SetVec4(const std::string& name, const glm::vec4& value) const
 {
+	UseSelf();
 	glUniform4fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]);
 }
 
 void ShaderCompiler::SetVec4(const std::string& name, float x, float y, float z, float w) const
 {
+	UseSelf();
 	glUniform4f(glGetUniformLocation(ID, name.c_str()), x, y, z, w);
 }
 
 void ShaderCompiler::SetMat2(const std::string& name, const glm::mat2& mat) const
 {
+	UseSelf();
 	glUniformMatrix2fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
 
 void ShaderCompiler::SetMat3(const std::string& name, const glm::mat3& mat) const
 {
+	UseSelf();
 	glUniformMatrix3fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
 
 void ShaderCompiler::SetMat4(const std::string& name, const glm::mat4& mat) const
 {
+	UseSelf();
 	glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
 
@@ -208,6 +238,15 @@ void ShaderCompiler::BlockBindingUniform(unsigned int pos, const char* uniform) 
 	unsigned int id = glGetUniformBlockIndex(ID, uniform);
 	glUniformBlockBinding(ID, id, pos);
 }
+
+ShaderCompiler ShaderCompiler::Copy()
+{
+	ShaderCompiler temp = *this;
+	temp.Compile();
+	return temp;;
+}
+
+
 
 void ShaderCompiler::UseSelf() const
 {

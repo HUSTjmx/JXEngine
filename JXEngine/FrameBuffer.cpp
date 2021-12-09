@@ -140,6 +140,23 @@ void FrameBuffer::AddRenderObject(bool hasStencil, bool isMSAA)
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
+void FrameBuffer::CopyColorAttachmentToTex(GLuint dest, unsigned int index)
+{
+	/*glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+
+	auto a = GetAttachmentByIndex(index);
+	glFramebufferTexture2D(GL_READ_FRAMEBUFFER, a, GL_TEXTURE_2D, dest, 0);
+	glBindTexture(GL_TEXTURE_2D, dest);
+	glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, width, height);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);*/
+
+	glBindBuffer(GL_COPY_READ_BUFFER, textureBuffers[index]->Self());
+	glBindBuffer(GL_COPY_WRITE_BUFFER, dest);
+	glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, width * height);
+}
+
 void FrameBuffer::Delete()
 {
 	glDeleteFramebuffers(1, &fbo);

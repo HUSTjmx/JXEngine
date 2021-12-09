@@ -186,7 +186,20 @@ namespace SHADER_PATH
 			extern std::string earthSky_fs;
 		}
 
-		namespace CLOUD
+		namespace MEDIA
+		{
+			extern std::string Path;
+			extern std::string Cloud_01_vs;
+			extern std::string Cloud_01_fs;
+
+			extern std::string Cloud_02_vs;
+			extern std::string Cloud_02_fs;
+
+			extern std::string PlayingMarble_vs;
+			extern std::string PlayingMarble_fs;
+		}
+
+		namespace PURE_CLOUD
 		{
 			extern std::string Path;
 			extern std::string Cloud_01_vs;
@@ -196,11 +209,18 @@ namespace SHADER_PATH
 			extern std::string Cloud_02_fs;
 		}
 
-		namespace PURE_CLOUD
+		namespace FBM_GREAT_EFFECT
 		{
 			extern std::string Path;
-			extern std::string Cloud_01_vs;
-			extern std::string Cloud_01_fs;
+			extern std::string MysteryMoutains_vs;
+			extern std::string MysteryMoutains_fs;
+		}
+
+		namespace PAPER
+		{
+			extern std::string Path;
+			extern std::string StaticScene_01_vs;
+			extern std::string StaticScene_01_fs;
 		}
 	}
 
@@ -212,6 +232,13 @@ namespace SHADER_PATH
 			extern std::string KernelFovea_vs;
 			extern std::string KernelFovea_fs;
 			extern std::string KernelFovea_Pass2_fs;
+		}
+		
+		namespace BLUR
+		{
+			extern std::string Path;
+			extern std::string FoveatedBlur_vs;
+			extern std::string FoveatedBlur_fs;
 		}
 	}
 }

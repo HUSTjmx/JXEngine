@@ -62,7 +62,16 @@ public:
 	// ...
 	float farPlane;
 
+	// ...
 	ProjectionType projectionType;
+
+	// Camera matrix of the previous frame.
+	// ...
+	glm::mat4 Pre_ViewMat;
+
+	// Cropping matrix of the previous frame.
+	// ...
+	glm::mat4 Pre_ProjMat;
 
 	// constructor with vectors
 	Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, 1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
@@ -130,6 +139,10 @@ public:
 	// Load some camera info to shader, e.g. viewPos, farPlane, nearPlane etc.
 	// ...
 	void LoadInfoToShader(std::shared_ptr<Material> mat);
+
+	// Update view, projection mat4.
+	// ...
+	void UpdatePreMat();
 
 private:
 	// calculates the front vector from the Camera's (updated) Euler Angles

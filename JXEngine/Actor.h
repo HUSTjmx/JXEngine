@@ -59,6 +59,8 @@ private:
 class Actor
 {
 public:
+	Actor() {}
+
 	Actor(std::shared_ptr<Material> m);
 
 	Actor(const std::string& path, std::shared_ptr<Material> m);

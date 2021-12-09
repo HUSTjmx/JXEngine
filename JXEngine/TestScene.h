@@ -115,6 +115,7 @@ namespace OPENGL_SCENE
 
 		using MaterialPtr = std::shared_ptr<Material>;
 		using PassPtr = std::shared_ptr<Pass>;
+		using ScenePtr = std::shared_ptr<Scene>;
 
 		// Return this only instance of the class.
 		// ...
@@ -135,8 +136,26 @@ namespace OPENGL_SCENE
 		// ...
 		PassPtr CreateOne(PassPtr pre_frame, MaterialPtr mat);
 
+		// Create a pass with only a sphere obj without considering depth.
+		// We usually use it to create sky box.
+		// We also use it to test ray marching.
+		// ...
+		PassPtr CreateBackGround(MaterialPtr mat);
+
+		// Create a pass with only a sphere obj without considering depth.
+		// We usually use it to create sky box.
+		// We also use it to test ray marching.
+		// ...
+		PassPtr CreateBackGround(PassPtr pre_frame, MaterialPtr mat);
+
 
 	private:
+
+		// Create a scene with only a sphere obj without considering depth. 
+		// A tool function for CreateBackGround.
+		// ...
+		ScenePtr CreateBackGround_Scene();
+
 		PostPassFactory() {}
 	};
 }

@@ -31,6 +31,16 @@ void Pass::BindOutput()
 		glBindFramebuffer(GL_FRAMEBUFFER, frame->FBO());
 }
 
+void Pass::BindOutput(Output f)
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, f->FBO());
+}
+
+void Pass::BindOutput(unsigned int fbo)
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+}
+
 void Pass::UpdateInput(Input scene)
 {
 	this->scene = scene;

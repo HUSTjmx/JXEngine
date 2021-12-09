@@ -16,6 +16,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include "DesignPatterns.h"
 
 
 //namespace StructureTool {
@@ -99,6 +100,12 @@ public:
 	//   <a>: mat4, e.g. this view matrix when we render sky box.
 	// ...
 	glm::mat4 RemoveTranslation(glm::mat4 a);
+
+	// Jitter the mat in X- and Y- direction.
+	// We only use it to jitter proj mat, so we only change [2][0], [2][1] elements.
+	// ...
+	template<unsigned int N>
+	glm::mat4 JitterMat(glm::mat4 proj, unsigned int i, int width, int height);
 
 	//Generate a large list of semi-random model transformation matrices.
 	//
@@ -224,6 +231,7 @@ inline unsigned int BufferTool::GetBaseAlignment_std140<float, 1>()
 	return 4;
 }
 
+
 template<size_t amount>
 inline std::shared_ptr<glm::mat4> MatTool::GenerateModelMat_R(float radius, float offset)
 {
@@ -342,8 +350,45 @@ public:
 		return *instance_;
 	}
 
+	// Hammersley Creator
+	// ...
+	glm::vec2 Hammersley(unsigned int i, unsigned int N);
+
 private:
+
+	// Create a Van Der Corput list.
+	// ...
+	float RadicalInverse_VdC(unsigned int bits);
 
 	RandomTool() {}
 };
 
+template<unsigned int N>
+inline glm::mat4 MatTool::JitterMat(glm::mat4 proj, unsigned int i, int width, int height)
+{
+	if (i > N) i = i % N;
+	glm::vec2 offset = RandomTool::Instance().Hammersley(i, N);
+	proj[2][0] += (offset.x * 2.0 - 1.0) / (float)width;
+	proj[2][1] += (offset.y * 2.0 - 1.0) / (float)height;
+	return proj;
+}
+
+// The counter obj.
+// template param N is the flag. N = 0, 1, 2, ... is are different counter.
+// ...
+template<int N>
+class Counter
+{
+public:
+	static unsigned int times;
+
+	~Counter()
+	{
+		times++;
+	}
+};
+
+template<int N>
+unsigned int Counter<N>::times = 0;
+
+#define COUNTER(num) Counter<num>temp; 

@@ -332,7 +332,7 @@ namespace SHADER_PATH
 			std::string earthSky_fs = Path + "sky.fs";
 		}
 
-		namespace CLOUD
+		namespace MEDIA
 		{
 			std::string Path = "shaders/RayMarching/MediaRendering/";
 			std::string Cloud_01_vs = Path + "Cloud_01.vs";
@@ -340,6 +340,9 @@ namespace SHADER_PATH
 
 			std::string Cloud_02_vs = Path + "CloudFloor_01.vs";
 			std::string Cloud_02_fs = Path + "CloudFloor_01.fs";
+
+			std::string PlayingMarble_vs = Path + "PlayingMarble.vs";
+			std::string PlayingMarble_fs = Path + "PlayingMarble.fs";
 		}
 
 		namespace PURE_CLOUD
@@ -347,6 +350,23 @@ namespace SHADER_PATH
 			std::string Path = "shaders/RayMarching/Cloud/";
 			std::string Cloud_01_vs = Path + "Cloud_1.vs";
 			std::string Cloud_01_fs = Path + "Cloud_1.fs";
+
+			std::string Cloud_02_vs = Path + "Cloud_2.vs";
+			std::string Cloud_02_fs = Path + "Cloud_2.fs";
+		}
+
+		namespace FBM_GREAT_EFFECT
+		{
+			std::string Path = "shaders/RayMarching/FBM_GreatEffect/";
+			std::string MysteryMoutains_vs = Path + "MysteryMountains.vs";
+		    std::string MysteryMoutains_fs = Path + "MysteryMountains.fs";
+		}
+
+		namespace PAPER
+		{
+			std::string Path = "shaders/RayMarching/Paper/";
+			std::string StaticScene_01_vs = Path + "StaticScene_01.vs";
+			std::string StaticScene_01_fs = Path + "StaticScene_01.fs";
 		}
 	}
 
@@ -358,6 +378,13 @@ namespace SHADER_PATH
 			std::string KernelFovea_vs = Path + "KernelFovea.vs";
 			std::string KernelFovea_fs = Path + "KernelFovea.fs";
 			std::string KernelFovea_Pass2_fs = Path + "KernelFovea_pass2.fs";
+		}
+
+		namespace BLUR
+		{
+			std::string Path = "shaders/PostRendering/Blur/";
+			std::string FoveatedBlur_vs = Path + "FoveatedBlur.vs";
+			std::string FoveatedBlur_fs = Path + "FoveatedBlur.fs";
 		}
 	}
 }

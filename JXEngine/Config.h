@@ -29,6 +29,7 @@ namespace CONFIG
 		
 		namespace SHADER {
 			extern std::string VIEW_POS_IN_WORLD;
+			extern std::string CENTER_DIR;
 			extern std::string FAR_PLANE;
 			extern std::string NEAR_PLANE;
 		}
@@ -55,8 +56,10 @@ namespace CONFIG
 		extern const std::string MODEL_MATRIX;
 		extern const std::string PROJECTION_MATRIX;
 		extern const std::string PROJECTION_MATRIX_INV;
+		extern const std::string PROJECTION_MATRIX_PRE;
 		extern const std::string VIEW_MATRIX;
 		extern const std::string VIEW_MATRIX_INV;
+		extern const std::string VIEW_MATRIX_PRE;
 
 		extern const std::string TIME;
 

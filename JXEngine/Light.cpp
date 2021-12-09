@@ -38,7 +38,7 @@ void PointLight::LoadInfoToShader(std::shared_ptr<ShaderCompiler> shader)
 	shader->SetVec3(preName + CONFIG::LIGHT_SETTINGS::SHADER_POINT_LIGHT::COLOR, color);
 	shader->SetVec3(preName + CONFIG::LIGHT_SETTINGS::SHADER_POINT_LIGHT::POSITION, position);
 	shader->SetFloat(preName + CONFIG::LIGHT_SETTINGS::SHADER_POINT_LIGHT::INTENSITY, value);
-	shader->SetFloat(preName + CONFIG::LIGHT_SETTINGS::SHADER_POINT_LIGHT::LIGHT_IN_RADIUS, lightInRadius);
+	shader->SetFloat(preName + CONFIG::LIGHT_SETTINGS::SHADER_POINT_LIGHT::LIGHT_IN_RADIUS, 1.0 / lightInRadius);
 }
 
 void SpotLight::LoadInfoToShader(std::shared_ptr<ShaderCompiler> shader)
@@ -51,6 +51,6 @@ void SpotLight::LoadInfoToShader(std::shared_ptr<ShaderCompiler> shader)
 	shader->SetFloat(preName + CONFIG::LIGHT_SETTINGS::SHADER_SPOT_LIGHT::INNER_ANGLE, innerAngle);
 	shader->SetFloat(preName + CONFIG::LIGHT_SETTINGS::SHADER_SPOT_LIGHT::OUTER_ANGLE, outerAngle);
 	shader->SetFloat(preName + CONFIG::LIGHT_SETTINGS::SHADER_SPOT_LIGHT::INTENSITY, value);
-	shader->SetFloat(preName + CONFIG::LIGHT_SETTINGS::SHADER_SPOT_LIGHT::LIGHT_IN_RADIUS, lightInRadius);
+	shader->SetFloat(preName + CONFIG::LIGHT_SETTINGS::SHADER_SPOT_LIGHT::LIGHT_IN_RADIUS, 1.0 / lightInRadius);
 
 }

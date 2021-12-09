@@ -23,6 +23,8 @@ public:
 
 	Texture(unsigned int tex) : texture(tex), uniformPos(0), path(""), shaderName("texture1") {}
 
+	Texture(const std::string& shader_name);
+
 	Texture(const std::string& path, const std::string& directory, bool gamma, GLenum warpMode);
 
 	Texture(int uniformPos, const std::string& s_name, GLenum warpMode);
@@ -40,6 +42,7 @@ public:
 	// ...
 	virtual void Bind() const;
 
+	// ...
 	void SetUniformPos(int newPos);
 
 	// Set the texture for shader object.

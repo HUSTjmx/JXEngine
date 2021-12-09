@@ -1,3 +1,7 @@
+// Copyright 2021.	All rights reserved
+//
+// Author: 2568094892@qq.com (Jiang Meng Xian)
+// ...
 #pragma once
 #include <memory>
 #include <vector>
@@ -16,6 +20,9 @@ class ShaderCompiler;
 class Camera;
 class Transform;
 
+
+// Uniform data type.
+// ...
 enum class UNIFORM_DATA_TYPE {
 	Int,
 	Float,
@@ -28,6 +35,8 @@ enum class UNIFORM_DATA_TYPE {
 	Mat4
 };
 
+// Engine Commands, a enum element can represent a opengl command.
+// ...
 enum class EngineCommands
 {
 	Depth_Func_LEQUAL,
@@ -39,24 +48,42 @@ enum class EngineCommands
 	Cull_Disable
 };
 
+// Engine commands obj.
+// ...
 class EngineSetting
 {
 public:
 	EngineSetting() {}
 
+	// Add a init command before this material is drawed.
+	// ...
 	void AddInitCmds(EngineCommands cmd);
 
+	// Add a end command after this material is drawed.
+	// ...
 	void AddEndCmds(EngineCommands cmd);
 
+	// Call init commands.
+	// ...
 	void InitExecutive() const;
 
+	// Call end commands.
+	// ...
 	void EndExecutive() const;
 
 private:
+
+	// The array of init commands
+	// ...
 	std::vector<EngineCommands> initCmds;
+
+	// The array of end commands
+	// ...
 	std::vector<EngineCommands> endCmds;
 };
 
+// The material obj, one of the main class.
+// ...
 class Material : public Observer
 {
 
@@ -64,34 +91,66 @@ public:
 
 	Material(std::shared_ptr<ShaderCompiler> s);
 
+	// The design pattern, observer pattern.
+	// The observer, that is the listener.
+	// ...
 	void OnNotify(Event* event)override;
 
 	// Create a new different obj with the same setting.
 	// ...
 
+	// Add a texture for the material.
+	// ...
 	virtual void AddTexture(std::shared_ptr<Texture> tex);
 
+	// Update the shader code of the material.
+	// ...
 	virtual void UpdateShader(std::shared_ptr<ShaderCompiler> s);
 
+	// The function is used when we have finished setting of the material. But in reality, we maybe delete it.
+	// It may is usefulness.
+	// ...
 	virtual void BindTexturesToOpenGL();
 
+	// On the fly ,we should bind texture for the material.
+	// ...
 	virtual void LinkTextureForShader();
 
+	// Active the material that the pass is draw.
 	virtual void Active() const;
 
+	// Load some info to shader, in a word, we set uniform data.
+	// ...
 	virtual void LoadInfoToShader()const;
 
+	// ...
 	virtual std::shared_ptr<ShaderCompiler> GetShader();
 
+	// Set MVP mat.
+	// Note : We maybe need change this pos of update MVP to other class.
+	// ...
 	void SetMVP(const Camera& camera, Transform transform);
 
+	// Set VP mat.
+	// Note : We maybe need change this pos of update VP to other class.
+	// ...
 	void SetVP(const Camera& camera);
 
+	// Set P mat.
+	// Note : We maybe need change this pos of update P to other class.
+	// ...
 	void SetP(Transform transform);
 
+	// Set view pos.
+	// ...
 	void SetViewPos(const Camera& camera);
 
+	// Set the mobility that show we should delete the translation of View or not.
+	// ...
 	void SetMobility(bool movbility);
+
+	// ...
+	void SetJitter(bool isJitter);
 
 	std::vector<std::shared_ptr<Texture>> LoadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName, std::string directory);
 
@@ -121,6 +180,10 @@ private:
 	glm::vec3 emissive;
 
 	bool CanMove;
+
+	// Is jitter the proj mat?
+	// ...
+	bool IsJitter;
 };
 
 template<typename T>

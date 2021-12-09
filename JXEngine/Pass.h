@@ -1,3 +1,7 @@
+// Copyright 2021.	All rights reserved
+//
+// Author: 2568094892@qq.com (Jiang Meng Xian)
+// ...
 #pragma once
 #include <memory>
 
@@ -5,6 +9,7 @@ class FrameBuffer;
 class Scene;
 class Material;
 
+// 
 class Pass
 {
 public:
@@ -25,7 +30,11 @@ public:
 
 	virtual void Draw();
 
-	virtual void BindOutput();
+	void BindOutput();
+
+	void BindOutput(Output frame);
+
+	void BindOutput(unsigned int fbo);
 
 	virtual void UpdateInput(Input scene);
 

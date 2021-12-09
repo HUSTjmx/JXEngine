@@ -326,6 +326,7 @@ void Transform::Reset()
 void ActorType::SetMobility(Mobility a)
 {
 	mobility = a;
+	//std::cout << "xxx" << std::endl;
 	this->notify(this);
 }
 

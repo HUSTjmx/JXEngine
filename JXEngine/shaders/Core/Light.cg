@@ -81,7 +81,7 @@ float GetPointLightIllumiance(int i, vec3 w_pos)
     
     vec3 posToLight = pointLights[i].position - w_pos;
     float attenuation = GetSquareFalloffAttenuation(posToLight, pointLights[i].lightInvRadius);
-    return pointLights[i].intensity * 0.25 * PI_INV * attenuation;
+    return pointLights[i].intensity  * PI_INV * attenuation;
 }
 
 vec3 GetPointLightColor(int i)

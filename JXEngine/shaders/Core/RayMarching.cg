@@ -13,9 +13,9 @@ vec3 MysteryMoutains_v1(sampler2D noisyTexture, vec2 uv)
     for(float i = 1.5; i > 0.; i-=.002)
     {
         float s =.5;
-        t = F F F F ;
+        t = F F F;
         c =1.+d.x-t*i; c.y-=.1;
-        if(t.x>p.y*.007 + 2.1)break;
+        if(t.x>p.y*.007 + 1.1)break;
         p += d;
     }
     return c;

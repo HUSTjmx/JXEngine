@@ -1,9 +1,11 @@
 #version 430 core
 uniform vec2 Resolution;
+#define PIXEL_SIZE vec2(1.0 / Resolution)
 
 uniform float iTime;
 
 uniform vec3 viewPosWS;
+uniform vec3 view_center_dir;
 uniform float near_plane;
 uniform float far_plane;
 
@@ -70,146 +72,799 @@ float RoughnessReMap(float rough)
     return rough * rough;
 }
 
-out vec4 FragColor;
+#define PI 3.14159265358
+#define PI_INV 0.31830988618
+#define HALF_PI (0.5 * PI)
+#define PI2 6.28318530
+#define GAMMA 0.4545454545
+
+
+// Range remapping from [0, 1] to [-1, 1].
+// ...
+float RemapNDC(float a)
+{
+    return a * 2.0 - 1.0;
+}
+
+vec2 ReMapNDC_V2(vec2 a)
+{
+    return vec2(RemapNDC(a.x), RemapNDC(a.y));
+}
+
+ vec3 ReMapNDC_V3(vec3 a)
+ {
+     return vec3(RemapNDC(a.x), RemapNDC(a.y), RemapNDC(a.z));
+ }
+
+// Get Linear depth.
+// ...
+float LinearizeDepth(float depth, float near, float far)
+{
+    float z = RemapNDC(depth);
+    return (2.0 * near * far) / (far + near - z * (far - near));
+    
+}
+
+// AlphaTest
+// ...
+float AlphaTest(float alpha, float min_)
+{
+    if (alpha < min_)
+        discard;
+    return 1.0;
+}
+
+// Gamma Correction
+// ...
+vec3 GammaCorrection(vec3 color)
+{
+    return pow(color, vec3(GAMMA));
+}
+
+// Random Creation.
+// We do not use Trigonometric function.
+// ...
+// -----------------------------------------------------
+//  1 out, 1 in...
+float hash11(float p)
+{
+    //p = fract(p * .1031);
+    //p *= p + 33.33;
+    //p *= p + p;
+    //return fract(p);
+    return fract(sin(p) * 10000.0);
+}
+
+//----------------------------------------------------------------------------------------
+//  1 out, 2 in
+// ...
+float hash12(vec2 uv)
+{
+	//vec3 p3  = fract(vec3(p.xyx) * .1031);
+    //p3 += dot(p3, p3.yzx + 33.33);
+    //return fract((p3.x + p3.y) * p3.z);
+
+    const float a = 12.9898, b = 78.233, c = 43758.5453;
+    float dt = dot(uv.xy, vec2(a, b)), sn = mod(dt, PI);
+    return fract(sin(sn) * c);
+}
+
+//----------------------------------------------------------------------------------------
+//  1 out, 3 in
+// ...
+float hash13(vec3 p3)
+{
+	p3  = fract(p3 * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+//----------------------------------------------------------------------------------------
+//  2 out, 1 in
+// ...
+vec2 hash21(float p)
+{
+	vec3 p3 = fract(vec3(p) * vec3(.1031, .1030, .0973));
+	p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.xx+p3.yz)*p3.zy);
+
+}
+
+//----------------------------------------------------------------------------------------
+///  2 out, 2 in
+// ...
+vec2 hash22(vec2 p)
+{
+	vec3 p3 = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yzx+33.33);
+    return fract((p3.xx+p3.yz)*p3.zy);
+
+}
+
+//----------------------------------------------------------------------------------------
+///  2 out, 3 in
+// ...
+vec2 hash23(vec3 p3)
+{
+	p3 = fract(p3 * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yzx+33.33);
+    return fract((p3.xx+p3.yz)*p3.zy);
+}
+
+//----------------------------------------------------------------------------------------
+//  3 out, 1 in
+// ...
+vec3 hash31(float p)
+{
+   vec3 p3 = fract(vec3(p) * vec3(.1031, .1030, .0973));
+   p3 += dot(p3, p3.yzx+33.33);
+   return fract((p3.xxy+p3.yzz)*p3.zyx); 
+}
+
+
+//----------------------------------------------------------------------------------------
+///  3 out, 2 in
+// ...
+vec3 hash32(vec2 p)
+{
+	vec3 p3 = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yxz+33.33);
+    return fract((p3.xxy+p3.yzz)*p3.zyx);
+}
+
+//----------------------------------------------------------------------------------------
+///  3 out, 3 in
+// ...
+vec3 hash33(vec3 p3)
+{
+	p3 = fract(p3 * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yxz+33.33);
+    return fract((p3.xxy + p3.yxx)*p3.zyx);
+
+}
+
+//----------------------------------------------------------------------------------------
+// 4 out, 1 in
+// ...
+vec4 hash41(float p)
+{
+	vec4 p4 = fract(vec4(p) * vec4(.1031, .1030, .0973, .1099));
+    p4 += dot(p4, p4.wzxy+33.33);
+    return fract((p4.xxyz+p4.yzzw)*p4.zywx);
+    
+}
+
+//----------------------------------------------------------------------------------------
+// 4 out, 2 in
+// ...
+vec4 hash42(vec2 p)
+{
+	vec4 p4 = fract(vec4(p.xyxy) * vec4(.1031, .1030, .0973, .1099));
+    p4 += dot(p4, p4.wzxy+33.33);
+    return fract((p4.xxyz+p4.yzzw)*p4.zywx);
+
+}
+
+//----------------------------------------------------------------------------------------
+// 4 out, 3 in
+// ...
+vec4 hash43(vec3 p)
+{
+	vec4 p4 = fract(vec4(p.xyzx)  * vec4(.1031, .1030, .0973, .1099));
+    p4 += dot(p4, p4.wzxy+33.33);
+    return fract((p4.xxyz+p4.yzzw)*p4.zywx);
+}
+
+//----------------------------------------------------------------------------------------
+// 4 out, 4 in
+// ...
+vec4 hash44(vec4 p4)
+{
+	p4 = fract(p4  * vec4(.1031, .1030, .0973, .1099));
+    p4 += dot(p4, p4.wzxy+33.33);
+    return fract((p4.xxyz+p4.yzzw)*p4.zywx);
+}
+
+
+// IQ Noise
+// ...
+float noise31_IQ(vec3 rp)
+{
+    vec3 ip = floor(rp);
+    rp -= ip;
+    vec3 s = vec3(7, 157, 113);
+    vec4 h = vec4(0.0, s.yz, s.y + s.z) + dot(ip, s);
+    rp = rp * rp * (3.0 - 2.0 * rp);
+    h = mix(fract(sin(h) * 43758.5), fract(sin(h + s.x) * 43758.5), rp.x);
+    h.xy = mix(h.xz, h.yw, rp.y);
+    return mix(h.x, h.y, rp.z);
+}
+
+// FBM v1
+// Base.
+// ...
+float fbm_v1(vec3 x)
+{
+    float r = 0.0;
+    float w = 1.0;
+    float s = 1.0;
+    for(int i = 0; i < 5; i++)
+    {
+        w *= 0.5;
+        s *= 2.0;
+        r += w * noise31_IQ(s * x);
+    }
+    return r;
+}
+
+// FBM v2
+// ...
+float fbm_v2(vec3 x, float H, int numOctaves)
+{
+    float G = exp2(-H);
+    float f = 1.0;
+    float a = 1.0;
+    float t = 0.0;
+    for(int i = 0; i < numOctaves; ++i)
+    {
+        t += a * noise31_IQ(f * x);
+        f *= 2.0;
+        a *= G;
+    }
+    return t;
+}
+
+// FBM v3
+// Use noisy texture.
+// ...
+float displacementSimple_FBM_v3(sampler2D noiseTexture, vec2 p)
+{
+    float f;
+    f = 0.5000 * texture(noiseTexture, p).x; p = p * 2.0;
+    f += 0.2500 * texture(noiseTexture, p).x; p = p * 2.0;
+    f += 0.1250 * texture(noiseTexture, p).x; p = p * 2.0;
+    f += 0.0625 * texture(noiseTexture, p).x; p = p * 2.0;
+    return f;
+}
+
+// FBM v4
+// Use noisy texture.
+// ...
+float displacementSimple_FBM_v4(sampler2D noiseTexture, vec3 p)
+{
+    return (displacementSimple_FBM_v3(noiseTexture, p.xy) +
+            displacementSimple_FBM_v3(noiseTexture, p.xz) +
+            displacementSimple_FBM_v3(noiseTexture, p.yz)) / 3.0;
+}
+
+
+
+
+// Some useful math functions.
+// ...
+// ---------------------------------------------------
+// ---------------------------------------------------
+
+float Gain_11(float x, float k)
+{
+    float a = 0.5 * pow(2.0 * ((x < 0.5) ? x : 1.0 - x), k);
+    return (x < 0.5) ? a : 1.0 - a;
+}
+
+vec3 Gain_33(vec3 x, float k)
+{
+    return vec3(Gain_11(x.x, k), Gain_11(x.y, k), Gain_11(x.z, k));
+}
+
+// L2 Paradigm
+// ...
+float L2(float x, float y){
+    return sqrt(x * x + y * y);
+}
+
+// Max function with 4 items.
+// ...
+float max4(float l1,float l2, float l3, float l4){
+    return max(max(l1, l2), max(l3, l4));
+}
+
+// Judge function.
+// if in > 0.0, return 0.0.
+// else return 1.0.
+// ...
+float l(float y){
+    if(y < 0.0)return 1.0;
+    return 0.0;
+}
+
+// Right atan.
+// ...
+float atan2(float x, float y){
+    if(x > 0.)return atan(y/x);
+    if(x < 0. && y >= 0.) return atan(y/x) + PI;
+    if(x < 0. && y < 0.) return atan(y/x) - PI;
+    if(x == 0. && y > 0.) return HALF_PI;
+    if(x == 0. && y < 0.) return -1. * HALF_PI;
+    return 0.0;
+}
+
+// Judge uv in range [0, 1].
+// ...
+float inRange(vec2 uv){
+    if(uv.x < 0.0 || uv.x > 1.0)return -1.0;
+    if(uv.y < 0.0 || uv.y > 1.0)return -1.0;
+    return 1.0;
+}
+
+// Judge uv in range [n, m].
+// ...
+float inRange(vec2 uv, float n, float m){
+    if(uv.x < n || uv.x > m)return -1.0;
+    if(uv.y < n || uv.y > m)return -1.0;
+    return 1.0;
+}
+
+// ...
+vec2 csqr(vec2 a)
+{
+    return vec2(a.x * a.x - a.y * a.y, 2.* a.x * a.y);
+}
+
+// Compute the angle between two ray.
+// ...
+float GetAngle_2Ray(vec3 ray1, vec3 ray2)
+{
+    float n = dot(ray1, ray2);
+    float a = length(ray1);
+    float b = length(ray2);
+    return n / ( a * b );
+}
+
+
+
+
+struct DirLight
+{
+    vec3 color;
+	vec3 direction;
+    float intensity;
+};
+
+struct PointLight
+{
+    vec3 color;
+    vec3 position;
+    float intensity;
+    float lightInvRadius;
+};
+
+struct SpotLight
+{
+    vec3 color;
+    vec3 position;
+    vec3 direction;
+    float innerAngle;
+    float outerAngle;
+    float intensity;
+    float lightInvRaduis;
+};
+
+#define DIRECTION_LIGHT_MAX_NUM 1
+#define POINT_LIGHT_NUM 10
+#define SPOT_LIGHT_NUM 5
+
+
+uniform DirLight dirLights[DIRECTION_LIGHT_MAX_NUM];
+uniform PointLight pointLights[POINT_LIGHT_NUM];
+uniform SpotLight spotLights[SPOT_LIGHT_NUM];
+
+uniform int dirLightsNum;
+uniform int pointLightsNum;
+uniform int spotLightsNum;
+
+
+//Æ½·½Ë¥¼õº¯Êý
+float GetSquareFalloffAttenuation(vec3 posToLight, float lightInvRadius)
+{
+    float distanceSquare = dot(posToLight, posToLight);
+    float factor = distanceSquare * lightInvRadius * lightInvRadius;
+    float smoothFactor = max(1.0 - factor * factor, 0.0);
+    return (smoothFactor * smoothFactor) / max(distanceSquare, 1e-4);
+}
+
+//¾Û¹âµÆË¥¼õ
+float GetSpotAngleAttenuation(vec3 l, vec3 lightDir, float innerAngle, float outerAngle)
+{
+    float cosOuter = cos(outerAngle);
+    float spotScale = 1.0 / max(cos(innerAngle) - cosOuter, 1e-4);
+    float spotOffset = -cosOuter * spotScale;
+    
+    float cd = dot(normalize(-lightDir), l);
+    float attenuation = clamp(cd * spotScale + spotOffset, 0.0, 1.0);
+    return attenuation * attenuation;
+}
+
+float GetDirLightIllumiance(int i)
+{
+    if (i > DIRECTION_LIGHT_MAX_NUM)
+        return 0.0;
+    return dirLights[i].intensity;
+}
+
+vec3 GetDirLightColor(int i)
+{
+    if (i > DIRECTION_LIGHT_MAX_NUM)
+        return vec3(0.0);
+    return dirLights[i].color;
+}
+
+float GetPointLightIllumiance(int i, vec3 w_pos)
+{
+    if (i > POINT_LIGHT_NUM)
+        return 0.0;
+    
+    vec3 posToLight = pointLights[i].position - w_pos;
+    float attenuation = GetSquareFalloffAttenuation(posToLight, pointLights[i].lightInvRadius);
+    return pointLights[i].intensity  * PI_INV * attenuation;
+}
+
+vec3 GetPointLightColor(int i)
+{
+    if (i > POINT_LIGHT_NUM)
+        return vec3(0.0);
+    
+    return pointLights[i].color;
+}
+
+float GetSpotLightIllumiance(int i, vec3 w_pos)
+{
+    if (i > SPOT_LIGHT_NUM)
+        return 0.0f;
+
+    vec3 posToLight = spotLights[i].position - w_pos;
+    vec3 l = normalize(posToLight);
+    
+    float attenuation;
+    attenuation = GetSquareFalloffAttenuation(posToLight, spotLights[i].lightInvRaduis);
+    attenuation *= GetSpotAngleAttenuation(l, spotLights[i].direction, spotLights[i].innerAngle, spotLights[i].outerAngle);
+    
+    return spotLights[i].intensity * attenuation;
+}
+
+vec3 GetSpotLightColor(int i)
+{
+    return spotLights[i].color;
+}
+
+
+#define MEDIUMP_FLT_MAX 65504.0
+#define saturateMediump(x) min(x, MEDIUMP_FLT_MAX)
+
+/*********************************************************************************
+Flament BRDF
+
+f_r = D * G * F / (4 * (n * v) * (n * l))
+V = G / (4 * (n * v) * (n * l))
+f_r = D * V * F
+
+
+**********************************************************************************/
+
+//Walter GGX??????????Trowbridge_Reitz
+float D_GGX(float NoH, float roughness)
+{
+    float a = NoH * roughness;
+    float k = roughness / (1.0 - NoH * NoH + a * a);
+    return k * k * PI_INV;
+}
+
+//??????Walter GGX???
+float D_GGX_Optimized(float rougness, float NoH, vec3 n, vec3 h)
+{
+    vec3 NxH = cross(n, h);
+    float a = NoH * rougness;
+    float k = rougness / (dot(NxH, NxH) + a * a);
+    float d = k * k * PI_INV;
+    return saturateMediump(d);
+}
+
+//????????????
+float V_SmithGGXCorrelated(float NoV, float NoL, float roughness)
+{
+    float a2 = roughness * roughness;
+    float GGXV = NoL * sqrt(NoV * NoV * (1.0 - a2) + a2);
+    float GGXL = NoV * sqrt(NoL * NoL * (1.0 - a2) + a2);
+    return 0.5 / (GGXL + GGXV);
+}
+
+//????????????????
+float V_SmithGGXCorrelatedFast(float NoV, float NoL, float roughness)
+{
+    float a = roughness;
+    float GGXV = NoL * (NoV * (1.0 - a) + a);
+    float GGXL = NoV * (NoL * (1.0 - a) + a);
+    return 0.5 / (GGXL + GGXV);
+}
+
+//Hammon???????????
+float V_SmithGGXCorrelatedFast_Hammon(float NoV, float NoL, float roughness)
+{
+    float a = roughness;
+    float n1 = 2.0 * NoV * NoL;
+    float n2 = NoL + NoV;
+    return 0.5 / mix(n1, n2, a);
+}
+
+//Cook-Torrance????BRDF??Fresnel??
+vec3 F_Schlick(float VoH, vec3 f0, float f90)
+{
+    return f0 + (vec3(f90) - f0) * pow(1.0 - VoH, 5.0);
+}
+
+float F_Schlick(float VoH, float f0, float f90)
+{
+    return f0 + (f90 - f0) * pow(1.0 - VoH, 5.0);
+}
+
+//??f90?????1??Fresnel??
+vec3 F_Schlick_F90(float VoH, vec3 f0)
+{
+    float f = pow(1.0 - VoH, 5.0);
+    return f + f0 * (1.0 - f);
+}
+
+//Lambertian diffuse BRDF : 1.0 / PI
+float Fd_Lambert()
+{
+    return PI_INV;
+}
+
+//Disney diffuse BRDF
+float Fd_Burley(float NoV, float NoL, float LoH, float roughness)
+{
+    float f90 = 0.5 + 2.0 * roughness * LoH * LoH;
+    float lightScatter = F_Schlick(NoL, 1.0, f90);
+    float viewScatter = F_Schlick(NoV, 1.0, f90);
+    return lightScatter * viewScatter * PI_INV;
+}
+
+vec3 Standard_BRDF_Torrance_DVF(vec3 diffuse_color, vec3 v, vec3 l, vec3 n, float r, vec3 f0, float f90)
+{
+    vec3 h = normalize(v + l);
+    
+    float NoV = abs(dot(n, v)) + 1e-5;
+    float NoL = clamp(dot(n, l), 0.0, 1.0);
+    float NoH = clamp(dot(n, l), 0.0, 1.0);
+    float LoH = clamp(dot(l, h), 0.0, 1.0);
+    
+    float D = D_GGX(NoH, r);
+    vec3 F = F_Schlick_F90(LoH, f0);
+    float V = V_SmithGGXCorrelated(NoV, NoL, r);
+    
+    //???œX??BRDF
+    vec3 Fr = (D * V) * F;
+    
+    //??????BRDF
+    vec3 Fd = diffuse_color * Fd_Burley(NoV, NoL, LoH, r);
+    
+    return Fr + Fd;
+}
+
+layout(location = 0) out vec4 FragColor;
+layout(location = 1) out vec4 LastColor;
+layout(location = 2) out vec4 ScatterLight;
+layout(location = 3) out vec4 FinalPos;
 
 in vec2 TexCoords;
 
-mat2 rot(in float a){float c = cos(a), s = sin(a);return mat2(c,s,-s,c);}
-const mat3 m3 = mat3(0.33338, 0.56034, -0.71817, -0.87887, 0.32651, -0.15323, 0.15162, 0.69596, 0.61339)*1.93;
-float mag2(vec2 p){return dot(p,p);}
-float linstep(in float mn, in float mx, in float x){ return clamp((x - mn)/(mx - mn), 0., 1.); }
-float prm1 = 0.;
-vec2 bsMo = vec2(0);
+uniform mat4 view;
+uniform mat4 view_inv;
+uniform mat4 view_pre;
+uniform mat4 projection;
+uniform mat4 projection_inv;
+uniform mat4 projection_pre;
 
-vec2 disp(float t){ 
-    return vec2(0.0);
-    return vec2(sin(t*0.22)*1., cos(t*0.175)*1.)*2.; }
+uniform sampler2D preTexture;
+uniform sampler2D scatterTex;
+uniform sampler2D posTex;
+uniform int IsFirstFrame;
 
-vec2 map(vec3 p)
+// Box
+#define BOX_SIZE vec3(4.0, 4.0, 4.0)
+// White Wall
+#define OBJ_WHITEWALL 1.0
+    const vec3 WhiteWallColor = vec3(0.7295, 0.7355, 0.729);
+// Right Wall
+#define OBJ_RIGHTWALL 2.0
+    const vec3 RightWallColor = vec3(0.117, 0.4125, 0.115);
+// Left Wall
+#define OBJ_LEFTWALL 3.0
+    const vec3 LeftWallColor = vec3(0.611, 0.0555, 0.062);
+// YuShi Sphere
+#define OBJ_YUSHI_SPHERE 4.0
+    const vec3 YuShiPos = vec3(0.0, 0.0, 0.5);
+    const float YushiRadius = 1.0; 
+
+// Wall Material
+#define WALL_METALLIC 0.0
+#define WALL_REFLECTANCE 0.1
+#define WALL_ROUGHNESS 0.9
+
+
+float sdPlane(vec3 p, vec3 n /* normalized */, float h)
 {
-    vec3 p2 = p;
-    p2.xy -= disp(p.z).xy;
-    p.xy *= rot(sin(p.z+iTime)*(0.1 + prm1*0.05) + iTime*0.09);
-    float cl = mag2(p2.xy);
-    float d = 0.;
-    p *= .61;
-    float z = 1.;
-    float trk = 1.;
-    float dspAmp = 0.1 + prm1*0.2;
-    for(int i = 0; i < 5; i++)
+    return dot(p, n) + h;
+}
+
+float sdSphere(vec3 p, vec3 center, float s)
+{
+    return length(p - center) - s;
+}
+
+vec2 iBox(in vec3 ro, in vec3 rd, in vec3 rad)
+{
+    vec3 m = 1.0 / rd;
+    vec3 n = m * ro;
+    vec3 k = abs(m) * rad;
+    vec3 t1 = -n - k;
+    vec3 t2 = -n + k;
+    return vec2(max(max(t1.x, t1.y), t1.z),
+                min(min(t2.x, t2.y), t2.z));
+}
+
+vec2 iSphere( in vec3 ro, in vec3 rd, in vec4 sph )//from iq
+{
+	vec3 oc = ro - sph.xyz;
+	float b = dot( oc, rd );
+	float c = dot( oc, oc ) - sph.w * sph.w;
+	float h = b * b - c;
+	if( h < 0.0 ) return vec2(-1.0);
+	h = sqrt(h);
+	return vec2(-b - h, -b + h );
+}
+
+vec2 opU(vec2 d1, vec2 d2)
+{
+    return (d1.x < d2.x) ? d1 : d2;
+}
+
+vec2 Map(in vec3 pos)
+{
+    vec2 res = vec2(1e10, 0.0);
+
+    // Ground
+    res = opU(res, vec2(sdPlane(pos, vec3(0.0, 1.0, 0.0), 3.0), OBJ_WHITEWALL));
+    // Top
+    res = opU(res, vec2(sdPlane(pos, vec3(0.0, -1.0, 0.0), 3.0), OBJ_WHITEWALL));
+    // Back
+    res = opU(res, vec2(sdPlane(pos, vec3(0.0, 0.0,- 1.0), 1.0), OBJ_WHITEWALL));
+    // left
+    res = opU(res, vec2(sdPlane(pos, vec3(1.0, 0.0, 0.0), 3.0), OBJ_LEFTWALL));
+    // Right
+    res = opU(res, vec2(sdPlane(pos, vec3(-1.0, 0.0, 0.0), 3.0), OBJ_RIGHTWALL));
+    // YuShi
+    res = opU(res, vec2(sdSphere(pos, YuShiPos, YushiRadius), OBJ_YUSHI_SPHERE));
+
+    return res;
+}
+
+vec3 calcNormal( in vec3 pos )
+{
+    vec2 e = vec2(1.0,-1.0) * 0.5773 * 0.0005;
+    return normalize( e.xyy * Map( pos + e.xyy ).x + 
+					  e.yyx * Map( pos + e.yyx ).x + 
+					  e.yxy * Map( pos + e.yxy ).x + 
+					  e.xxx * Map( pos + e.xxx ).x );
+}
+
+vec2 RayCast(in vec3 ro, in vec3 rd)
+{
+    vec2 res = vec2(-1.0, -1.0);
+    float tmin = 0.3;
+    float tmax = 20.0;
+
+    vec2 tb = iBox(ro, rd, BOX_SIZE);
+    if(tb.x < tb.y && tb.y > 0.0 && tb.x < tmax)
     {
-		p += sin(p.zxy*0.75*trk + iTime*trk*.8)*dspAmp;
-        d -= abs(dot(cos(p), sin(p.yzx))*z);
-        z *= 0.57;
-        trk *= 1.4;
-        p = p*m3;
-    }
-    d = abs(d + prm1*3.)+ prm1*.3 - 2.5 + bsMo.y;
-    return vec2(d + cl*.2 + 0.25, cl);
-}
+        tmin = max(tb.x, tmin);
+        tmax = min(tb.y, tmax);
 
-float HSV_PDF(float e)
-{
-    const float M = 0.9;
-    if(e <= 5.79)return 1.0 * M;
-    return 7.49 / pow(0.3 * e + 1.0, 2) * M;
-}
-
-
-vec4 render( in vec3 ro, in vec3 rd, float time, float e, vec2 uv)
-{
-    if(abs(p.x) - 0.05 > 0.0)return vec4(0.0, 0.0, 0.0, 1.0);
-	vec4 rez = vec4(0);
-    const float ldst = 8.;
-	vec3 lpos = vec3(disp(time + ldst)*0.5, time + ldst);
-	float t = 1.5;
-	float fogT = 0.;
-
-    int times = int(90.0 * HSV_PDF(e) + 30.0);
-    if(p.x > 0.0)times = 120;
-
-	for(int i=0; i<times; i++)
-	{
-		if(rez.a > 0.99)break;
-
-		vec3 pos = ro + t*rd;
-        vec2 mpv = map(pos);
-		float den = clamp(mpv.x-0.3,0.,1.)*1.12;
-		float dn = clamp((mpv.x + 2.),0.,3.);
-        
-		vec4 col = vec4(0);
-        if (mpv.x > 0.6)
+        float t = tmin;
+        for(int i = 0; i < 70 && t < tmax; ++i)
         {
-        
-            col = vec4(sin(vec3(5.,0.4,0.2) + mpv.y*0.1 +sin(pos.z*0.4)*0.5 + 1.8)*0.5 + 0.5,0.08);
-            col *= den*den*den;
-			col.rgb *= linstep(4.,-2.5, mpv.x)*2.3;
-            float dif =  clamp((den - map(pos+.8).x)/9., 0.001, 1. );
-            dif += clamp((den - map(pos+.35).x)/2.5, 0.001, 1. );
-            col.xyz *= den*(vec3(0.005,.045,.075) + 1.5*vec3(0.033,0.07,0.03)*dif);
+            vec2 h = Map(ro + rd * t);
+            if(abs(h.x) < (0.0001 * t))
+            {
+                res = vec2(t, h.y);
+                break;
+            }
+            t += h.x;
         }
-		
-		float fogC = exp(t*0.2 - 2.2);
-		col.rgba += vec4(0.06,0.11,0.11, 0.1)*clamp(fogC-fogT, 0., 1.);
-		fogT = fogC;
-		rez = rez + col*(1. - rez.a);
-		t += clamp(0.5 - dn*dn*.05, 0.09, 0.3);
+        return res;
+    }
+    return res;
+}
+
+float GetYushiColor(in vec3 p) {
+	
+	float res = 0.;
+	
+    vec3 c = p;
+	for (int i = 0; i < 10; ++i) 
+    {
+        p =.7 * abs(p) / dot(p,p) - .7;
+        p.yz= csqr(p.yz);
+        p = p.zxy;
+        res += exp(-19. * abs(dot(p,c)));
+        
 	}
-	return clamp(rez, 0.0, 1.0);
+	return res / 2.;
 }
 
-float getsat(vec3 c)
+vec3 GetColor(in float ID, in vec3 ro, in vec3 rd)
 {
-    float mi = min(min(c.x, c.y), c.z);
-    float ma = max(max(c.x, c.y), c.z);
-    return (ma - mi)/(ma+ 1e-7);
+    if(ID < 0.5) return vec3(0.0);
+    if(ID < 1.5) return WhiteWallColor;
+    if(ID < 2.5) return RightWallColor;
+    if(ID < 3.5) return LeftWallColor;
+    if(ID < 4.5)
+    {
+        vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius));
+        float t = tmm.x;
+        float dt = .02;
+        //float dt = .2 - .195*cos(iTime*.05);//animated
+        float c = 0.0;
+        vec3 col = vec3(0.0);
+        for( int i = 0; i < 40; ++i )
+        {
+            t += dt * exp(-2. * c);
+            if(t > tmm.y)
+            {
+                t -= dt * exp(-2. * c);
+                break;
+            }
+                    
+            c = GetYushiColor(ro + t * rd);               
+            
+           // col = .99 * col + .08 * vec3(c * c, c * c * c, c);//green	
+           col = .99*col+ .08*vec3(c*c*c, c*c, c);//blue
+        }
+        return col * 0.5;
+    }
+    return vec3(0.0);
 }
-
-//from my "Will it blend" shader (https://www.shadertoy.com/view/lsdGzN)
-vec3 iLerp(in vec3 a, in vec3 b, in float x)
-{
-    vec3 ic = mix(a, b, x) + vec3(1e-6,0.,0.);
-    float sd = abs(getsat(ic) - mix(getsat(a), getsat(b), x));
-    vec3 dir = normalize(vec3(2.*ic.x - ic.y - ic.z, 2.*ic.y - ic.x - ic.z, 2.*ic.z - ic.y - ic.x));
-    float lgt = dot(vec3(1.0), ic);
-    float ff = dot(dir, normalize(ic));
-    ic += 1.5*dir*sd*ff*lgt;
-    return clamp(ic,0.,1.);
-}
-
 
 void main()
 {
-    vec2 q = TexCoords;
-    vec2 p = (TexCoords * Resolution - 0.5 * Resolution.xy) / Resolution.y;
-    bsMo = vec2(-0.5);
-    
-    float time = iTime*3.;
-    vec3 ro = vec3(0,0,time);
-    
-    ro += vec3(sin(iTime)*0.5,sin(iTime*1.)*0.,0);
-        
-    float dspAmp = .85;
-    ro.xy += disp(ro.z)*dspAmp;
-    float tgtDst = 3.5;
-    
-    vec3 target = normalize(ro - vec3(disp(time + tgtDst)*dspAmp, time + tgtDst));
-    ro.x -= bsMo.x*2.;
-    vec3 rightdir = normalize(cross(target, vec3(0,1,0)));
-    vec3 updir = normalize(cross(rightdir, target));
-    rightdir = normalize(cross(updir, target));
-	vec3 rd=normalize((p.x*rightdir + p.y*updir)*1. - target);
-    vec3 rd_center = normalize(-target);
+    vec3 orig = viewPosWS;
+    vec4 rd = view_inv * projection_inv * vec4(vec3(ReMapNDC_V2(TexCoords), 1.0), 1.0);
+    vec3 dir = normalize(rd.xyz);
 
-    rd.xy *= rot(-disp(time + 3.5).x*0.2 + bsMo.x);
-    prm1 = smoothstep(-0.4, 0.4,sin(iTime*0.3));
-	vec4 scn = render(ro, rd, time, degrees(acos(dot(rd, rd_center))), p);
-		
-    vec3 col = scn.rgb;
-    col = iLerp(col.bgr, col.rgb, clamp(1.-prm1,0.05,1.));
-    
-    col = pow(col, vec3(.55,0.65,0.6))*vec3(1.,.97,.9);
+    vec2 res = RayCast(orig, dir);
+    vec3 pos = orig + dir * res.x;
+    vec3 N = calcNormal(pos);
+    vec3 result = vec3(0.0);
 
-    col *= pow( 16.0*q.x*q.y*(1.0-q.x)*(1.0-q.y), 0.12)*0.7+0.3; //Vign
-    FragColor = vec4(col.rgb, 1.0);
-} 
+    vec3 baseColor = GetColor(res.y, orig, dir);
+
+    vec3 diffuse_color = BaseColorReMap(baseColor, WALL_METALLIC);
+	float r = RoughnessReMap(WALL_ROUGHNESS);
+	vec3 f0 = GetF0_All(baseColor, WALL_METALLIC, WALL_REFLECTANCE);
+
+
+    for(int i = 0; i < pointLightsNum; ++i)
+	{
+		//light_Intensity * light_color * BRDF * NoL 
+		vec3 L = normalize(pointLights[i].position - pos);
+		float NoL = clamp(dot(N, L), 0.0, 1.0);
+		result = result + GetPointLightColor(i) * GetPointLightIllumiance(i, pos)
+		* Standard_BRDF_Torrance_DVF(diffuse_color, dir, L, N, r, f0, 1.0) * NoL; 
+	}	
+
+    result += (vec3(0.04, 0.04, 0.04) * GetPointLightColor(i) * diffuse_color);
+
+
+    FragColor = vec4(result, 1.0);
+
+
+}

@@ -105,3 +105,36 @@ vec3 FoveatedRendering_Pass_2(sampler2D frame, vec2 uv)
     //return vec3(h);
     return col;
 }
+
+
+// Gaussian Blur.
+// X Pass.
+// ...
+vec3 GaussianBlur_X(sampler2D tex, in vec2 uv, float length)
+{
+    vec3 col;
+    col += 0.40 * texture(tex, uv).xyz;
+    col += 0.15 * texture(tex, uv + vec2(PIXEL_SIZE.x * length, 0.0)).xyz;
+    col += 0.15 * texture(tex, uv - vec2(PIXEL_SIZE.x * length, 0.0)).xyz;
+    col += 0.10 * texture(tex, uv + vec2(PIXEL_SIZE.x * length * 2.0, 0.0)).xyz;
+    col += 0.10 * texture(tex, uv - vec2(PIXEL_SIZE.x * length * 2.0, 0.0)).xyz;
+    col += 0.05 * texture(tex, uv + vec2(PIXEL_SIZE.x * length * 3.0, 0.0)).xyz;
+    col += 0.05 * texture(tex, uv - vec2(PIXEL_SIZE.x * length * 3.0, 0.0)).xyz;
+    return col;
+}
+
+// Gaussian Blur.
+// Y Pass.
+// ...
+vec3 GaussianBlur_Y(sampler2D tex, in vec2 uv, float length)
+{
+    vec3 col;
+    col += 0.40 * texture(tex, uv).xyz;
+    col += 0.15 * texture(tex, uv + vec2(0.0, PIXEL_SIZE.y * length)).xyz;
+    col += 0.15 * texture(tex, uv - vec2(0.0, PIXEL_SIZE.y * length)).xyz;
+    col += 0.10 * texture(tex, uv + vec2(0.0, PIXEL_SIZE.y * length * 2.0)).xyz;
+    col += 0.10 * texture(tex, uv - vec2(0.0, PIXEL_SIZE.y * length * 2.0)).xyz;
+    col += 0.05 * texture(tex, uv + vec2(0.0, PIXEL_SIZE.y * length * 3.0)).xyz;
+    col += 0.05 * texture(tex, uv - vec2(0.0, PIXEL_SIZE.y * length * 3.0)).xyz;
+    return col;
+}

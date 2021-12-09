@@ -57,8 +57,17 @@ void Camera::LoadInfoToShader(std::shared_ptr<Material> mat)
 {
 	mat->Active();
 	mat->SetViewPos(*this);
+	mat->GetShader()->SetVec3(CONFIG::CAMERA_CONFIG::SHADER::CENTER_DIR, this->Front);
 	mat->GetShader()->SetFloat(CONFIG::CAMERA_CONFIG::SHADER::FAR_PLANE, farPlane);
 	mat->GetShader()->SetFloat(CONFIG::CAMERA_CONFIG::SHADER::NEAR_PLANE, nearPlane);
+	//mat->GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX_PRE, this->Pre_ProjMat);
+	//mat->GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX_PRE, this->Pre_ViewMat);
+}
+
+void Camera::UpdatePreMat()
+{
+	this->Pre_ViewMat = GetViewMatrix();
+	this->Pre_ProjMat = GetProjectionMatrix();
 }
 
 void Camera::updateCameraVectors()

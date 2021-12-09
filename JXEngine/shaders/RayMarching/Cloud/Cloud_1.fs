@@ -53,9 +53,10 @@ vec4 render( in vec3 ro, in vec3 rd, float time, float e, vec2 p)
 	vec3 lpos = vec3(disp(time + ldst)*0.5, time + ldst);
 	float t = 1.5;
 	float fogT = 0.;
+   // return vec4(rd, 1.0);
 
-    int times = int(110.0 * HSV_PDF(e) + 10.0);
-    if(p.x > 0.0)times = 120;
+    int times = int(20.0 * HSV_PDF(e) + 10.0);
+    if(p.x > 0.0)times = 80;
 
 	for(int i=0; i<times; i++)
 	{

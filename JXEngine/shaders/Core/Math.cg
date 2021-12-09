@@ -12,9 +12,14 @@ float RemapNDC(float a)
     return a * 2.0 - 1.0;
 }
 
- vec2 ReMapNDC_V2(vec2 a)
+vec2 ReMapNDC_V2(vec2 a)
+{
+    return vec2(RemapNDC(a.x), RemapNDC(a.y));
+}
+
+ vec3 ReMapNDC_V3(vec3 a)
  {
-     return vec2(RemapNDC(a.x), RemapNDC(a.y));
+     return vec3(RemapNDC(a.x), RemapNDC(a.y), RemapNDC(a.z));
  }
 
 // Get Linear depth.
@@ -314,6 +319,14 @@ float atan2(float x, float y){
 float inRange(vec2 uv){
     if(uv.x < 0.0 || uv.x > 1.0)return -1.0;
     if(uv.y < 0.0 || uv.y > 1.0)return -1.0;
+    return 1.0;
+}
+
+// Judge uv in range [n, m].
+// ...
+float inRange(vec2 uv, float n, float m){
+    if(uv.x < n || uv.x > m)return -1.0;
+    if(uv.y < n || uv.y > m)return -1.0;
     return 1.0;
 }
 

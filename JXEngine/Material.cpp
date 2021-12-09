@@ -26,6 +26,8 @@ Material::Material(std::shared_ptr<ShaderCompiler> s)
 
 	CanMove = true;
 
+	IsJitter = false;
+
 	engineSetting = std::make_shared<EngineSetting>();
 }
 
@@ -33,7 +35,7 @@ void Material::OnNotify(Event* event)
 {
 	auto type_ = dynamic_cast<ActorType*>(event);
 	CanMove = type_->GetMobility() == ActorType::Mobility::MOVE;
-	//std::cout << CanMove << std::endl;
+	std::cout << CanMove << std::endl;
 }
 
 
@@ -50,7 +52,11 @@ void Material::UpdateShader(std::shared_ptr<ShaderCompiler> s)
 void Material::BindTexturesToOpenGL()
 {
 	for (auto i = textures.begin(); i != textures.end();i++)
+	{
+		i->get()->SetUniformPos(i - textures.begin());
+		i->get()->SetForShader(*shader);
 		i->get()->Bind();
+	}
 }
 
 void Material::LinkTextureForShader()
@@ -62,7 +68,7 @@ void Material::LinkTextureForShader()
 	unsigned int heightNr = 1;
 	for (auto i = textures.begin(); i != textures.end();i++)
 	{
-		std::string number;
+		std::string number = "";
 		std::string name = i->get()->GetType();
 		if (name == "texture_albedo")
 			number = std::to_string(diffuseNr++);
@@ -73,10 +79,10 @@ void Material::LinkTextureForShader()
 		else if (name == "texture_height")
 			number = std::to_string(heightNr++); // transfer unsigned int to stream
 
-		i->get()->SetUniformPos(i - textures.begin());
+		//i->get()->SetUniformPos(i - textures.begin());
 		i->get()->SetType(name + number);
 		//std::cout << name + number << " ";
-		i->get()->SetForShader(*shader);
+		//i->get()->SetForShader(*shader);
 		
 		
 	}
@@ -120,14 +126,23 @@ void Material::SetVP(const Camera& camera)
 	Active();
 	auto project_mat = camera.GetProjectionMatrix();
 	auto view = camera.GetViewMatrix();
+	if (IsJitter)
+	{
+		project_mat = MatTool::Instance().JitterMat<16>(project_mat, Counter<0>::times, CONFIG::SCREEN_CONFIG::SCR_WIDTH * 2, CONFIG::SCREEN_CONFIG::SCR_HEIGHT * 2);
+	}
 
 	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX, project_mat);
 	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX_INV, glm::inverse(project_mat));
+	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::PROJECTION_MATRIX_PRE, camera.Pre_ProjMat);
 	//std::cout << CanMove << std::endl;
 	if (!CanMove)
+	{
+		//std::cout << "xxx" << std::endl;
 		view = MatTool::Instance().RemoveTranslation(view);
+	}
 	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX, view);
 	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX_INV, glm::inverse(view));
+	GetShader()->SetMat4(CONFIG::SHADER_DEFAULT_UNIFORM_NAME::VIEW_MATRIX_PRE, camera.Pre_ViewMat);
 }
 
 void Material::SetP(Transform transform)
@@ -146,6 +161,11 @@ void Material::SetViewPos(const Camera& camera)
 void Material::SetMobility(bool movbility)
 {
 	CanMove = movbility;
+}
+
+void Material::SetJitter(bool isJitter)
+{
+	IsJitter = isJitter;
 }
 
 std::vector<std::shared_ptr<Texture>> Material::LoadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName, std::string directory)
@@ -203,14 +223,15 @@ void Material::LoadTextures(aiMaterial* mat,std::string directory)
 
 std::shared_ptr<Material> Material::Copy() const
 {
-	std::shared_ptr<Material> m = std::make_shared<Material>(shader);
+
+	std::shared_ptr<Material> m = std::make_shared<Material>(std::make_shared<ShaderCompiler>(shader->Copy()));
 	m->baseColor = baseColor;
 	m->emissive = emissive;
 	m->metallic = metallic;
 	m->reflectance = reflectance;
 	m->roughness = roughness;
 	//m->engineSetting = engineSetting;
-	m->textures = textures;
+	//m->textures = textures;
 	return m;
 }
 

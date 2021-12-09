@@ -4,6 +4,24 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include "ShaderCompiler.h"
+#include "Config.h"
+
+Texture::Texture(const std::string& shader_name)
+{
+	this->uniformPos = 0;
+	shaderName = shader_name;
+	path = "";
+
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	// 为当前绑定的纹理对象设置环绕、过滤方式
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+}
 
 Texture::Texture(const std::string& path, const std::string& directory, bool gamma, GLenum warpMode)
 {

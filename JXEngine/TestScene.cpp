@@ -517,7 +517,7 @@ Scene OPENGL_SCENE::TestScene::GetScene_Cloud_11_01()
 	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
 	sky_sh->Compile();
 
-	ShaderPtr Cloud_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::CLOUD::Cloud_01_vs.c_str(), SHADER_PATH::RAY_MARCHING::CLOUD::Cloud_01_fs.c_str());
+	ShaderPtr Cloud_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::MEDIA::Cloud_01_vs.c_str(), SHADER_PATH::RAY_MARCHING::MEDIA::Cloud_01_fs.c_str());
 	Cloud_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
 	Cloud_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
 	Cloud_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
@@ -579,7 +579,7 @@ Scene OPENGL_SCENE::TestScene::GetScene_Cloud_11_01()
 
 	scene.AddActor(a1);
 	scene.AddActor(a2);
-	//scene.AddActor(a3);
+	scene.AddActor(a3);
 
 	LightPtr dir1 = std::make_shared<DirectionalLight>(-lightPos);
 	dir1->color = glm::vec3(1.0, 1.0, 0.8);
@@ -606,7 +606,7 @@ Scene OPENGL_SCENE::TestScene::GetScene_Cloud_11_01()
 	point4->SetValue(600.0);
 
 	//
-	//scene.AddLight(dir1);
+	scene.AddLight(dir1);
 	scene.AddLight(point1);
 	scene.AddLight(point2);
 	scene.AddLight(point3);
@@ -938,8 +938,8 @@ Pass OPENGL_SCENE::TestPass::GetPass_RayMarchingRendering(Pass& main_tex, Pass& 
 
 	Scene scene2 = TestScene::Instance().GetScene_FoveatedRender_12();
 
-	ShaderPtr postShader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::CLOUD::Cloud_02_vs.c_str(), 
-		SHADER_PATH::RAY_MARCHING::CLOUD::Cloud_02_fs.c_str());
+	ShaderPtr postShader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::MEDIA::Cloud_02_vs.c_str(), 
+		SHADER_PATH::RAY_MARCHING::MEDIA::Cloud_02_fs.c_str());
 	postShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
 	postShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
 	postShader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
@@ -1098,7 +1098,7 @@ void OPENGL_SCENE::TestPass::DrawFoveated_Comp_09(Pass& p0, Pass& p1, Pass& p2, 
 
 	//glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
 	// clear all relevant buffers
-	for (auto i = p3.scene->_Lights_().begin(); i != p3.scene->_Lights_().end(); ++i)
+	for (auto i = p3.scene->_Lights_().begin() + 1; i != p3.scene->_Lights_().end(); ++i)
 	{
 		auto light = std::dynamic_pointer_cast<PointLight>(*i);
 		auto pos = light->GetPos();
@@ -1146,5 +1146,80 @@ OPENGL_SCENE::PostPassFactory::PassPtr OPENGL_SCENE::PostPassFactory::CreateOne(
 
 OPENGL_SCENE::PostPassFactory::PassPtr OPENGL_SCENE::PostPassFactory::CreateOne(OPENGL_SCENE::PostPassFactory::PassPtr pre_frame, OPENGL_SCENE::PostPassFactory::MaterialPtr mat)
 {
-	return std::make_shared<Pass>(Pass());
+	/* 让前一帧的输出绑定到这个frameBuffer */
+	if (!pre_frame->GetOutput())
+	{
+		/* 让前一帧的输出绑定到这个frameBuffer */
+		auto frame = std::make_shared<FrameBuffer>(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+		frame->AddTexture(GL_RGB, "screenTexture", false);
+		frame->NotifyGL();
+		frame->AddRenderObject(true);
+		pre_frame->UpdateOutput(frame);
+	}
+
+	Scene scene = TestScene::Instance().GetScene_FoveatedRender_12();
+	Pass p;
+	p.UpdateGlobalMat(mat);
+	p.UpdateInput(std::make_shared<Scene>(scene));
+	p.GetMat()->AddTexture(pre_frame->GetOutput()->textureBuffers[0]);
+	p.GetMat()->LinkTextureForShader();
+
+	/*for(int i=0;i< p.GetMat()->textures.size();i++)
+		std::cout << p.GetMat()->textures[i]->GetType() << std::endl;*/
+
+	return std::make_shared<Pass>(p);
+}
+
+OPENGL_SCENE::PostPassFactory::PassPtr OPENGL_SCENE::PostPassFactory::CreateBackGround(OPENGL_SCENE::PostPassFactory::MaterialPtr mat)
+{
+	mat->Active();
+	mat->SetMobility(false);
+	mat->engineSetting->AddInitCmds(EngineCommands::Depth_Func_LEQUAL);
+	mat->engineSetting->AddEndCmds(EngineCommands::Depth_Func_LESS);
+
+	auto scene = CreateBackGround_Scene();
+	Pass p;
+	p.UpdateGlobalMat(mat);
+	p.UpdateInput(scene);
+	return std::make_shared<Pass>(p);
+}
+
+OPENGL_SCENE::PostPassFactory::PassPtr OPENGL_SCENE::PostPassFactory::CreateBackGround(OPENGL_SCENE::PostPassFactory::PassPtr pre_frame, OPENGL_SCENE::PostPassFactory::MaterialPtr mat)
+{
+	mat->Active();
+	mat->SetMobility(false);
+	mat->engineSetting->AddInitCmds(EngineCommands::Depth_Func_LEQUAL);
+	mat->engineSetting->AddEndCmds(EngineCommands::Depth_Func_LESS);
+
+	/* 让前一帧的输出绑定到这个frameBuffer */
+	if (!pre_frame->GetOutput())
+	{
+		/* 让前一帧的输出绑定到这个frameBuffer */
+		auto frame = std::make_shared<FrameBuffer>(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+		frame->AddTexture(GL_RGB, "screenTexture", false);
+		frame->NotifyGL();
+		frame->AddRenderObject(true);
+		pre_frame->UpdateOutput(frame);
+	}
+
+	auto scene = CreateBackGround_Scene();
+	Pass p;
+	p.UpdateGlobalMat(mat);
+	p.UpdateInput(scene);
+	p.GetMat()->AddTexture(pre_frame->GetOutput()->textureBuffers[0]);
+	p.GetMat()->LinkTextureForShader();
+
+	return std::make_shared<Pass>(p);
+}
+
+OPENGL_SCENE::PostPassFactory::ScenePtr OPENGL_SCENE::PostPassFactory::CreateBackGround_Scene()
+{
+	Scene scene(INPUT::inputCamera);
+	ActorPtr a = std::make_shared<Atmosphere>();
+	a->_ActorType_().SetMobility(ActorType::Mobility::STATIC);
+	a->LoadInfoToShader();
+
+	scene.AddActor(a);
+
+	return std::make_shared<Scene>(scene);
 }

@@ -18,11 +18,12 @@ namespace CONFIG
 	namespace CAMERA_CONFIG
 	{
 		float NEAR_PLANE = 0.6f;
-		float FAR_PLANE = 30.0f;
+		float FAR_PLANE = 200.0f;
 		float ASPECT = (float)SCREEN_CONFIG::SCR_WIDTH / (float)SCREEN_CONFIG::SCR_HEIGHT;
 		
 		namespace SHADER {
 			std::string VIEW_POS_IN_WORLD = "viewPosWS";
+			std::string CENTER_DIR = "view_center_dir";
 			std::string FAR_PLANE = "far_plane";
 			std::string NEAR_PLANE = "near_plane";
 		}
@@ -49,8 +50,10 @@ namespace CONFIG
 		const std::string MODEL_MATRIX = "model";
 		const std::string PROJECTION_MATRIX = "projection";
 		const std::string PROJECTION_MATRIX_INV = "projection_inv";
+		const std::string PROJECTION_MATRIX_PRE = "projection_pre";
 		const std::string VIEW_MATRIX = "view";
 		const std::string VIEW_MATRIX_INV = "view_inv";
+		const std::string VIEW_MATRIX_PRE = "view_pre";
 
 		const std::string TIME = "iTime";
 
@@ -84,7 +87,7 @@ namespace CONFIG
 			const std::string COLOR = "color";
 			const std::string POSITION = "position";
 			const std::string INTENSITY = "intensity";
-			const std::string LIGHT_IN_RADIUS = "lightInRadius";
+			const std::string LIGHT_IN_RADIUS = "lightInvRadius";
 
 			std::vector<glm::vec3> POSITION_ARRAY = {
 				glm::vec3(0.7f,  0.2f,  2.0f),
@@ -117,7 +120,7 @@ namespace CONFIG
 			const std::string POSITION = "position";
 			const std::string DIRECTION = "direction";
 			const std::string INTENSITY = "intensity";
-			const std::string LIGHT_IN_RADIUS = "lightInRadius";
+			const std::string LIGHT_IN_RADIUS = "lightInvRadius";
 			const std::string INNER_ANGLE = "innerAngle";
 			const std::string OUTER_ANGLE = "outerAngle";
 		}
