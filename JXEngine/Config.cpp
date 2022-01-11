@@ -17,8 +17,8 @@ namespace CONFIG
 
 	namespace CAMERA_CONFIG
 	{
-		float NEAR_PLANE = 0.6f;
-		float FAR_PLANE = 200.0f;
+		float NEAR_PLANE = 0.1f;
+		float FAR_PLANE = 100.0f;
 		float ASPECT = (float)SCREEN_CONFIG::SCR_WIDTH / (float)SCREEN_CONFIG::SCR_HEIGHT;
 		
 		namespace SHADER {
@@ -26,6 +26,8 @@ namespace CONFIG
 			std::string CENTER_DIR = "view_center_dir";
 			std::string FAR_PLANE = "far_plane";
 			std::string NEAR_PLANE = "near_plane";
+			std::string POSITION_LAST_FRAME = "LastViewPosWS";
+			std::string CENTER_DIR_LAST_FRAME = "Last_view_center_dir";
 		}
 	}
 

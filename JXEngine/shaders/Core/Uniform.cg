@@ -4,7 +4,9 @@ uniform vec2 Resolution;
 uniform float iTime;
 
 uniform vec3 viewPosWS;
+uniform vec3 LastViewPosWS;
 uniform vec3 view_center_dir;
+uniform vec3 Last_view_center_dir;
 uniform float near_plane;
 uniform float far_plane;
 

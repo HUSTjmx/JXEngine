@@ -32,13 +32,22 @@ uniform int IsFirstFrame;
 // YuShi Sphere
 #define OBJ_YUSHI_SPHERE 4.0
     const vec3 YuShiPos = vec3(0.0, 0.0, 0.5);
-    const float YushiRadius = 1.0; 
+    const float YushiRadius = 2.0; 
 
 // Wall Material
 #define WALL_METALLIC 0.0
 #define WALL_REFLECTANCE 0.1
 #define WALL_ROUGHNESS 0.9
 
+
+vec3 StretchToFarPLane(in vec3 pos)
+{
+    vec3 v = normalize(pos - LastViewPosWS);
+    float cos_theta = dot(normalize(Last_view_center_dir), v);
+    float len = far_plane / cos_theta;
+    //return vec3(far_plane / len);
+    return LastViewPosWS + v * vec3(len);
+}
 
 float sdPlane(vec3 p, vec3 n /* normalized */, float h)
 {
@@ -142,7 +151,7 @@ float GetYushiColor(in vec3 p) {
 	for (int i = 0; i < 10; ++i) 
     {
         p =.7 * abs(p) / dot(p,p) - .7;
-        p.yz= csqr(p.yz);
+        p.yz = csqr(p.yz);
         p = p.zxy;
         res += exp(-19. * abs(dot(p,c)));
         
@@ -150,7 +159,7 @@ float GetYushiColor(in vec3 p) {
 	return res / 2.;
 }
 
-vec3 GetColor(in float ID, in vec3 ro, in vec3 rd)
+vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec4 pre_scat, in vec4 flags)
 {
     if(ID < 0.5) return vec3(0.0);
     if(ID < 1.5) return WhiteWallColor;
@@ -160,25 +169,49 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd)
     {
         vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius));
         float t = tmm.x;
-        float dt = .02;
-        //float dt = .2 - .195*cos(iTime*.05);//animated
+        float dt = .05;     //float dt = .2 - .195*cos(iTime*.05);//animated
         float c = 0.0;
         vec3 col = vec3(0.0);
-        for( int i = 0; i < 40; ++i )
+
+        float pre_t = length(pre_pos.xyz - ro);
+
+        float text_ = dot(normalize(pre_pos.xyz - ro), rd);
+
+        if(IsFirstFrame > 0)
+        {
+            col = pre_scat.xyz;
+            t = max(pre_t, t);
+            c = pre_scat.w;
+        }
+
+        for( int i = 0; i < 1; ++i )
         {
             t += dt * exp(-2. * c);
             if(t > tmm.y)
             {
-                t -= dt * exp(-2. * c);
                 break;
             }
                     
             c = GetYushiColor(ro + t * rd);               
             
-           // col = .99 * col + .08 * vec3(c * c, c * c * c, c);//green	
-           col = .99*col+ .08*vec3(c*c*c, c*c, c);//blue
+            // col = .99 * col + .08 * vec3(c * c, c * c * c, c);//green	
+            col = .99*col+ .08*vec3(c*c*c, c*c, c);//blue
         }
-        return col * 0.5;
+        
+        pre_pos = vec4(ro + t * rd, 1.0);
+        pre_scat = vec4(col, c);
+
+        //if(IsFirstFrame % 50 < 25)
+        //{
+        //    return normalize(pre_pos.xyz - ro);
+        //}
+        //else{
+        //    return rd;
+        //}
+        
+        //return vec3(text_);
+        //return pre_t;
+        return col;
     }
     return vec3(0.0);
 }
@@ -186,21 +219,50 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd)
 void main()
 {
     vec3 orig = viewPosWS;
-    vec4 rd = view_inv * projection_inv * vec4(vec3(ReMapNDC_V2(TexCoords), 1.0), 1.0);
-    vec3 dir = normalize(rd.xyz);
+    vec4 rd = view_inv * projection_inv * (vec4(ReMapNDC_V3(vec3(TexCoords, 1.0)), 1.0) * far_plane);
+    vec3 dir  = normalize(rd.xyz - orig);
+    float W = rd.w;
 
+    // reproject
+    vec4 pre_pos = projection_pre * view_pre * vec4(StretchToFarPLane(orig + dir), 1.0);
+    pre_pos = pre_pos / pre_pos.w;
+    vec2 pre_uv = pre_pos.xy * 0.5 + 0.5;
+
+    // Read history
+    vec4 pos_tex;
+    vec4 scat_tex;
+    vec4 flags = vec4(1e-5);
+
+    // Ray Marching
     vec2 res = RayCast(orig, dir);
     vec3 pos = orig + dir * res.x;
     vec3 N = calcNormal(pos);
-    vec3 result = vec3(0.0);
 
-    vec3 baseColor = GetColor(res.y, orig, dir);
+    vec3 M_pos = pos;
+    if(res.x < 0.0001) M_pos = orig + dir;
+    vec4 M_ndc = projection_pre * view_pre * vec4(StretchToFarPLane(M_pos), 1.0);
+    M_ndc = M_ndc / M_ndc.w;
+    vec2 M_uv = M_ndc.xy * 0.5 + 0.5;
 
+    if(IsFirstFrame == 0)
+    {
+        pos_tex = vec4(orig, 0.0);
+        scat_tex = vec4(0.0);
+    }
+    else
+    {
+        pos_tex = texture(posTex, M_uv);
+        scat_tex = texture(scatterTex, M_uv);
+    }
+
+    vec3 baseColor = GetColor(res.y, orig, dir, pos_tex, scat_tex, flags);
+
+    // Light Compute
     vec3 diffuse_color = BaseColorReMap(baseColor, WALL_METALLIC);
 	float r = RoughnessReMap(WALL_ROUGHNESS);
 	vec3 f0 = GetF0_All(baseColor, WALL_METALLIC, WALL_REFLECTANCE);
 
-
+    vec3 result = vec3(0.0);
     for(int i = 0; i < pointLightsNum; ++i)
 	{
 		//light_Intensity * light_color * BRDF * NoL 
@@ -210,10 +272,33 @@ void main()
 		* Standard_BRDF_Torrance_DVF(diffuse_color, dir, L, N, r, f0, 1.0) * NoL; 
 	}	
 
-    result += (vec3(0.04, 0.04, 0.04) * GetPointLightColor(0) * diffuse_color);
+    result += (vec3(0.1, 0.1, 0.1) * GetPointLightColor(0) * diffuse_color);
+    result = result/ (result + vec3(1.0));
+    result = GammaCorrection(result);
 
-
+    // Output
     FragColor = vec4(result, 1.0);
+    FinalPos = pos_tex;
+    ScatterLight = scat_tex;
+    
+    // Test
+    //if(IsFirstFrame % 100 < 50)
+     //   FragColor = vec4(M_uv, 1.0, 1.0);
+    //else FragColor = vec4(TexCoords, 1.0, 1.0);
+    
+    //FragColor = vec4(abs(M_uv - TexCoords) * 10.0, 0.0, 1.0);
+   // FinalPos = vec4(pos, 1.0);
+   // FragColor = texture(posTex, pre_uv);
 
+   // FragColor = vec4(IsFirstFrame / 1000.0);
 
+  // FragColor = vec4(baseColor, 1.0);
+
+  //   FragColor = vec4(dir, 1.0);
+  // FragColor = rd;
+  //FragColor = vec4(rd.www * 10.0, 1.0);
+
+  //FragColor = vec4(abs(Last_view_center_dir), 1.0);
+
+  // FragColor = vec4(StretchToFarPLane(orig + dir), 1.0);
 }

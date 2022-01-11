@@ -2,6 +2,7 @@
 #include "FrameBuffer.h"
 #include "Config.h"
 #include "Texture.h"
+#include "Tools.h"
 
 GLuint GetAttachmentByIndex(int index)
 {
@@ -183,7 +184,7 @@ unsigned int FrameBuffer::BindTextureToBuffer(GLenum format, bool isMSAA)
 	if (isMSAA)
 		glTexImage2DMultisample(type_, 4, format, width, height, GL_TRUE);
 	else
-		glTexImage2D(type_, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(type_, 0, format, width, height, 0, BufferTool::Instance().GetFormatByInternalFormat(format), GL_UNSIGNED_BYTE, NULL);
 
 	glTexParameteri(type_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(type_, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

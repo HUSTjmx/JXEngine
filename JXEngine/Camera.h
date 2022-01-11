@@ -46,6 +46,10 @@ public:
 	glm::vec3 Up;
 	glm::vec3 Right;
 	glm::vec3 WorldUp;
+	// last camera Attributes
+	glm::vec3 LastPosition;
+	glm::vec3 LastFront;
+
 	// euler Angles
 	float Yaw;
 	float Pitch;
@@ -77,6 +81,7 @@ public:
 	Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, 1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
 	{
 		Position = position;
+		LastPosition = Position;
 		WorldUp = up;
 		Yaw = yaw;
 		Pitch = pitch;
@@ -85,12 +90,14 @@ public:
 		nearPlane = CONFIG::CAMERA_CONFIG::NEAR_PLANE;
 		farPlane = CONFIG::CAMERA_CONFIG::FAR_PLANE;
 		updateCameraVectors();
+		LastFront = Front;
 	}
 
 	// constructor with scalar values
 	Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
 	{
 		Position = glm::vec3(posX, posY, posZ);
+		LastPosition = Position;
 		WorldUp = glm::vec3(upX, upY, upZ);
 		Yaw = yaw;
 		Pitch = pitch;
@@ -98,17 +105,20 @@ public:
 		nearPlane = CONFIG::CAMERA_CONFIG::NEAR_PLANE;
 		farPlane = CONFIG::CAMERA_CONFIG::FAR_PLANE;
 		updateCameraVectors();
+		LastFront = Front;
 	}
 
 	Camera& operator=(const Camera& c)
 	{
 		this->farPlane = c.farPlane;
 		this->Front = c.Front;
+		this->LastFront = c.LastFront;
 		this->MouseSensitivity = c.MouseSensitivity;
 		this->MovementSpeed = c.MovementSpeed;
 		this->nearPlane = c.nearPlane;
 		this->Pitch = c.Pitch;
 		this->Position = c.Position;
+		this->LastPosition = c.LastPosition;
 		this->projectionType = c.projectionType;
 		this->Right = c.Right;
 		this->Up = c.Up;
@@ -143,6 +153,10 @@ public:
 	// Update view, projection mat4.
 	// ...
 	void UpdatePreMat();
+
+	// Update the lastXX attributes.
+	// ...
+	void UpdatePreAttr();
 
 private:
 	// calculates the front vector from the Camera's (updated) Euler Angles

@@ -7,11 +7,13 @@
 // ...
 
 #pragma once
+#include <iostream>
 #include <string>
 #include <fstream>
 #include <algorithm>
 #include <vector>
 #include <map>
+#include <bitset>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glad/glad.h>
@@ -177,10 +179,162 @@ public:
 	// ...
 	template<typename T,size_t NUM = 1>
 	unsigned int GetBaseAlignment_std140();
+
+	static GLenum GetFormatByInternalFormat(GLenum internalFormat);
+
 	
 private:
 	BufferTool() {}
 };
+
+
+#pragma region InputTool Auxiliary Tools
+template<typename T>
+class IOTrait
+{
+public:
+	T one_;
+	T two_;
+	T three_;
+	T four_;
+
+	std::bitset<4> bits;
+
+	IOTrait(T const& a)
+	{
+		one_ = a;
+		bits.set(0, true);
+		bits.set(1, false);
+		bits.set(2, false);
+		bits.set(3, false);
+	}
+};
+
+template<>
+class IOTrait<glm::vec2>
+{
+public:
+	float one_;
+	float two_;
+	float three_;
+	float four_;
+
+	std::bitset<4> bits;
+
+	IOTrait(glm::vec2 const& a)
+	{
+		one_ = a.r;
+		two_ = a.g;
+
+		bits.set(0, true);
+		bits.set(1, true);
+		bits.set(2, false);
+		bits.set(3, false);
+	}
+};
+
+template<>
+class IOTrait<glm::vec3>
+{
+public:
+	float one_;
+	float two_;
+	float three_;
+	float four_;
+
+	std::bitset<4> bits;
+
+	IOTrait(glm::vec3 const& a)
+	{
+		one_ = a.r;
+		two_ = a.g;
+		three_ = a.b;
+
+		bits.set(0, true);
+		bits.set(1, true);
+		bits.set(2, true);
+		bits.set(3, false);
+	}
+};
+
+template<>
+class IOTrait<glm::vec4>
+{
+public:
+	float one_;
+	float two_;
+	float three_;
+	float four_;
+
+	std::bitset<4> bits;
+
+	IOTrait(glm::vec4 const& a)
+	{
+		one_ = a.r;
+		two_ = a.g;
+		three_ = a.b;
+		four_ = a.a;
+
+		bits.set(0, true);
+		bits.set(1, true);
+		bits.set(2, true);
+		bits.set(3, true);
+	}
+};
+
+#pragma endregion
+
+// Input/Output tools.
+// ...
+class InputTool : public Singleton<InputTool>
+{
+public:
+	friend class Singleton<InputTool>;
+
+	// This function is used to output the C++ default types, 
+	// and the vector types of the glm library, but not the matrix classes yet.
+	// ...
+	template<typename T>
+	std::ostream& VectorOutput(std::ostream& os, const T& data);
+
+private:
+	InputTool() {}
+
+};
+
+template<typename T>
+inline std::ostream& InputTool::VectorOutput(std::ostream& os, const T& data)
+{
+	auto trait = IOTrait<T>(data);
+
+	os << "The data is: ";
+
+	if (trait.bits.count() == 1)
+		os << trait.one_ << std::endl;
+	else
+	{
+		os << "vec" << trait.bits.count() << "(" << trait.one_;
+
+		if (trait.bits.test(1))
+			os << ", " << trait.two_;
+
+
+		if (trait.bits.test(2))
+			os << ", " << trait.three_;
+		else
+			os << ");";
+
+		if (trait.bits.test(3))
+			os << ", " << trait.four_ << ");";
+		else
+			os << ");";
+
+		os << std::endl;
+	}
+	return os;
+}
+
+#define JMX_INPUT_GLM(data_) InputTool::Instance().VectorOutput(std::cout,data_)
 
 template<typename T, size_t M>
 inline void BufferTool::CopyDataToArrayBuffer(unsigned int& buffer, T(*data)[M])
@@ -392,3 +546,4 @@ template<int N>
 unsigned int Counter<N>::times = 0;
 
 #define COUNTER(num) Counter<num>temp; 
+

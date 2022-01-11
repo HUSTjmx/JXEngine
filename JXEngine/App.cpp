@@ -142,11 +142,35 @@ void LoadOpenGLFuncPoint()
 
 void SET_LIGHT(Scene& scene)
 {
-	auto pointLight0 = std::make_shared<PointLight>(glm::vec3(0.0, 2.0, -2.5));
+	auto pointLight0 = std::make_shared<PointLight>(glm::vec3(0.0, 2.0, -1.5));
 	pointLight0->SetColor(glm::vec3(1.0, 0.9, 0.5));
 	pointLight0->SetRadius(10.0);
 	pointLight0->SetValue(200.0);
 	scene.AddLight(pointLight0);
+}
+
+void Test()
+{
+	auto project_mat = INPUT::inputCamera->GetProjectionMatrix();
+	auto view = INPUT::inputCamera->GetViewMatrix();
+	auto ndc_pos = glm::vec3(0.5, 0.5, 1.0);
+	ndc_pos = ndc_pos * glm::vec3(2.0) - glm::vec3(1.0);
+
+	auto w_pos = glm::inverse(view) * glm::inverse(project_mat) * (glm::vec4(ndc_pos, 1.0) * glm::vec4(CONFIG::CAMERA_CONFIG::FAR_PLANE));
+	JMX_INPUT_GLM(w_pos);
+	auto xx = project_mat * view * w_pos;
+	ndc_pos = glm::vec3(xx.r,xx.g,xx.b) / xx.w;
+	ndc_pos = (ndc_pos + glm::vec3(1.0)) / glm::vec3(2.0);
+	JMX_INPUT_GLM(ndc_pos);
+
+
+	// Test StretchToFarPLane
+	auto w_pos2 = glm::vec3(12.0, 0.0, 0.0);
+	auto v = glm::normalize(w_pos2 - INPUT::inputCamera->Position);
+	float cos_theta = glm::dot(v, INPUT::inputCamera->Front);
+	float len = CONFIG::CAMERA_CONFIG::FAR_PLANE / cos_theta;
+	glm::vec3 new_pos = INPUT::inputCamera->Position + v * len;
+	JMX_INPUT_GLM(new_pos);
 }
 
 void Loop(GLFWwindow* window)
@@ -179,8 +203,8 @@ void Loop(GLFWwindow* window)
 	auto frame = std::make_shared<FrameBuffer>(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
 	frame->AddTexture(GL_RGB, "screenTexture", false);
 	frame->AddTexture(GL_RGB, "preTexture", false);
-	frame->AddTexture(GL_RGBA, "scatterTex", false);
-	frame->AddTexture(GL_RGBA, "posTex", false);
+	frame->AddTexture(GL_RGBA32F, "scatterTex", false);
+	frame->AddTexture(GL_RGBA32F, "posTex", false);
 	frame->NotifyGL();
 	frame->AddRenderObject(true);
 
@@ -306,6 +330,8 @@ void Loop(GLFWwindow* window)
 
 	const int blurTimes = 0;
 
+	//Test();
+
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
@@ -372,6 +398,8 @@ void Loop(GLFWwindow* window)
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
 		INPUT::inputCamera->UpdatePreMat();
+		INPUT::inputCamera->UpdatePreAttr();
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 

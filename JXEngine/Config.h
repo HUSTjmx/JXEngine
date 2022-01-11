@@ -32,6 +32,9 @@ namespace CONFIG
 			extern std::string CENTER_DIR;
 			extern std::string FAR_PLANE;
 			extern std::string NEAR_PLANE;
+
+			extern std::string POSITION_LAST_FRAME;
+			extern std::string CENTER_DIR_LAST_FRAME;
 		}
 	}
 

@@ -216,3 +216,18 @@ float RandomTool::RadicalInverse_VdC(unsigned int bits)
 	bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
 	return float(bits) * 2.3283064365386963e-10; // / 0x100000000
 }
+
+GLenum BufferTool::GetFormatByInternalFormat(GLenum internalFormat)
+{
+	if (internalFormat == GL_RGB)
+		return GL_RGB;
+	if (internalFormat == GL_RGB16F)
+		return GL_RGB;
+	if (internalFormat == GL_RGBA16F)
+		return GL_RGBA;
+	if (internalFormat == GL_RGB32F)
+		return GL_RGB;
+	if (internalFormat == GL_RGBA32F)
+		return GL_RGBA;
+	
+}
