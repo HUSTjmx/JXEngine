@@ -367,7 +367,7 @@ void Loop(GLFWwindow* window)
 		glClear(GL_DEPTH_BUFFER_BIT);
 		foveated_blur_pass_X->Draw();
 		
-		for (int i = 0;i < blurTimes;++i)
+		for(int i = 0;i < blurTimes;++i)
 		{
 			if (i % 2 == 0)
 			{

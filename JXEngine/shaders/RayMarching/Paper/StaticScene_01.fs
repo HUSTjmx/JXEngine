@@ -39,6 +39,13 @@ uniform int IsFirstFrame;
 #define WALL_REFLECTANCE 0.1
 #define WALL_ROUGHNESS 0.9
 
+// History Rejection
+#define HISTORY_REJECTION_COS_MIN 0.99
+#define HISTORY_REJECTION_DIS_MIN 0.5
+
+// Phase Func Mode
+#define PHASE_MODE 2.0
+#define PHASE_G 0.5
 
 vec3 StretchToFarPLane(in vec3 pos)
 {
@@ -47,6 +54,39 @@ vec3 StretchToFarPLane(in vec3 pos)
     float len = far_plane / cos_theta;
     //return vec3(far_plane / len);
     return LastViewPosWS + v * vec3(len);
+}
+
+float PhaseFunc_UNIFORM()
+{
+    return 0.25 * PI_INV;
+}
+
+float PhaseFunc_RAYLEIGH(float mu)
+{
+    float A = 3.0 / 16.0 * PI_INV;
+    return A * (1.0 + mu * mu);
+}
+
+float PhaseFunc_MIE(float mu, float g)
+{
+    float A = 3.0 / 8.0 * PI_INV;
+    float g2 = g * g;
+    float mu2 = mu * mu;
+
+    float numerator = (1.0 - g2) * (1.0 + mu2);
+
+    float denominator = (2.0 + g2) * pow(1.0 + g2 - 2.0 * g * mu, 1.50);
+
+    return A * numerator / denominator;
+}
+
+float PhaseFunc(vec3 V, vec3 L, float g)
+{
+    float mu = dot(V, L);
+    if(PHASE_MODE < 0.5) return PhaseFunc_UNIFORM();
+    if(PHASE_MODE < 1.5) return PhaseFunc_RAYLEIGH(mu);
+    if(PHASE_MODE < 2.5) return PhaseFunc_MIE(mu, g);
+    return PhaseFunc_UNIFORM();
 }
 
 float sdPlane(vec3 p, vec3 n /* normalized */, float h)
@@ -159,6 +199,37 @@ float GetYushiColor(in vec3 p) {
 	return res / 2.;
 }
 
+void getParticipatingMedia(out float sigmaS, out float sigmaE, in vec3 pos)
+{
+    float sphereFog = clamp((YushiRadius - length(pos - YuShiPos))/YushiRadius, 0.0, 1.0);
+    
+    sigmaS = sphereFog;
+    const float sigmaA = 0.0;
+    sigmaE = max(0.000000001, sigmaA + sigmaS);
+}
+
+float volumetricShadow(in vec3 from, in vec3 to)
+{
+    return 1.0;
+}
+
+vec3 evaluateLightWithPhase(in vec3 pos)
+{
+    vec3 light_sum = vec3(0.0);
+    vec3 V = normalize(pos - viewPosWS);
+    for(int i = 0; i < pointLightsNum; ++i)
+        light_sum += GetPointLightIllumiance(i, pos) * PhaseFunc(V, normalize(pointLights[i].position - viewPosWS), PHASE_G) * volumetricShadow(pos, pointLights[i].position);
+    
+    for(int i = 0; i < spotLightsNum; ++i)
+        light_sum += GetSpotLightIllumiance(i, pos) * PhaseFunc(V, normalize(spotLights[i].position - viewPosWS), PHASE_G) * volumetricShadow(pos, spotLights[i].position);
+
+    for(int i = 0; i < dirLightsNum; ++i)
+        light_sum += GetDirLightIllumiance(i) * PhaseFunc(V, dirLights[i].direction, PHASE_G);
+    
+    return light_sum;
+}
+
+
 vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec4 pre_scat, in vec4 flags)
 {
     if(ID < 0.5) return vec3(0.0);
@@ -170,37 +241,48 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
         vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius));
         float t = tmm.x;
         float dt = .05;     //float dt = .2 - .195*cos(iTime*.05);//animated
-        float c = 0.0;
-        vec3 col = vec3(0.0);
+        float transmittance = 1.0;
+        vec3 scatteredLight = vec3(0.0);
+        float sigmaS = 0.0;
+        float sigmaE = 0.0;
 
         float pre_t = length(pre_pos.xyz - ro);
 
-        float text_ = dot(normalize(pre_pos.xyz - ro), rd);
-
         if(IsFirstFrame > 0)
         {
-            col = pre_scat.xyz;
+            scatteredLight = pre_scat.xyz;
             t = max(pre_t, t);
-            c = pre_scat.w;
+            transmittance = pre_scat.w;
         }
 
-        for( int i = 0; i < 1; ++i )
+        if(pre_pos.w < 0.5)
         {
-            t += dt * exp(-2. * c);
-            if(t > tmm.y)
+            for( int i = 0; i < 10; ++i )
             {
-                break;
-            }
-                    
-            c = GetYushiColor(ro + t * rd);               
-            
-            // col = .99 * col + .08 * vec3(c * c, c * c * c, c);//green	
-            col = .99*col+ .08*vec3(c*c*c, c*c, c);//blue
-        }
-        
-        pre_pos = vec4(ro + t * rd, 1.0);
-        pre_scat = vec4(col, c);
+                vec3 p = ro + t * rd;
+                getParticipatingMedia(sigmaS, sigmaE, p);
 
+                vec3 S = evaluateLightWithPhase(p) * sigmaS;
+                vec3 Sint = (S - S * exp(-sigmaE * dt)) / sigmaE;
+                scatteredLight += transmittance * Sint; // accumulate and also take into account the transmittance from previous steps
+                transmittance *= exp(-sigmaE * dt);
+                        
+                t += dt;
+                if(t > tmm.y)
+                { 
+                    pre_pos.w = 1.0;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            pre_pos.w = 1.0;
+        }
+
+        
+        pre_pos = vec4(ro + t * rd, pre_pos.w);
+        pre_scat = vec4(scatteredLight, transmittance);
         //if(IsFirstFrame % 50 < 25)
         //{
         //    return normalize(pre_pos.xyz - ro);
@@ -211,9 +293,22 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
         
         //return vec3(text_);
         //return pre_t;
-        return col;
+        return vec3(0.0);
     }
     return vec3(0.0);
+}
+
+float HistoryRejection(in vec3 N1, in vec3 N2)
+{
+    float a = length(LastViewPosWS - viewPosWS);
+    if(a > HISTORY_REJECTION_DIS_MIN)
+        return -1.0;
+
+    float b = dot(normalize(view_center_dir), normalize(Last_view_center_dir));
+    if(b < HISTORY_REJECTION_COS_MIN)
+        return -1.0;
+
+    return 1.0;
 }
 
 void main()
@@ -235,14 +330,15 @@ void main()
 
     // Ray Marching
     vec2 res = RayCast(orig, dir);
+    if(res.x < 0.0001) res.x = far_plane;
     vec3 pos = orig + dir * res.x;
     vec3 N = calcNormal(pos);
 
     vec3 M_pos = pos;
-    if(res.x < 0.0001) M_pos = orig + dir;
     vec4 M_ndc = projection_pre * view_pre * vec4(StretchToFarPLane(M_pos), 1.0);
     M_ndc = M_ndc / M_ndc.w;
     vec2 M_uv = M_ndc.xy * 0.5 + 0.5;
+    vec3 M_dir = normalize(M_pos - LastViewPosWS);
 
     if(IsFirstFrame == 0)
     {
@@ -254,6 +350,18 @@ void main()
         pos_tex = texture(posTex, M_uv);
         scat_tex = texture(scatterTex, M_uv);
     }
+
+    if(HistoryRejection(dir, M_dir) < 0.0001)
+    {
+        pos_tex = vec4(orig, 0.0);
+        scat_tex = vec4(0.0);
+    }
+
+     if(inRange(M_uv) < 0.000001)
+     {
+        pos_tex = vec4(orig, 0.0);
+        scat_tex = vec4(0.0);
+     }
 
     vec3 baseColor = GetColor(res.y, orig, dir, pos_tex, scat_tex, flags);
 
@@ -273,6 +381,8 @@ void main()
 	}	
 
     result += (vec3(0.1, 0.1, 0.1) * GetPointLightColor(0) * diffuse_color);
+    if(res.y > 3.9)
+        result += scat_tex.xyz;
     result = result/ (result + vec3(1.0));
     result = GammaCorrection(result);
 
@@ -283,22 +393,64 @@ void main()
     
     // Test
     //if(IsFirstFrame % 100 < 50)
-     //   FragColor = vec4(M_uv, 1.0, 1.0);
+        //   FragColor = vec4(M_uv, 1.0, 1.0);
     //else FragColor = vec4(TexCoords, 1.0, 1.0);
-    
+
     //FragColor = vec4(abs(M_uv - TexCoords) * 10.0, 0.0, 1.0);
-   // FinalPos = vec4(pos, 1.0);
-   // FragColor = texture(posTex, pre_uv);
+    // FinalPos = vec4(pos, 1.0);
+    // FragColor = texture(posTex, pre_uv);
 
-   // FragColor = vec4(IsFirstFrame / 1000.0);
+    // FragColor = vec4(IsFirstFrame / 1000.0);
 
-  // FragColor = vec4(baseColor, 1.0);
+    // FragColor = vec4(baseColor, 1.0);
 
-  //   FragColor = vec4(dir, 1.0);
-  // FragColor = rd;
-  //FragColor = vec4(rd.www * 10.0, 1.0);
+    //   FragColor = vec4(dir, 1.0);
+    // FragColor = rd;
+    //FragColor = vec4(rd.www * 10.0, 1.0);
 
-  //FragColor = vec4(abs(Last_view_center_dir), 1.0);
+    //FragColor = vec4(abs(Last_view_center_dir), 1.0);
 
-  // FragColor = vec4(StretchToFarPLane(orig + dir), 1.0);
+    // FragColor = vec4(StretchToFarPLane(orig + dir), 1.0);
+    
+    if(inRange(M_uv) < 0.000001) FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+
+    //if(HistoryRejection(dir, M_dir) < 0.0001) FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+
+    //FragColor = vec4(vec3(dot(M_dir, dir)), 1.0);
 }
+
+
+/*
+
+if(IsFirstFrame > 0)
+        {
+            col = pre_scat.xyz;
+            t = max(pre_t, t);
+            c = pre_scat.w;
+        }
+
+        if(pre_pos.w < 0.5)
+        {
+            for( int i = 0; i < 10; ++i )
+            {
+                t += dt * exp(-2. * c);
+                if(t > tmm.y)
+                { 
+                    pre_pos.w = 1.0;
+                    break;
+                }
+                        
+                c = GetYushiColor(ro + t * rd);               
+                
+                // col = .99 * col + .08 * vec3(c * c, c * c * c, c);//green	
+                col = .9*col+ .08*vec3(c*c*c, c*c, c);//blue
+            }
+        }
+        else
+        {
+            pre_pos.w = 1.0;
+        }
+
+        
+        pre_pos = vec4(ro + t * rd, pre_pos.w);
+        pre_scat = vec4(col, c);*/
