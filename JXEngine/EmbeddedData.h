@@ -221,6 +221,9 @@ namespace SHADER_PATH
 			extern std::string Path;
 			extern std::string StaticScene_01_vs;
 			extern std::string StaticScene_01_fs;
+
+			extern std::string StaticScene_02_vs;
+			extern std::string StaticScene_02_fs;
 		}
 	}
 

@@ -317,8 +317,8 @@ float atan2(float x, float y){
 // Judge uv in range [0, 1].
 // ...
 float inRange(vec2 uv){
-    if(uv.x < 0.0 || uv.x > 1.0)return -1.0;
-    if(uv.y < 0.0 || uv.y > 1.0)return -1.0;
+    if(uv.x < 0.0001 || uv.x > 1.0)return -1.0;
+    if(uv.y < 0.0001 || uv.y > 1.0)return -1.0;
     return 1.0;
 }
 
@@ -345,4 +345,30 @@ float GetAngle_2Ray(vec3 ray1, vec3 ray2)
     float b = length(ray2);
     return n / ( a * b );
 }
+
+float gain(float x, float k) 
+{
+    const float a = 0.5 * pow(2.0 * ((x < 0.5) ? x : 1.0 - x), k);
+    return (x < 0.5) ? a : 1.0 - a;
+}
+
+float expStep(float x, float k, float n)
+{
+    return exp(-k * pow(x, n));
+}
+
+float almostIdentity( float x, float m, float n )
+{
+    if( x>m ) return x;
+    const float a = 2.0*n - m;
+    const float b = 2.0*m - 3.0*n;
+    const float t = x/m;
+    return (a*t + b)*t*t + n;
+}
+
+float almostIdentity( float x )
+{
+    return x*x*(2.0-x);
+}
+
 

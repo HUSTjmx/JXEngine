@@ -41,6 +41,10 @@ namespace INPUT
 			inputCamera->ProcessKeyboard(LEFT, Clock.DeltaTime());
 		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 			inputCamera->ProcessKeyboard(RIGHT, Clock.DeltaTime());
+		if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+			inputCamera->MovementSpeed += 0.5;
+		if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+			inputCamera->MovementSpeed -= 0.5;
 	}
 
 	// glfw: whenever the mouse moves, this callback is called

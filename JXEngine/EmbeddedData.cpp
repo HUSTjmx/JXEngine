@@ -367,6 +367,9 @@ namespace SHADER_PATH
 			std::string Path = "shaders/RayMarching/Paper/";
 			std::string StaticScene_01_vs = Path + "StaticScene_01.vs";
 			std::string StaticScene_01_fs = Path + "StaticScene_01.fs";
+
+			std::string StaticScene_02_vs = Path + "StaticScene_02.vs";
+			std::string StaticScene_02_fs = Path + "StaticScene_02.fs";
 		}
 	}
 

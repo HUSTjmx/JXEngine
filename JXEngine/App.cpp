@@ -43,7 +43,7 @@ int main()
 	GLFWwindow* window = glfwCreateWindow(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
 
 	//std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(20.0, 18.0, -40.0));
-	std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(0.0, 0.0, -12.0));
+	std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(0.0, 0.0, -10.0));
 	camera->Front = glm::vec3(0, 0, 1);
 
 	INPUT::SET_CAMERA(camera);
@@ -268,7 +268,23 @@ void Loop(GLFWwindow* window)
 	StaticScene_01_Mat->SetJitter(false);
 #pragma endregion
 
-	auto cloud_p_01 = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(StaticScene_01_Mat);
+#pragma region StaticScene_02
+	auto StaticScene_02_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PAPER::StaticScene_02_vs.c_str(),
+		SHADER_PATH::RAY_MARCHING::PAPER::StaticScene_02_fs.c_str());
+	StaticScene_02_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	StaticScene_02_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	StaticScene_02_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	StaticScene_02_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	StaticScene_02_shader->Compile();
+	auto StaticScene_02_Mat = std::make_shared<Material>(StaticScene_02_shader);
+	StaticScene_02_Mat->AddTexture(frame->textureBuffers[1]);
+	StaticScene_02_Mat->AddTexture(frame->textureBuffers[2]);
+	StaticScene_02_Mat->AddTexture(frame->textureBuffers[3]);
+	StaticScene_02_Mat->LinkTextureForShader();
+	StaticScene_02_Mat->SetJitter(false);
+#pragma endregion
+
+	auto cloud_p_01 = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(StaticScene_02_Mat);
 	cloud_p_01->UpdateOutput(frame);
 	SET_LIGHT(*cloud_p_01->scene);
 
@@ -330,7 +346,8 @@ void Loop(GLFWwindow* window)
 
 	const int blurTimes = 0;
 
-	//Test();
+	// ≤‚ ‘
+	Test();
 
 	// render loop
 	// -----------

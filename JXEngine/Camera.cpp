@@ -36,6 +36,7 @@ void Camera::ProcessMouseMovement(float xoffset, float yoffset, GLboolean constr
 	{
 		if (Pitch > 89.0f)
 			Pitch = 89.0f;
+
 		if (Pitch < -89.0f)
 			Pitch = -89.0f;
 	}
