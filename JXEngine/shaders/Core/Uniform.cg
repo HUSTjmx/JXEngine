@@ -33,7 +33,7 @@ vec3 BaseColorReMap(vec3 color, float metallic)
 //Fresnel��������f0�����ҶԵ���ʶ����ǵ�ɫ��
 vec3 ReflectanceReMap(float reflec)
 {
-    return 0.16 * reflec * reflec;
+    return vec3(0.16 * reflec * reflec);
 }
 
 //���������ʼ���Fresnel������f0

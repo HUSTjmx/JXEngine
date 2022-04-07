@@ -72,14 +72,16 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\Environment\c++\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Environment\c++\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\xueyaojiang\Desktop\JMX\c++_OpenGL_Env\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\xueyaojiang\Desktop\JMX\c++_OpenGL_Env\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>C:\Users\xueyaojiang\Desktop\JMX\c++_OpenGL_Env\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\xueyaojiang\Desktop\JMX\c++_OpenGL_Env\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -94,7 +96,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opengl32.lib;glfw3.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glfw3.lib;assimpd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -123,6 +125,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>opengl32.lib;glfw3.lib;assimpd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -142,12 +145,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\c++_OpenGL_Env\src\glad.c" />
     <ClCompile Include="Actor.cpp" />
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Atmosphere.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Config.cpp" />
-    <ClCompile Include="D:\Environment\c++\src\glad.c" />
     <ClCompile Include="DesignPatterns.cpp" />
     <ClCompile Include="EmbeddedData.cpp" />
     <ClCompile Include="FrameBuffer.cpp" />
