@@ -31,6 +31,11 @@ namespace CONFIG
 		}
 	}
 
+	namespace TIME_CONFIG
+	{
+		float AverageRange = 1.0f;
+	}
+
 	namespace SHADOW_MAP
 	{
 		unsigned int SHADOW_WIDTH = 1024;
