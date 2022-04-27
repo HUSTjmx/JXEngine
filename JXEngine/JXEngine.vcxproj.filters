@@ -138,9 +138,6 @@
     <ClCompile Include="Input.cpp">
       <Filter>源文件\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="D:\Environment\c++\src\glad.c">
-      <Filter>源文件\ExtendLibrary</Filter>
-    </ClCompile>
     <ClCompile Include="FrameBuffer.cpp">
       <Filter>源文件\Core</Filter>
     </ClCompile>
@@ -155,6 +152,9 @@
     </ClCompile>
     <ClCompile Include="Atmosphere.cpp">
       <Filter>源文件\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\c++_OpenGL_Env\src\glad.c">
+      <Filter>源文件\ExtendLibrary</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

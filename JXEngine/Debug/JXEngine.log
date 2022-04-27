@@ -1,51 +1,12 @@
 ﻿  App.cpp
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Material.h(21,16): warning C4099: “Transform”: 类型名称以前使用“struct”现在使用的是“class”
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Actor.h(16): message : 参见“Transform”的声明
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\App.cpp(123,20): warning C4018: “<”: 有符号/无符号不匹配
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(53,17): warning C4018: “>=”: 有符号/无符号不匹配
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(52): message : 在编译 类 模板 成员函数“void Counted<DirectionalLight>::init(void)”时
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(41): message : 查看对正在编译的函数 模板 实例化“void Counted<DirectionalLight>::init(void)”的引用
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(40): message : 在编译 类 模板 成员函数“Counted<DirectionalLight>::Counted(void)”时
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Light.h(63): message : 查看对正在编译的函数 模板 实例化“Counted<DirectionalLight>::Counted(void)”的引用
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Light.h(59): message : 查看对正在编译的 类 模板 实例化“Counted<DirectionalLight>”的引用
-  Atmosphere.cpp
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Material.h(21,16): warning C4099: “Transform”: 类型名称以前使用“struct”现在使用的是“class”
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Actor.h(16): message : 参见“Transform”的声明
-  EmbeddedData.cpp
-  Scene.cpp
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Material.h(21,16): warning C4099: “Transform”: 类型名称以前使用“struct”现在使用的是“class”
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Actor.h(16): message : 参见“Transform”的声明
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(53,17): warning C4018: “>=”: 有符号/无符号不匹配
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(52): message : 在编译 类 模板 成员函数“void Counted<DirectionalLight>::init(void)”时
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(41): message : 查看对正在编译的函数 模板 实例化“void Counted<DirectionalLight>::init(void)”的引用
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(40): message : 在编译 类 模板 成员函数“Counted<DirectionalLight>::Counted(void)”时
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Light.h(63): message : 查看对正在编译的函数 模板 实例化“Counted<DirectionalLight>::Counted(void)”的引用
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Light.h(59): message : 查看对正在编译的 类 模板 实例化“Counted<DirectionalLight>”的引用
-  TestScene.cpp
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Actor.h(16,18): warning C4099: “Transform”: 类型名称以前使用“class”现在使用的是“struct”
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Actor.h(16): message : 参见“Transform”的声明
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\TestScene.cpp(55,32): warning C4305: “参数”: 从“double”到“T”截断
-          with
-          [
-              T=float
-          ]
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\TestScene.cpp(61,20): warning C4018: “<”: 有符号/无符号不匹配
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\TestScene.cpp(307,29): warning C4305: “参数”: 从“double”到“T”截断
-          with
-          [
-              T=float
-          ]
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\TestScene.cpp(586,19): warning C4305: “=”: 从“double”到“float”截断
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\TestScene.cpp(694,19): warning C4305: “=”: 从“double”到“float”截断
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Tools.h(394,19): warning C4244: “参数”: 从“double”转换到“unsigned int”，可能丢失数据
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\TestScene.cpp(334): message : 查看对正在编译的函数 模板 实例化“std::shared_ptr<glm::mat4> MatTool::GenerateModelMat_R<1000>(float,float)”的引用
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Tools.h(410,15): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Tools.h(414,18): warning C4244: “初始化”: 从“int”转换到“float”，可能丢失数据
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(53,17): warning C4018: “>=”: 有符号/无符号不匹配
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(52): message : 在编译 类 模板 成员函数“void Counted<DirectionalLight>::init(void)”时
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(41): message : 查看对正在编译的函数 模板 实例化“void Counted<DirectionalLight>::init(void)”的引用
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Counted.h(40): message : 在编译 类 模板 成员函数“Counted<DirectionalLight>::Counted(void)”时
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Light.h(63): message : 查看对正在编译的函数 模板 实例化“Counted<DirectionalLight>::Counted(void)”的引用
-C:\Users\ZoroD\source\repos\JXEngine\JXEngine\Light.h(59): message : 查看对正在编译的 类 模板 实例化“Counted<DirectionalLight>”的引用
-  正在生成代码...
-  JXEngine.vcxproj -> C:\Users\ZoroD\source\repos\JXEngine\Debug\JXEngine.exe
+C:\Users\xueyaojiang\Desktop\JMX\JXEngine\JXEngine\Material.h(21,16): warning C4099: 'Transform': type name first seen using 'struct' now seen using 'class'
+C:\Users\xueyaojiang\Desktop\JMX\JXEngine\JXEngine\Actor.h(16): message : see declaration of 'Transform'
+C:\Users\xueyaojiang\Desktop\JMX\JXEngine\JXEngine\App.cpp(123,20): warning C4018: '<': signed/unsigned mismatch
+C:\Users\xueyaojiang\Desktop\JMX\JXEngine\JXEngine\Counted.h(53,17): warning C4018: '>=': signed/unsigned mismatch
+C:\Users\xueyaojiang\Desktop\JMX\JXEngine\JXEngine\Counted.h(52): message : while compiling class template member function 'void Counted<DirectionalLight>::init(void)'
+C:\Users\xueyaojiang\Desktop\JMX\JXEngine\JXEngine\Counted.h(41): message : see reference to function template instantiation 'void Counted<DirectionalLight>::init(void)' being compiled
+C:\Users\xueyaojiang\Desktop\JMX\JXEngine\JXEngine\Counted.h(40): message : while compiling class template member function 'Counted<DirectionalLight>::Counted(void)'
+C:\Users\xueyaojiang\Desktop\JMX\JXEngine\JXEngine\Light.h(63): message : see reference to function template instantiation 'Counted<DirectionalLight>::Counted(void)' being compiled
+C:\Users\xueyaojiang\Desktop\JMX\JXEngine\JXEngine\Light.h(59): message : see reference to class template instantiation 'Counted<DirectionalLight>' being compiled
+C:\Users\xueyaojiang\Desktop\JMX\JXEngine\JXEngine\App.cpp(129): warning C4715: 'CheckExtension': not all control paths return a value
+  JXEngine.vcxproj -> C:\Users\xueyaojiang\Desktop\JMX\JXEngine\Debug\JXEngine.exe

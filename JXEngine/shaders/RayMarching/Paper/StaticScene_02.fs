@@ -25,7 +25,7 @@ uniform int IsFirstFrame;
 #define uint4 uvec4
 
 // Box
-#define BOX_SIZE vec3(4.0, 4.0, 4.0)
+#define BOX_SIZE vec3(18.0, 18.0, 18.0)
 // White Wall
 #define OBJ_WHITEWALL 1.0
     const vec3 WhiteWallColor = vec3(0.7295, 0.7355, 0.729);
@@ -37,8 +37,8 @@ uniform int IsFirstFrame;
     const vec3 LeftWallColor = vec3(0.611, 0.0555, 0.062);
 // YuShi Sphere
 #define OBJ_BUNNY 4.0
-    const vec3 BunnyPos = vec3(0.0, 0.0, 0.0);
-    const vec3 BunnyBOX = vec3(1.0, 1.0, 1.0); 
+    const vec3 BunnyPos = vec3(0.0, -0.5, 0.0);
+    const vec3 BunnyBOX = vec3(2., 2., 2.); 
 
 // Wall Material
 #define WALL_METALLIC 0.0
@@ -53,14 +53,14 @@ uniform int IsFirstFrame;
 #define FOVEA_CONST_FACTOR 0.5
 
 // Phase Func Mode
-#define PHASE_MODE 2.0
+#define PHASE_MODE 1.0
 #define PHASE_G 0.5
 
 ////////// Parameters
 
 // Participating media properties. have fun tweaking those :)
-float3 scattering = 25.0 * float3(0.25,0.5,1.0);
-float3 absorption = 0.0 * float3(0.75,0.5,0.0);
+float3 scattering = 1.0 * float3(0.25,0.5,1.0);
+float3 absorption = 2.0 * float3(0.75,0.5,0.0);
 #define extinction  (absorption + scattering)
 // Default noise erosion strength
 float erosionStrength = 1.0;
@@ -69,7 +69,7 @@ float erosionStrength = 1.0;
 
 #define VOLUME_FILTERING_NEAREST 0
 
-#define FBM_NOISE 0
+#define FBM_NOISE 1
 
 #define BASIC_ANIMATED_NOISE 1
 
@@ -220,7 +220,7 @@ float linearRandFBM(vec3 uv)
 float3 worldPosTocubePos(float3 worldPos)
 {
     // cube of world space size 4 with bottom face on the ground y=0
-    return worldPos*0.15 + float3(0.0,-0.5,0.0);
+    return worldPos*-0.13 + float3(0.5,0.5,0.5);
 }
 
 // From https://www.shadertoy.com/view/4s23DR
@@ -248,6 +248,7 @@ bool cube(vec3 org, vec3 dir, out float near, out float far)
 // Get density for a position
 float getDensity(float3 cubePos)
 {
+    cubePos = worldPosTocubePos(cubePos);
     float density = sampleBunny(cubePos);
     if(density==0.0) return 0.0;	// makes things a tad bit faster
 #if FBM_NOISE
@@ -264,15 +265,6 @@ float getDensity(float3 cubePos)
     density = density * max(0.0, 0.5 + 0.5*erosionStrength*linearRand(noiseUV));
 #endif
     return density;
-}
-
-// Returns the light distance attenuation
-float distanceAttenuation(float distance)
-{
-    float lightMaxRadius = 3.0;
-    float linAtt = clamp((lightMaxRadius-distance)/lightMaxRadius,0.0,1.0);
-    linAtt*=linAtt;	// some "fake artistic" attenuation
-    return linAtt/(distance*distance);
 }
 
 
@@ -305,27 +297,29 @@ vec2 opU(vec2 d1, vec2 d2)
     return (d1.x < d2.x) ? d1 : d2;
 }
 
-vec2 Map(in vec3 pos)
+vec2 Map(in vec3 pos, in int mode)
 {
     vec2 res = vec2(1e10, 0.0);
 
     // Ground
-    res = opU(res, vec2(sdPlane(pos, vec3(0.0, 1.0, 0.0), 3.0), OBJ_WHITEWALL));
+    res = opU(res, vec2(sdPlane(pos, vec3(0.0, 1.0, 0.0), 4.0), OBJ_WHITEWALL));
     // Top
-    res = opU(res, vec2(sdPlane(pos, vec3(0.0, -1.0, 0.0), 3.0), OBJ_WHITEWALL));
+    res = opU(res, vec2(sdPlane(pos, vec3(0.0, -1.0, 0.0), 4.0), OBJ_WHITEWALL));
     // Back
-    res = opU(res, vec2(sdPlane(pos, vec3(0.0, 0.0,- 1.0), 1.0), OBJ_WHITEWALL));
+    res = opU(res, vec2(sdPlane(pos, vec3(0.0, 0.0,- 1.0), 4.0), OBJ_WHITEWALL));
     // left
-    res = opU(res, vec2(sdPlane(pos, vec3(1.0, 0.0, 0.0), 3.0), OBJ_LEFTWALL));
+    res = opU(res, vec2(sdPlane(pos, vec3(1.0, 0.0, 0.0), 4.0), OBJ_LEFTWALL));
     // Right
-    res = opU(res, vec2(sdPlane(pos, vec3(-1.0, 0.0, 0.0), 3.0), OBJ_RIGHTWALL));
-    // YuShi
-    res = opU(res, vec2(sdBox(pos - BunnyPos, BunnyBOX), OBJ_BUNNY));
+    res = opU(res, vec2(sdPlane(pos, vec3(-1.0, 0.0, 0.0), 4.0), OBJ_RIGHTWALL));
+
+    if(mode > 0)
+        // YuShi
+        res = opU(res, vec2(sdBox(pos - BunnyPos, BunnyBOX), OBJ_BUNNY));
 
     return res;
 }
 
-vec2 RayCast(in vec3 ro, in vec3 rd)
+vec2 RayCast(in vec3 ro, in vec3 rd, in int mode)
 {
     vec2 res = vec2(-1.0, -1.0);
     float tmin = 0.3;
@@ -340,7 +334,7 @@ vec2 RayCast(in vec3 ro, in vec3 rd)
         float t = tmin;
         for(int i = 0; i < 70 && t < tmax; ++i)
         {
-            vec2 h = Map(ro + rd * t);
+            vec2 h = Map(ro + rd * t, mode);
             if(abs(h.x) < (0.0001 * t))
             {
                 res = vec2(t, h.y);
@@ -356,20 +350,21 @@ vec2 RayCast(in vec3 ro, in vec3 rd)
 vec3 calcNormal( in vec3 pos )
 {
     vec2 e = vec2(1.0,-1.0) * 0.5773 * 0.0005;
-    return normalize( e.xyy * Map( pos + e.xyy ).x + 
-					  e.yyx * Map( pos + e.yyx ).x + 
-					  e.yxy * Map( pos + e.yxy ).x + 
-					  e.xxx * Map( pos + e.xxx ).x );
+    float bgID;
+    return normalize( e.xyy * Map( pos + e.xyy, -1 ).x + 
+					  e.yyx * Map( pos + e.yyx, -1 ).x + 
+					  e.yxy * Map( pos + e.yxy, -1 ).x + 
+					  e.xxx * Map( pos + e.xxx, -1 ).x );
 }
 
 // Get transmittance from a direction and distance onto a point (volume shadows)
 float3 volumetricShadow(float3 cubePos, float3 Lpos)
 {
-    return vec3(1.0);
+    //return vec3(1.0);
     float3 shadow = float3(1.0);
     float3 Ldir = normalize(Lpos - cubePos);
     float sampledDistance = 0.1;
-    float stepSizeShadow = 0.1;
+    float stepSizeShadow = 1.0;
     for(float tshadow = 0.0; tshadow < sampledDistance; tshadow += stepSizeShadow)
     {
         float3 cubeShadowPos = cubePos + tshadow * Ldir;
@@ -395,7 +390,7 @@ vec3 evaluateLightWithPhase(in vec3 pos)
     return light_sum;
 }
 
-vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, in vec3 sigmaS, in vec3 sigmaE, inout vec4 pre_pos, inout vec4 pre_scat, in vec4 flags)
+vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec4 pre_scat, inout vec4 pre_transmit, in vec4 flags)
 {
     if(ID < 0.5) return vec3(0.0);
     if(ID < 1.5) return WhiteWallColor;
@@ -403,20 +398,24 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, in vec3 sigmaS, in vec3 sigma
     if(ID < 3.5) return LeftWallColor;
     if(ID < 4.5)
     {
+       // ro = worldPosTocubePos(ro);
+
         vec2 tmm = iBox(ro, rd, BunnyBOX);
         float t = tmm.x;
         float dt = .01;     //float dt = .2 - .195*cos(iTime*.05);//animated
         vec3 transmittance = vec3(1.0);
         vec3 scatteredLight = vec3(0.0);
+
+        //ro = worldPosTocubePos(ro);
     
-        for(int i = 0; i < 1; ++i)
+        for(int i = 0; i < 50; ++i)
         {
             float3 rayPos = ro + t * rd;
-            float density = getDensity(worldPosTocubePos(rayPos));
-
-
-            vec3 S = evaluateLightWithPhase(rayPos) * sigmaS * density;
-            vec3 m_sigmaE = max(vec3(0.0001), density * sigmaE);
+            float density = getDensity(rayPos);
+            //float density = getDensity(worldPosTocubePos(rayPos));
+            //density = 1.0;
+            vec3 S = evaluateLightWithPhase(rayPos) * scattering * density;
+            vec3 m_sigmaE = max(vec3(0.0001), density * extinction);
             vec3 Sint = (S - S * exp(-m_sigmaE * dt)) / m_sigmaE;
             scatteredLight += transmittance * Sint; // accumulate and also take into account the transmittance from previous steps
             transmittance *= exp(-m_sigmaE * dt);
@@ -428,7 +427,8 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, in vec3 sigmaS, in vec3 sigma
             }
         }
         pre_pos = vec4(ro + t * rd, pre_pos.w);
-        pre_scat = vec4(scatteredLight, transmittance);
+        pre_scat = vec4(scatteredLight, 1.0);
+        pre_transmit = vec4(transmittance, 1.0);
     }
     return vec3(0.0);
 }
@@ -444,45 +444,52 @@ void main()
      // Read history
     vec4 pos_tex;
     vec4 scat_tex;
+    vec4 transmit_tex = vec4(1.0);
     vec4 flags = vec4(1e-5);
 
     // Ray Marching
-    vec2 res = RayCast(orig, dir);
-    if(res.x < 0.0001) res.x = far_plane;
+    float bgID;
+    vec2 res = RayCast(orig, dir, 1);
+    vec2 bg_res = RayCast(orig, dir, -1);
+    //if(res.x < 0.0001) res.x = far_plane;
     vec3 pos = orig + dir * res.x;
-    vec3 N = calcNormal(pos);
+    vec3 bg_pos = orig + dir * bg_res.x;
+    vec3 N = calcNormal(bg_pos);
 
     // 散射属性的设置
 #if BASIC_ANIMATED_MEDIA==1
-    float r = floor(time);
+    float r = floor(iTime);
     scattering = abs(25.0* float3(rand(float3(r,0.0,1.0)),rand(float3(r,0.0,5.0)),rand(float3(r,0.0,9.0))));
     absorption = abs(5.0* float3(rand(float3(r,1.0,2.0)),rand(float3(r,1.0,7.0)),rand(float3(r,1.0,7.0))));
 #elif BASIC_ANIMATED_MEDIA==2
-    float r = time*0.2;
+    float r = iTime * 0.2;
     scattering = abs(25.0* float3(sin(r*1.1),sin(r*3.3),sin(r*5.5)));
     absorption = abs( 5.0* float3(sin(r*2.2),sin(r*4.4),sin(r*6.6)));
 #endif
 
-    vec3 baseColor = GetColor(res.y, orig, dir, scattering, scattering + absorption, pos_tex, scat_tex, flags);
+    vec3 baseColor = GetColor(res.y, orig, dir, pos_tex, scat_tex, transmit_tex, flags);
+    if(res.y > 3.9)
+        baseColor = GetColor(bg_res.y, orig, dir, pos_tex, scat_tex, transmit_tex, flags);
 
     // Light Compute
     vec3 diffuse_color = BaseColorReMap(baseColor, WALL_METALLIC);
-	float r = RoughnessReMap(WALL_ROUGHNESS);
+	float r2 = RoughnessReMap(WALL_ROUGHNESS);
 	vec3 f0 = GetF0_All(baseColor, WALL_METALLIC, WALL_REFLECTANCE);
 
     vec3 result = vec3(0.0);
+   // pos = worldPosTocubePos(pos) + 0.5;
     for(int i = 0; i < pointLightsNum; ++i)
 	{
 		//light_Intensity * light_color * BRDF * NoL 
-		vec3 L = normalize(pointLights[i].position - pos);
+		vec3 L = normalize(pointLights[i].position - bg_pos);
 		float NoL = clamp(dot(N, L), 0.0, 1.0);
-		result = result + GetPointLightColor(i) * GetPointLightIllumiance(i, pos)
-		* Standard_BRDF_Torrance_DVF(diffuse_color, dir, L, N, r, f0, 1.0) * NoL; 
+		result = result + GetPointLightColor(i) * GetPointLightIllumiance(i, bg_pos)
+		* Standard_BRDF_Torrance_DVF(diffuse_color, dir, L, N, r2, f0, 1.0) * NoL; 
 	}	
 
     //result += (vec3(0.1, 0.1, 0.1) * GetPointLightColor(0) * diffuse_color);
     if(res.y > 3.9)
-        result += scat_tex.xyz;
+        result = result * transmit_tex.xyz + scat_tex.xyz;
     result = result/ (result + vec3(1.0));
     result = GammaCorrection(result);
 

@@ -43,7 +43,7 @@ int main()
 	GLFWwindow* window = glfwCreateWindow(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
 
 	//std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(20.0, 18.0, -40.0));
-	std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(0.0, 0.0, -10.0));
+	std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(0.0, 0.0, -14.0));
 	camera->Front = glm::vec3(0, 0, 1);
 
 	INPUT::SET_CAMERA(camera);
@@ -126,7 +126,6 @@ bool CheckExtension(const std::string& extensionName)
 			return true;
 	}
 
-	return false;
 }
 
 void LoadOpenGLFuncPoint()
@@ -143,6 +142,7 @@ void LoadOpenGLFuncPoint()
 void SET_LIGHT(Scene& scene)
 {
 	auto pointLight0 = std::make_shared<PointLight>(glm::vec3(0.0, 2.0, -1.5));
+	//auto pointLight0 = std::make_shared<PointLight>(glm::vec3(1.0, 1.0, 1.0));
 	pointLight0->SetColor(glm::vec3(1.0, 0.9, 0.5));
 	pointLight0->SetRadius(10.0);
 	pointLight0->SetValue(200.0);

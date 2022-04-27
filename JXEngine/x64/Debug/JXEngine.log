@@ -1,0 +1,19 @@
+﻿App.obj : error LNK2019: unresolved external symbol glfwInit referenced in function "void __cdecl InitGlfw(void)" (?InitGlfw@@YAXXZ)
+App.obj : error LNK2019: unresolved external symbol glfwTerminate referenced in function "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z)
+App.obj : error LNK2019: unresolved external symbol glfwWindowHint referenced in function "void __cdecl InitGlfw(void)" (?InitGlfw@@YAXXZ)
+App.obj : error LNK2019: unresolved external symbol glfwCreateWindow referenced in function main
+App.obj : error LNK2019: unresolved external symbol glfwWindowShouldClose referenced in function "void __cdecl Loop(struct GLFWwindow *)" (?Loop@@YAXPEAUGLFWwindow@@@Z)
+App.obj : error LNK2019: unresolved external symbol glfwSetFramebufferSizeCallback referenced in function "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z)
+App.obj : error LNK2019: unresolved external symbol glfwPollEvents referenced in function "void __cdecl Loop(struct GLFWwindow *)" (?Loop@@YAXPEAUGLFWwindow@@@Z)
+App.obj : error LNK2019: unresolved external symbol glfwSetInputMode referenced in function "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z)
+App.obj : error LNK2019: unresolved external symbol glfwSetCursorPosCallback referenced in function "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z)
+App.obj : error LNK2019: unresolved external symbol glfwSetScrollCallback referenced in function "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z)
+App.obj : error LNK2019: unresolved external symbol glfwMakeContextCurrent referenced in function "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z)
+App.obj : error LNK2019: unresolved external symbol glfwSwapBuffers referenced in function "void __cdecl Loop(struct GLFWwindow *)" (?Loop@@YAXPEAUGLFWwindow@@@Z)
+App.obj : error LNK2019: unresolved external symbol glfwGetProcAddress referenced in function "void __cdecl LoadOpenGLFuncPoint(void)" (?LoadOpenGLFuncPoint@@YAXXZ)
+Input.obj : error LNK2019: unresolved external symbol glfwSetWindowShouldClose referenced in function "void __cdecl INPUT::processInput(struct GLFWwindow *)" (?processInput@INPUT@@YAXPEAUGLFWwindow@@@Z)
+Input.obj : error LNK2019: unresolved external symbol glfwGetKey referenced in function "void __cdecl INPUT::processInput(struct GLFWwindow *)" (?processInput@INPUT@@YAXPEAUGLFWwindow@@@Z)
+TestScene.obj : error LNK2019: unresolved external symbol glfwGetTime referenced in function "public: class std::shared_ptr<struct glm::mat<4,4,float,0> > __cdecl MatTool::GenerateModelMat_R<1000>(float,float)" (??$GenerateModelMat_R@$0DOI@@MatTool@@QEAA?AV?$shared_ptr@U?$mat@$03$03M$0A@@glm@@@std@@MM@Z)
+Timer.obj : error LNK2001: unresolved external symbol glfwGetTime
+C:\Users\xueyaojiang\Desktop\JMX\c++_OpenGL_Env\lib\glfw3.lib : warning LNK4272: library machine type 'x86' conflicts with target machine type 'x64'
+C:\Users\xueyaojiang\Desktop\JMX\JXEngine\x64\Debug\JXEngine.exe : fatal error LNK1120: 16 unresolved externals
