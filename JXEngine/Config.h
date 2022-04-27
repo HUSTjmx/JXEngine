@@ -38,6 +38,11 @@ namespace CONFIG
 		}
 	}
 
+	namespace TIME_CONFIG
+	{
+		extern float AverageRange;
+	}
+
 	namespace SHADOW_MAP
 	{
 		extern unsigned int SHADOW_WIDTH;

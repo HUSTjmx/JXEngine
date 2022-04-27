@@ -108,7 +108,7 @@ void GetSupportExtensions()
 	if (!g_supportExtensions.empty())
 		return;
 
-	GLint n, i;
+	GLint n = 0, i;
 	glGetIntegerv(GL_NUM_EXTENSIONS, &n);
 	for (i = 0; i < n; i++)
 	{
@@ -347,15 +347,14 @@ void Loop(GLFWwindow* window)
 	const int blurTimes = 0;
 
 	// ²âÊÔ
-	Test();
+	//Test();
 
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
 	{
-		Clock.Timing();
 		COUNTER(0);
-		//Clock.FPS();
+		Clock.Timing();
 
 		// input
 		// -----
