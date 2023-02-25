@@ -223,8 +223,10 @@ void Material::LoadTextures(aiMaterial* mat,std::string directory)
 
 std::shared_ptr<Material> Material::Copy() const
 {
+	std::shared_ptr<ShaderCompiler> shader2 = std::make_shared<ShaderCompiler>();
+	shader->Copy(*shader2.get());
 
-	std::shared_ptr<Material> m = std::make_shared<Material>(std::make_shared<ShaderCompiler>(shader->Copy()));
+	std::shared_ptr<Material> m = std::make_shared<Material>(shader2);
 	m->baseColor = baseColor;
 	m->emissive = emissive;
 	m->metallic = metallic;

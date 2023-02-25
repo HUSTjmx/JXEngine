@@ -147,6 +147,13 @@ void SET_LIGHT(Scene& scene)
 	pointLight0->SetRadius(10.0);
 	pointLight0->SetValue(200.0);
 	scene.AddLight(pointLight0);
+
+
+	glm::vec3 lightPos(0.2f, 0.01f, 1.0f);
+	auto dir1 = std::make_shared<DirectionalLight>(-lightPos);
+	dir1->color = glm::vec3(1.0, 1.0, 0.8);
+	dir1->value = 1.6;
+	scene.AddLight(dir1);
 }
 
 void Test()
@@ -284,8 +291,50 @@ void Loop(GLFWwindow* window)
 	StaticScene_02_Mat->SetJitter(false);
 #pragma endregion
 
-	auto cloud_p_01 = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(StaticScene_02_Mat);
+#pragma region StaticScene_03
+	auto StaticScene_03_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_01_vs.c_str(),
+		SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_01_fs.c_str());
+	StaticScene_03_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	StaticScene_03_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	StaticScene_03_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	StaticScene_03_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	StaticScene_03_shader->Compile();
+	auto StaticScene_03_Mat = std::make_shared<Material>(StaticScene_03_shader);
+	StaticScene_03_Mat->AddTexture(frame->textureBuffers[1]);
+	StaticScene_03_Mat->AddTexture(frame->textureBuffers[2]);
+	StaticScene_03_Mat->AddTexture(frame->textureBuffers[3]);
+	StaticScene_03_Mat->LinkTextureForShader();
+	StaticScene_03_Mat->SetJitter(false);
+#pragma endregion
+
+#pragma region StaticScene_04
+	auto sky_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_01_vs.c_str(), SHADER_PATH::RAY_MARCHING::SKY::earthSky_fs.c_str());
+	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	sky_sh->Compile();
+	auto StaticScene_04_Mat = std::make_shared<Material>(sky_sh);
+	StaticScene_04_Mat->AddTexture(frame->textureBuffers[1]);
+	StaticScene_04_Mat->AddTexture(frame->textureBuffers[2]);
+	StaticScene_04_Mat->AddTexture(frame->textureBuffers[3]);
+	StaticScene_04_Mat->LinkTextureForShader();
+	StaticScene_04_Mat->SetJitter(false);
+	StaticScene_04_Mat->Active();
+	//std::cout << earthRadius << std::endl;
+	StaticScene_04_Mat->GetShader()->SetFloat(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::EARTH_RADIUS, 6360e3);
+	StaticScene_04_Mat->GetShader()->SetFloat(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::ATMOSHERE_RADIUS, 6420e3);
+	StaticScene_04_Mat->GetShader()->SetFloat(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::HR, 7994);
+	StaticScene_04_Mat->GetShader()->SetFloat(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::HM, 1200);
+	StaticScene_04_Mat->GetShader()->SetVec3(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::BETA_R, glm::vec3(3.8e-6f, 13.5e-6f, 33.1e-6f));
+	StaticScene_04_Mat->GetShader()->SetVec3(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::BETA_M, glm::vec3(21e-6f));
+#pragma endregion
+	//bool useSky = true;
+
+	auto cloud_p_01 = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(StaticScene_03_Mat);
+	//if(useSky) cloud_p_01 = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(StaticScene_04_Mat);
 	cloud_p_01->UpdateOutput(frame);
+	//if(useSky) cloud_p_01->scene->MainCamera().Position = glm::vec3(0.0, 6360e3 + 1.0, 0.0);
 	SET_LIGHT(*cloud_p_01->scene);
 
 
@@ -345,6 +394,8 @@ void Loop(GLFWwindow* window)
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	const int blurTimes = 0;
+	
+	int frame_index = 0;
 
 	// ²âÊÔ
 	//Test();
@@ -416,9 +467,18 @@ void Loop(GLFWwindow* window)
 		INPUT::inputCamera->UpdatePreMat();
 		INPUT::inputCamera->UpdatePreAttr();
 
+		BMPTool::Instance().GetScreenShot(SCENE_TYPE::MyMethod, 0, frame_index++);
+
+		if (frame_index > 200) frame_index = 0;
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
 	}
+
+	//cloud_p_01.~shared_ptr();
+	//Foveated_pass_1.~shared_ptr();
+	//Foveated_pass_2.~shared_ptr();
+	//
 }
 

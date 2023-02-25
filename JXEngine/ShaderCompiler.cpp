@@ -239,11 +239,15 @@ void ShaderCompiler::BlockBindingUniform(unsigned int pos, const char* uniform) 
 	glUniformBlockBinding(ID, id, pos);
 }
 
-ShaderCompiler ShaderCompiler::Copy()
+ShaderCompiler& ShaderCompiler::Copy(ShaderCompiler& shader)
 {
-	ShaderCompiler temp = *this;
-	temp.Compile();
-	return temp;;
+	//shader->
+	shader.SetVertexShader(this->vertexShader);
+	shader.SetFragmentShader(this->fragmentShader);
+	shader.SetGeometryShader(this->geometryShader);
+	shader.SetHasGeometry(this->hasGeometry);
+	shader.Compile();
+	return shader;
 }
 
 

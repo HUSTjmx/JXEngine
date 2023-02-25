@@ -1,7 +1,35 @@
 #version 330 core
-out vec4 FragColor;
+layout(location = 0) out vec4 FragColor;
+layout(location = 1) out vec4 LastColor;
+layout(location = 2) out vec4 ScatterLight;
+layout(location = 3) out vec4 FinalPos;
 
 in vec2 TexCoords;
+
+uniform mat4 view;
+uniform mat4 view_inv;
+uniform mat4 view_pre;
+uniform mat4 projection;
+uniform mat4 projection_inv;
+uniform mat4 projection_pre;
+
+uniform sampler2D preTexture;
+uniform sampler2D scatterTex;
+uniform sampler2D posTex;
+uniform int IsFirstFrame;
+
+
+// History Rejection
+#define HISTORY_REJECTION_COS_MIN 0.99
+#define HISTORY_REJECTION_DIS_MAX 1
+#define DIS_WEIGHT 0.4
+#define ANGLE_WEIGHT (1.0 - DIS_WEIGHT)
+#define FOVEA_CONST_FACTOR 0.5
+
+float Map_HSV(float v)
+{
+    return exp(1.0 - v) - 1.0;
+}
 
 mat2 rot(in float a){float c = cos(a), s = sin(a);return mat2(c,s,-s,c);}
 const mat3 m3 = mat3(0.33338, 0.56034, -0.71817, -0.87887, 0.32651, -0.15323, 0.15162, 0.69596, 0.61339)*1.93;
@@ -45,22 +73,30 @@ float HSV_PDF(float e)
 }
 
 
-vec4 render( in vec3 ro, in vec3 rd, float time, float e, vec2 p)
+vec4 render( in vec3 ro, in vec3 rd, float time, float e, vec2 p, inout vec4 pre_pos, inout vec4 pre_scat, in vec4 flags)
 {
-    if(abs(p.x) - 0.001 < 0.0)return vec4(0.0, 0.0, 0.0, 1.0);
-	vec4 rez = vec4(0);
+   // if(abs(p.x) - 0.001 < 0.0)return vec4(0.0, 0.0, 0.0, 1.0);
+	vec4 scatteredLight = vec4(0);
     const float ldst = 8.;
 	vec3 lpos = vec3(disp(time + ldst)*0.5, time + ldst);
 	float t = 1.5;
 	float fogT = 0.;
    // return vec4(rd, 1.0);
 
-    int times = int(20.0 * HSV_PDF(e) + 10.0);
-    if(p.x > 0.0)times = 80;
+    int times = 80;
+    //if(p.x > 0.0)times = 80;
+    
+    float pre_t = length(pre_pos.xyz - ro);
+    if(IsFirstFrame > 0 && length(pre_scat.xyz) > 0.00001)
+    {
+        scatteredLight = pre_scat;
+        t = max(pre_t, t);
+        //transmittance = pre_scat.w;
+    }
 
 	for(int i=0; i<times; i++)
 	{
-		if(rez.a > 0.99)break;
+		if(scatteredLight.a > 0.99)break;
 
 		vec3 pos = ro + t*rd;
         vec2 mpv = map(pos);
@@ -82,10 +118,10 @@ vec4 render( in vec3 ro, in vec3 rd, float time, float e, vec2 p)
 		float fogC = exp(t*0.2 - 2.2);
 		col.rgba += vec4(0.06,0.11,0.11, 0.1)*clamp(fogC-fogT, 0., 1.);
 		fogT = fogC;
-		rez = rez + col*(1. - rez.a);
+		scatteredLight = scatteredLight + col*(1. - scatteredLight.a);
 		t += clamp(0.5 - dn*dn*.05, 0.09, 0.3);
 	}
-	return clamp(rez, 0.0, 1.0);
+	return clamp(scatteredLight, 0.0, 1.0);
 }
 
 float getsat(vec3 c)
@@ -107,33 +143,71 @@ vec3 iLerp(in vec3 a, in vec3 b, in float x)
     return clamp(ic,0.,1.);
 }
 
+float HistoryRejection(in vec3 N1, in vec3 N2)
+{
+    // 颜色无法考虑，因为我们不知道当前帧的颜色
+    // 距离因子：主要是由于移动导致的采样误差，以及突然的遮挡和出现。
+    float Dis_Factor = length(LastViewPosWS - viewPosWS);  /* 值越大，越触发 */
+    Dis_Factor = clamp(Dis_Factor / HISTORY_REJECTION_DIS_MAX, 0.0, 1.0);
+    float Angle_Factor = dot(normalize(view_center_dir), normalize(Last_view_center_dir));  /* 值越小，越触发 */
+    Angle_Factor = 1.0 - Angle_Factor;
+    float FOVEA_Factor = Map_HSV(HSV_PDF(degrees(acos(dot(N1, view_center_dir))))); /* 值越小，越触发 */
+    const float Const_Factor = 0.1;
+
+    float factor = (Dis_Factor * DIS_WEIGHT + Angle_Factor * ANGLE_WEIGHT) / (FOVEA_CONST_FACTOR + FOVEA_Factor);
+
+    
+    if(Angle_Factor > 0.01)
+        return -1.0;
+    return 1.0;
+}
 
 void main()
 {
     vec2 q = TexCoords;
     vec2 p = (TexCoords * Resolution - 0.5 * Resolution.xy) / Resolution.y;
-    bsMo = vec2(-0.5);
     
-    float time = iTime*3.;
-    vec3 ro = vec3(0,0,time);
-    
-    ro += vec3(sin(iTime)*0.5,sin(iTime*1.)*0.,0);
-        
-    float dspAmp = .85;
-    ro.xy += disp(ro.z)*dspAmp;
-    float tgtDst = 3.5;
-    
-    vec3 target = normalize(ro - vec3(disp(time + tgtDst)*dspAmp, time + tgtDst));
-    ro.x -= bsMo.x*2.;
-    vec3 rightdir = normalize(cross(target, vec3(0,1,0)));
-    vec3 updir = normalize(cross(rightdir, target));
-    rightdir = normalize(cross(updir, target));
-	vec3 rd=normalize((p.x*rightdir + p.y*updir)*1. - target);
-    vec3 rd_center = normalize(-target);
-
-    rd.xy *= rot(-disp(time + 3.5).x*0.2 + bsMo.x);
+    vec3 orig = viewPosWS;
+    vec4 rd = view_inv * projection_inv * (vec4(ReMapNDC_V3(vec3(TexCoords, 1.0)), 1.0) * far_plane);
+    vec3 dir  = normalize(rd.xyz - orig);
     prm1 = smoothstep(-0.4, 0.4,sin(iTime*0.3));
-	vec4 scn = render(ro, rd, time, degrees(acos(dot(rd, rd_center))), p);
+
+    // Read history
+    vec4 pos_tex;
+    vec4 scat_tex;
+    vec4 flags = vec4(1e-5);
+
+     // Read Pre Data
+    vec3 M_pos = orig + dir;
+    vec4 M_ndc = projection_pre * view_pre * vec4(M_pos, 1.0);
+    M_ndc = M_ndc / M_ndc.w;
+    vec2 M_uv = M_ndc.xy * 0.5 + 0.5;
+    vec3 M_dir = normalize(M_pos - LastViewPosWS);
+
+    if(IsFirstFrame == 0)
+    {
+        pos_tex = vec4(orig, 0.0);
+        scat_tex = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+    else
+    {
+        pos_tex = texture(posTex, M_uv);
+        scat_tex = texture(scatterTex, M_uv);
+    }
+
+    if(HistoryRejection(dir, M_dir) < 0.001)
+    {
+        pos_tex = vec4(orig, 0.0);
+        scat_tex = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+
+    if(inRange(M_uv) < -0.05)
+    {
+        pos_tex = vec4(orig, 0.0);
+        scat_tex = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+
+	vec4 scn = render(orig, dir, iTime*3.0 , degrees(acos(dot(dir, view_center_dir))), p, pos_tex, scat_tex, flags);
 		
     vec3 col = scn.rgb;
     col = iLerp(col.bgr, col.rgb, clamp(1.-prm1,0.05,1.));
@@ -141,5 +215,8 @@ void main()
     col = pow(col, vec3(.55,0.65,0.6))*vec3(1.,.97,.9);
 
     col *= pow( 16.0*q.x*q.y*(1.0-q.x)*(1.0-q.y), 0.12)*0.7+0.3; //Vign
+
     FragColor = vec4(col.rgb, 1.0);
+    FinalPos = pos_tex;
+    ScatterLight = scat_tex;
 } 

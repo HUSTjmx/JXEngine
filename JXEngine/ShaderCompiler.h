@@ -20,6 +20,8 @@
 class ShaderCompiler
 {
 public:
+	ShaderCompiler() {}
+
 	ShaderCompiler(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr);
 
 	ShaderCompiler(const char* vertexCode, const char* fragmentCode, int xx);
@@ -92,10 +94,18 @@ public:
 	// But we only share the code, do not share status!
 	// So we need re-compile() to get new handle of program.
 	// ...
-	ShaderCompiler Copy();
+	ShaderCompiler& Copy(ShaderCompiler& shader);
 
 	// ...
 	static std::string FILE_HEAD;
+
+	void SetVertexShader(std::string vertexShader) { this->vertexShader = vertexShader; }
+
+	void SetFragmentShader(std::string fragmentShader) { this->fragmentShader = fragmentShader; }
+
+	void SetGeometryShader(std::string geometryShader) { this->geometryShader = geometryShader; }
+
+	void SetHasGeometry(bool hasGeometry) { this->hasGeometry = hasGeometry; }
 
 	// The id of shaderProgram.
 	// ...

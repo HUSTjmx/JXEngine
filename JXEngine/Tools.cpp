@@ -231,3 +231,104 @@ GLenum BufferTool::GetFormatByInternalFormat(GLenum internalFormat)
 		return GL_RGBA;
 	
 }
+
+void BMPTool::WriteBMP(const char* FileName, RGBColor* ColorBuffer, int ImageWidth, int ImageHeight)
+{
+	//颜色数据总尺寸：
+	const int ColorBufferSize = ImageHeight * ImageWidth * sizeof(RGBColor);
+
+	//文件头
+	BITMAPFILEHEADER fileHeader;
+	fileHeader.bfType = 0x4D42;	//0x42是'B'；0x4D是'M'
+	fileHeader.bfReserved1 = 0;
+	fileHeader.bfReserved2 = 0;
+	fileHeader.bfSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + ColorBufferSize;
+	fileHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+
+	//信息头
+	BITMAPINFOHEADER bitmapHeader = { 0 };
+	bitmapHeader.biSize = sizeof(BITMAPINFOHEADER);
+	bitmapHeader.biHeight = ImageHeight;
+	bitmapHeader.biWidth = ImageWidth;
+	bitmapHeader.biPlanes = 1;
+	bitmapHeader.biBitCount = 24;
+	bitmapHeader.biSizeImage = ColorBufferSize;
+	bitmapHeader.biCompression = 0; //BI_RGB
+
+
+	FILE* fp;//文件指针
+
+	//打开文件（没有则创建）
+	fopen_s(&fp, FileName, "wb");
+
+	//写入文件头和信息头
+	fwrite(&fileHeader, sizeof(BITMAPFILEHEADER), 1, fp);
+	fwrite(&bitmapHeader, sizeof(BITMAPINFOHEADER), 1, fp);
+	//写入颜色数据
+	fwrite(ColorBuffer, ColorBufferSize, 1, fp);
+
+	fclose(fp);
+}
+
+void BMPTool::ReadBMP(const char* FileName, RGBColor* ColorBuffer)
+{
+	FILE* fp;
+
+	int ret = fopen_s(&fp, FileName, "rb");
+	if (fp == 0)
+	{
+		std::cout << "Read File Open Fail" << std::endl;
+		return;
+	}
+
+	BITMAPFILEHEADER fileheader = { 0 };
+	fread(&fileheader, sizeof(fileheader), 1, fp);
+	if (fileheader.bfType != 0x4D42)
+	{
+		fclose(fp);
+		return;
+	}
+
+	BITMAPINFOHEADER head;
+	fread(&head, sizeof(BITMAPINFOHEADER), 1, fp);
+	LONG bmpWidth = head.biWidth;
+	LONG bmpHeight = head.biHeight;
+	WORD biBitCount = head.biBitCount;
+
+	size_t size = 0;
+	while (true)
+	{
+		int iret = fread(&ColorBuffer[size], 1, 1, fp);
+		if (iret == 0)
+			break;
+		size = size + iret;
+	}
+	fclose(fp);
+}
+
+void BMPTool::GetScreenShot(SCENE_TYPE type_, int scene_id, int frame)
+{
+	//申请颜色数据内存
+	RGBColor* ColorBuffer = new RGBColor[CONFIG::SCREEN_CONFIG::SCR_WIDTH * CONFIG::SCREEN_CONFIG::SCR_HEIGHT];
+
+	//读取像素（注意这里的格式是 BGR）
+	glReadPixels(0, 0, CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT, GL_BGR, GL_UNSIGNED_BYTE, ColorBuffer);
+
+	std::string fileName = "Output\\Scene(" + std::to_string(scene_id)+")\\";
+
+	if (type_ == SCENE_TYPE::GroudTruth)
+		fileName += "GroudTruth\\";
+	if (type_ == SCENE_TYPE::MyMethod)
+		fileName += "MyMethod\\";
+	if (type_ == SCENE_TYPE::ContrastMethod)
+		fileName += "ContrastMethod\\";
+
+	fileName = fileName  + std::to_string(frame) + ".bmp";
+	
+	//将数据写入文件
+	WriteBMP(fileName.c_str(), ColorBuffer, CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+
+	//清理颜色数据内存
+	delete[] ColorBuffer;
+
+}

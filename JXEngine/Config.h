@@ -166,3 +166,10 @@ namespace CONFIG
 	}
 }
 
+enum class SCENE_TYPE
+{
+	GroudTruth,
+	MyMethod,
+	ContrastMethod
+};
+
