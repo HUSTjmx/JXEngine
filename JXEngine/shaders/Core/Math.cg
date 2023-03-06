@@ -371,4 +371,11 @@ float almostIdentity( float x )
     return x*x*(2.0-x);
 }
 
+mat3 rotate_around_x(in float angle_degrees)
+{
+	float angle = radians(angle_degrees);
+	float _sin = sin(angle);
+	float _cos = cos(angle);
+	return mat3(1, 0, 0, 0, _cos, -_sin, 0, _sin, _cos);
+}
 

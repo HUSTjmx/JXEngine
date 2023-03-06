@@ -86,10 +86,10 @@ vec3 computeIncidentLight_T(vec3 orig, vec3 dir, vec3 sunDirection, float tmin, 
 
 void main()
 {   
-    vec3 orig = vec3(0.0, earthRadius + 1.0, 0.0);
+    vec3 orig = vec3(0.0, 1.0, 0.0);
     vec4 rd = view_inv * projection_inv * (vec4(ReMapNDC_V3(vec3(TexCoords, 1.0)), 1.0) * far_plane);
-    vec3 dir  = normalize(rd.xyz - orig);
-
+    vec3 dir  = normalize(rd.xyz);
+    orig = vec3(0.0, earthRadius + 1.0, 0.0);
 
     vec3 sun = normalize(-dirLights[0].direction);
     vec3 color = computeIncidentLight_T(orig, dir, sun, 0.0, 100000.0);

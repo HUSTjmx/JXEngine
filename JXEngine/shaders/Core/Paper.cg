@@ -1,0 +1,40 @@
+/*
+* 本人毕业设计中所言的创新算法
+*/
+
+// Uniform变量
+uniform float MAX_DISTANCE_IS_FOVEAL_REGION;
+uniform float MIN_SIZE_IS_FOVEAL_REGION;
+uniform bool MEDIASIZE_IS_LEQ_LIGHTZSIZE;
+
+// 区域判断算法
+void IsFovealRegion(in float theta, in float L, in float R, out bool rel)
+{
+    bool A = (theta * 180.0) / PI < 5.79;
+    bool B = L < MAX_DISTANCE_IS_FOVEAL_REGION;
+    bool C = R > MAX_DISTANCE_IS_FOVEAL_REGION;
+    
+    //rel = A & B & C;
+    rel = A;
+}
+
+// 自适应的相位函数选择算法
+float SelectPhaseFunction(float mu, float g, bool isFoveal)
+{
+    if(isFoveal)
+    {
+        if(MEDIASIZE_IS_LEQ_LIGHTZSIZE)
+        {
+            return PhaseFunc_RAYLEIGH(mu);
+        }
+        else
+        {
+            return PhaseFunc_MIE(mu, g);
+        }
+    }
+    else
+    {
+        return PhaseFunc_CON();
+    }
+}
+

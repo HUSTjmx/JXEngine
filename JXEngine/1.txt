@@ -447,6 +447,13 @@ float almostIdentity( float x )
     return x*x*(2.0-x);
 }
 
+mat3 rotate_around_x(in float angle_degrees)
+{
+	float angle = radians(angle_degrees);
+	float _sin = sin(angle);
+	float _cos = cos(angle);
+	return mat3(1, 0, 0, 0, _cos, -_sin, 0, _sin, _cos);
+}
 
 
 
@@ -660,7 +667,7 @@ vec3 Standard_BRDF_Torrance_DVF(vec3 diffuse_color, vec3 v, vec3 l, vec3 n, floa
 {
     vec3 h = normalize(v + l);
     
-    float NoV = abs(dot(n, v)) + 1e-5;
+    float NoV = clamp(abs(dot(n, v)) + 1e-5, 0.00001, 1.0);
     float NoL = clamp(dot(n, l), 0.0001, 1.0);
     float NoH = clamp(dot(n, l), 0.0001, 1.0);
     float LoH = clamp(dot(l, h), 0.0001, 1.0);
@@ -678,6 +685,401 @@ vec3 Standard_BRDF_Torrance_DVF(vec3 diffuse_color, vec3 v, vec3 l, vec3 n, floa
     return Fr + Fd;
 }
 
+// FBM MODEL
+// ...
+// -----------------------------------
+// -----------------------------------
+
+// Mystery Mountains
+// ...
+#define F + texture(noisyTexture, .3 + p.xz * s / 3e3).xyz / (s += s) 
+vec3 MysteryMoutains_v1(sampler2D noisyTexture, vec2 uv)
+{
+    vec3 p = vec3(uv, 1.0) - 0.5, d = p, t;
+    vec3 c;
+    for(float i = 1.5; i > 0.; i-=.002)
+    {
+        float s =.5;
+        t = F F F;
+        c =1.+d.x-t*i; c.y-=.1;
+        if(t.x>p.y*.007 + 1.1)break;
+        p += d;
+    }
+    return c;
+}
+
+// Medulla Mapping Function
+// ...
+float Medulla_Map(in vec3 p)
+{
+    float res = 0.0;
+    vec3  c = p;
+
+    for(int i = 0; i < 10; ++i)
+    {
+        p = 0.7 * abs(p) / dot(p, p) - 0.7;
+        p.yz = csqr(p.yz);
+        p = p.zxy;
+        res += exp(-20.0 * abs(dot(p, c)));
+    }
+    return res / 2.4;
+}
+
+// ...
+bool solveQuadratic(float a, float b, float c, inout float x1, inout float x2)
+{
+    if(b < 0.000001)
+    {
+        // Handle special case where the two vector ray.dir and V are perpendicular
+        // with V = ray.orig - sphere.centre.
+        if(a < 0.000001) return false;
+        x1 = 0.0;
+        x2 = sqrt(-c / a);
+        return true;
+    }
+
+    float discr = b * b - 4.0 * a * c;
+
+    if(discr < 0.000001) return false;
+
+    float q = (b < 0.000001) ? -0.5 * (b - sqrt(discr)) : -0.5 * (b + sqrt(discr));
+    x1 = q / a;
+    x2 = c / q;
+    return true;
+}
+
+// Sphere intersect func
+// ...
+bool raySphereIntersect(vec3 orig, vec3 dir, float radius, inout float t0, inout float t1)
+{
+    float A = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
+    float B = 2.0 * (dir.x + orig.x + dir.y * orig.y + dir.z * orig.z);
+    float C = orig.x * orig.x + orig.y * orig.y + orig.z * orig.z - radius * radius;
+
+    if(!solveQuadratic(A, B, C, t0, t1)) return false;
+
+    if(t0 > t1)
+    {
+        float t = t1;
+        t1 = t0;
+        t0 = t;
+    }
+
+    return true;
+}
+
+
+
+// SKY MODEL.
+// ...
+// -------------------------------------------
+// -------------------------------------------
+
+#define MIE_G 0.76
+
+uniform float earthRadius;
+uniform float atmosphereRadius;
+uniform float Hr;
+uniform float Hm;
+
+uniform vec3 betaR;
+uniform vec3 betaM;
+
+#define D_STRONG_FOG 2.0
+#define D_FOG_NOISE 1.0
+
+
+float PhaseFunc_CON()
+{
+    return 1.0 / (4.0 * PI);
+}
+
+// Rayleigh Phase Function
+// ...
+float PhaseFunc_RAYLEIGH(float mu)
+{
+    float A = 3.0 / 16.0 * PI_INV;
+    return A * (1.0 + mu * mu);
+}
+
+// Mie Phase Function.
+// <g>: control of the degree of anisotropy of the medium
+// <mu>: mu = dit(light, view)
+// ...
+float PhaseFunc_MIE(float mu, float g)
+{
+    float A = 3.0 / 8.0 * PI_INV;
+    float g2 = g * g;
+    float mu2 = mu * mu;
+
+    float numerator = (1.0 - g2) * (1.0 + mu2);
+
+    float denominator = (2.0 + g2) * pow(1.0 + g2 - 2.0 * g * mu, 1.50);
+
+    return A * numerator / denominator;
+}
+
+
+// Computer incident light of sky model.
+// ...
+vec3 computeIncidentLight(vec3 orig, vec3 dir, vec3 sunDirection, float tmin, float tmax)
+{
+    float t0 = 0.0, t1 = 0.0;
+    if(!raySphereIntersect(orig, dir, atmosphereRadius, t0, t1) || t1 < 0.000001)return vec3(0.0);
+    if(t0 > tmin && t0 > 0.000001) tmin = t0;
+    if(t1 < tmax) tmax = t1;
+
+
+
+    int numSamples = 16;
+    int numSamplesLight = 8;
+
+
+    float segmentLength = (tmax - tmin) / numSamples;
+    float tCurrent = tmin;
+    
+    // mie and rayleigh contribution
+    // ...
+    vec3 sumR = vec3(0.0), sumM = vec3(0.0);
+
+    float opticalDepthR = 0.0, opticalDepthM = 0.0;
+
+    // mu in the paper which is the cosine of the angle between the sun direction and the ray direction.
+    // ...
+    float mu = dot(dir, sunDirection);
+
+    float phaseR = PhaseFunc_RAYLEIGH(mu);
+    float phaseM = PhaseFunc_MIE(mu, MIE_G);
+
+    for(int i = 0; i < numSamples; ++i)
+    {
+        vec3 samplePosition = orig + (tCurrent + segmentLength * 0.5) * dir;
+        float height = length(samplePosition) - earthRadius;
+
+        // Compute optical depth for light
+        // ...
+        float hr = exp(-height / Hr) * segmentLength;
+        float hm = exp(-height / Hm) * segmentLength;
+        opticalDepthR += hr;
+        opticalDepthM += hm;
+
+        // light optical depth.
+        // ...
+        float t0Light, t1Light;
+        raySphereIntersect(samplePosition, sunDirection, atmosphereRadius, t0Light, t1Light);
+        float segmentLengthLight = t1Light / numSamplesLight, tCurrentLight = 0.0;
+        float opticalDepthLightR = 0.0, opticalDepthLightM = 0.0;
+        int j;
+        for(j = 0; j < numSamplesLight; ++j)
+        {
+            vec3 samplePositionLight = samplePosition + (tCurrentLight + segmentLengthLight * 0.5) * sunDirection;
+            float heightLight = length(samplePositionLight) - earthRadius;
+            if(heightLight < 0.000001)break;
+            opticalDepthLightR += exp(-heightLight / Hr) * segmentLengthLight;
+            opticalDepthLightM += exp(-heightLight / Hm) * segmentLengthLight;
+            tCurrentLight += segmentLengthLight;
+        }
+
+        if(j == numSamplesLight)
+        {
+            vec3 tau = betaR * (opticalDepthR + opticalDepthLightR) + betaM * 1.1 * (opticalDepthLightM + opticalDepthM);
+            vec3 attenuation = vec3(exp(-tau.x), exp(-tau.y), exp(-tau.z));
+            sumR += attenuation * hr;
+            sumM += attenuation * hm;
+        }
+        tCurrent += segmentLength;
+
+    }
+    //return vec3(sunDirection);
+    return (sumR * betaR * phaseR + sumM * betaM * phaseM) * 20.0;
+}
+
+// ClOUD MODEL
+// ...
+// -----------------------------------------------------
+// -----------------------------------------------------
+
+#define T iTime / 3.0
+#define CT T / 14.0
+
+// Moody clouds from Patu
+// http://www.shadertoy.com/view/4tVXRV.
+// ...
+vec3 cloud_Patu(vec3 rd)
+{
+    vec2 uv = rd.xz / (rd.y + 0.6);
+    float nz = fbm_v1(vec3(uv.yx * 1.4 + vec2(CT, 0.0), CT)) * 1.5;
+    return clamp(pow(vec3(nz), vec3(4.0)) * rd.y, 0.0, 1.0);
+}
+
+
+// Tool function for Media integration Cloud.
+// ...
+void GetParticipatingMedia(sampler2D noiseTexture ,out float sigmaS, out float sigmaE, in vec3 pos, float len)
+{
+    float Fog = 1.0 + D_FOG_NOISE * 13.0 * clamp(displacementSimple_FBM_v3(noiseTexture, pos.xz * 100.5 + iTime), 0.0, 1.0);
+    Fog = 0.3 * clamp((Fog - len) * 1.0, 0.0, 1.0);
+
+    float fogFactor = 1.0 + D_STRONG_FOG * 2.0;
+
+    sigmaS = Fog * fogFactor;
+    float sigmaA = 0.0;
+    sigmaE = max(0.000001, sigmaS + sigmaA);
+} 
+
+// Tool function for Media integration Cloud.
+// ...
+float volumetricShadow(sampler2D noiseTexture, in vec3 from, in vec3 to, float sigmaS, float len)
+{
+    float numStep = 5.0;
+    float shadow = 1.0;
+    float sigmaE = sigmaS;
+
+    float dd = length(to - from) / numStep;
+    for(float s = 0.5; s < (numStep - 0.1); s += 1.0)
+    {
+        vec3 pos = from + (to - from) * (s / (numStep));
+
+        GetParticipatingMedia(noiseTexture, sigmaS, sigmaE, pos, len * 5.0);
+
+        shadow *= exp(-sigmaE * dd);
+    }
+    //return 1.0;
+    return shadow;
+}
+
+// Media integration Cloud.
+// ...
+vec4 cloud_SebH(sampler2D noiseTexture, vec3 rO, vec3 rD, float len)
+{
+    float sigmaS = 0.0;
+    float sigmaA = 0.0;
+    float sigmaE = sigmaS + sigmaA;
+
+    float transmittance = 1.0;
+
+    vec3 scatteredLight = vec3(0.0, 0.0, 0.0);
+    
+    // the distance that has moved.
+    // ...
+    float d = 0.0;
+
+    // Current march pos.
+    // ...
+    vec3 p = vec3(0.0 , 0.0, 0.0);
+
+    // Step length.
+    // ...
+    float dd = 0.01;
+
+    // Iter times.
+    // ...
+    int numIter = int(len * 0.1 / dd) + 20;
+
+    for(int i = 0; i < numIter; ++i)
+    {
+        vec3 p = rO + d * rD;
+
+        GetParticipatingMedia(noiseTexture, sigmaS, sigmaE, p, len * 5.0);
+
+        for(int j = 0; j < dirLightsNum; ++j)
+        {
+            float mu = clamp(dot(rD, normalize(dirLights[j].direction)), 0.0, 1.0);
+            vec3 S = GetDirLightIllumiance(j) * GetDirLightColor(j) * sigmaS * PhaseFunc_RAYLEIGH(mu)
+             * volumetricShadow(noiseTexture, p, p + dirLights[j].direction * 100.0, sigmaS, len);
+            vec3 Sint = (S - S * exp(-sigmaE * dd)) / sigmaE;
+            scatteredLight += transmittance * Sint;
+        }
+
+        for(int j = 0; j < pointLightsNum; ++j)
+        {
+            vec3 lightDir = normalize(pointLights[j].position - p);
+            float mu = clamp(dot(rD, -lightDir), 0.0, 1.0);
+            vec3 S = GetPointLightColor(j) * GetPointLightIllumiance(j, p) * sigmaS * PhaseFunc_RAYLEIGH(mu) 
+            * volumetricShadow(noiseTexture, p, pointLights[j].position, sigmaS, len);
+            vec3 Sint = (S - S * exp(-sigmaE * dd));
+            scatteredLight += transmittance * Sint;
+        }
+
+        float c = Medulla_Map(p);
+
+        scatteredLight = 1.1 * scatteredLight + 0.3 * scatteredLight * vec3(c * c, c * c, c * c);
+
+        transmittance *= exp(-sigmaE * dd);
+        d += dd;
+
+        //if(d > 4.0 * len) break;
+    }
+
+    return vec4(scatteredLight, transmittance);
+}
+
+// SD Function
+// ...
+// ----------------------------------------------------------
+
+float sdSphere(vec3 p, float s)
+{
+    return length(p) - s;
+}
+
+
+vec2 sphIntersect( in vec3 ro, in vec3 rd, in vec3 ce, float ra )
+{
+    vec3 oc = ro - ce;
+    float b = dot( oc, rd );
+    float c = dot( oc, oc ) - ra*ra;
+    float h = b*b - c;
+    if( h<0.0 ) return vec2(-1.0); // no intersection
+    h = sqrt( h );
+    return vec2( -b-h, -b+h );
+}
+
+
+
+
+/*
+* 本人毕业设计中所言的创新算法
+*/
+
+// Uniform变量
+uniform float MAX_DISTANCE_IS_FOVEAL_REGION;
+uniform float MIN_SIZE_IS_FOVEAL_REGION;
+uniform bool MEDIASIZE_IS_LEQ_LIGHTZSIZE;
+
+// 区域判断算法
+void IsFovealRegion(in float theta, in float L, in float R, out bool rel)
+{
+    bool A = (theta * 180.0) / PI < 5.79;
+    bool B = L < MAX_DISTANCE_IS_FOVEAL_REGION;
+    bool C = R > MAX_DISTANCE_IS_FOVEAL_REGION;
+    
+    //rel = A & B & C;
+    rel = A;
+}
+
+// 自适应的相位函数选择算法
+float SelectPhaseFunction(float mu, float g, bool isFoveal)
+{
+    if(isFoveal)
+    {
+        if(MEDIASIZE_IS_LEQ_LIGHTZSIZE)
+        {
+            return PhaseFunc_RAYLEIGH(mu);
+        }
+        else
+        {
+            return PhaseFunc_MIE(mu, g);
+        }
+    }
+    else
+    {
+        return PhaseFunc_CON();
+    }
+}
+
+
+
 layout(location = 0) out vec4 FragColor;
 layout(location = 1) out vec4 LastColor;
 layout(location = 2) out vec4 ScatterLight;
@@ -691,199 +1093,381 @@ uniform mat4 view_pre;
 uniform mat4 projection;
 uniform mat4 projection_inv;
 uniform mat4 projection_pre;
-
-uniform sampler2D preTexture;
-uniform sampler2D scatterTex;
-uniform sampler2D posTex;
 uniform int IsFirstFrame;
 
+// Box
+#define BOX_SIZE vec3(8.0, 8.0, 8.0)
+// White Wall
+#define OBJ_WHITEWALL 1.0
+    const vec3 WhiteWallColor = vec3(0.7295, 0.7355, 0.729);
+// Right Wall
+#define OBJ_RIGHTWALL 2.0
+    const vec3 RightWallColor = vec3(0.117, 0.4125, 0.115);
+// Left Wall
+#define OBJ_LEFTWALL 3.0
+    const vec3 LeftWallColor = vec3(0.611, 0.0555, 0.062);
+// YuShi Sphere
+#define OBJ_YUSHI_SPHERE 4.0
+    const vec3 YuShiPos = vec3(0.0, 0.0, 0.5);
+    const vec2 YushiRadius = vec2(1.0, 2.0); 
 
-mat2 rot(in float a){float c = cos(a), s = sin(a);return mat2(c,s,-s,c);}
-const mat3 m3 = mat3(0.33338, 0.56034, -0.71817, -0.87887, 0.32651, -0.15323, 0.15162, 0.69596, 0.61339)*1.93;
-float mag2(vec2 p){return dot(p,p);}
-float linstep(in float mn, in float mx, in float x){ return clamp((x - mn)/(mx - mn), 0., 1.); }
-float prm1 = 0.;
-vec2 bsMo = vec2(0);
+// Wall Material
+#define WALL_METALLIC 0.0
+#define WALL_REFLECTANCE 0.1
+#define WALL_ROUGHNESS 0.9
 
-vec2 disp(float t){ 
-    return vec2(0.0);
-    return vec2(sin(t*0.22)*1., cos(t*0.175)*1.)*2.; }
+// Shade Settings
+#define ShadowIntensity 5.0
 
-vec2 map(vec3 p)
-{
-    vec3 p2 = p;
-    p2.xy -= disp(p.z).xy;
-    p.xy *= rot(sin(p.z+iTime)*(0.1 + prm1*0.05) + iTime*0.09);
-    float cl = mag2(p2.xy);
-    float d = 0.;
-    p *= .61;
-    float z = 1.;
-    float trk = 1.;
-    float dspAmp = 0.1 + prm1*0.2;
-    for(int i = 0; i < 5; i++)
-    {
-		p += sin(p.zxy*0.75*trk + iTime*trk*.8)*dspAmp;
-        d -= abs(dot(cos(p), sin(p.yzx))*z);
-        z *= 0.57;
-        trk *= 1.4;
-        p = p*m3;
-    }
-    d = abs(d + prm1*3.)+ prm1*.3 - 2.5 + bsMo.y;
-    return vec2(d + cl*.2 + 0.25, cl);
-}
+// Phase Func Mode
+#define PHASE_MODE 2.0
+#define PHASE_G 0.5
 
 float HSV_PDF(float e)
 {
-    const float M = 0.9;
-    if(e <= 5.79)return 1.0 * M;
-    return 7.49 / pow(0.3 * e + 1.0, 2) * M;
+    const float M = 1.0;
+    if(e <= 5.79)return 1.0 * M * 1.0;
+    return 7.49 / pow(0.3 * e + 1.0, 2.0) * M;
+}
+
+float Map_HSV(float v)
+{
+    return exp(1.0 - v) - 1.0;
+}
+
+vec3 StretchToFarPLane(in vec3 pos)
+{
+    vec3 v = normalize(pos - LastViewPosWS);
+    float cos_theta = dot(normalize(Last_view_center_dir), v);
+    float len = far_plane / cos_theta;
+    //return vec3(far_plane / len);
+    return LastViewPosWS + v * vec3(len);
 }
 
 
-vec4 render( in vec3 ro, in vec3 rd, float time, float e, vec2 p, inout vec4 pre_pos, inout vec4 pre_scat, in vec4 flags)
-{
-   // if(abs(p.x) - 0.001 < 0.0)return vec4(0.0, 0.0, 0.0, 1.0);
-	vec4 scatteredLight = vec4(0);
-    const float ldst = 8.;
-	vec3 lpos = vec3(disp(time + ldst)*0.5, time + ldst);
-	float t = 1.5;
-	float fogT = 0.;
-   // return vec4(rd, 1.0);
 
-    int times = 80;
-    //if(p.x > 0.0)times = 80;
-    
-    float pre_t = length(pre_pos.xyz - ro);
-    if(IsFirstFrame > 0 && length(pre_scat.xyz) > 0.00001)
+float PhaseFunc(vec3 V, vec3 L, float g)
+{
+    float mu = dot(V, L);
+    if(PHASE_MODE < 0.5) return PhaseFunc_CON();
+    if(PHASE_MODE < 1.5) return PhaseFunc_RAYLEIGH(mu);
+    if(PHASE_MODE < 2.5) return PhaseFunc_MIE(mu, g);
+    return PhaseFunc_CON();
+}
+
+float sdPlane(vec3 p, vec3 n /* normalized */, float h)
+{
+    return dot(p, n) + h;
+}
+
+float sdTorus(vec3 p, vec3 center, vec2 t)
+{
+  p = p - center;
+  vec2 q = vec2(length(p.xz) - t.x, p.y);
+  return length(q) - t.y;
+}
+
+vec2 iBox(in vec3 ro, in vec3 rd, in vec3 rad)
+{
+    vec3 m = 1.0 / rd;
+    vec3 n = m * ro;
+    vec3 k = abs(m) * rad;
+    vec3 t1 = -n - k;
+    vec3 t2 = -n + k;
+    return vec2(max(max(t1.x, t1.y), t1.z),
+                min(min(t2.x, t2.y), t2.z));
+}
+
+vec2 iSphere( in vec3 ro, in vec3 rd, in vec4 sph )//from iq
+{
+	vec3 oc = ro - sph.xyz;
+	float b = dot( oc, rd );
+	float c = dot( oc, oc ) - sph.w * sph.w;
+	float h = b * b - c;
+	if( h < 0.0 ) return vec2(-1.0);
+	h = sqrt(h);
+	return vec2(-b - h, -b + h );
+}
+
+vec2 opU(vec2 d1, vec2 d2)
+{
+    return (d1.x < d2.x) ? d1 : d2;
+}
+
+vec2 Map(in vec3 pos)
+{
+    vec2 res = vec2(1e10, 0.0);
+
+    // Ground
+    res = opU(res, vec2(sdPlane(pos, vec3(0.0, 1.0, 0.0), 3.0), OBJ_WHITEWALL));
+    // Top
+    res = opU(res, vec2(sdPlane(pos, vec3(0.0, -1.0, 0.0), 3.0), OBJ_WHITEWALL));
+    // Back
+    res = opU(res, vec2(sdPlane(pos, vec3(0.0, 0.0,- 1.0), 1.0), OBJ_WHITEWALL));
+    // left
+    res = opU(res, vec2(sdPlane(pos, vec3(1.0, 0.0, 0.0), 3.0), OBJ_LEFTWALL));
+    // Right
+    res = opU(res, vec2(sdPlane(pos, vec3(-1.0, 0.0, 0.0), 3.0), OBJ_RIGHTWALL));
+    // YuShi
+    res = opU(res, vec2(sdTorus(pos, YuShiPos, YushiRadius), OBJ_YUSHI_SPHERE));
+
+    return res;
+}
+
+vec2 Map2(in vec3 pos)
+{
+    vec2 res = vec2(1e10, 0.0);
+
+    // Ground
+    res = opU(res, vec2(sdPlane(pos, vec3(0.0, 1.0, 0.0), 3.0), OBJ_WHITEWALL));
+    // Top
+    res = opU(res, vec2(sdPlane(pos, vec3(0.0, -1.0, 0.0), 3.0), OBJ_WHITEWALL));
+    // Back
+    res = opU(res, vec2(sdPlane(pos, vec3(0.0, 0.0,- 1.0), 1.0), OBJ_WHITEWALL));
+    // left
+    res = opU(res, vec2(sdPlane(pos, vec3(1.0, 0.0, 0.0), 3.0), OBJ_LEFTWALL));
+    // Right
+    res = opU(res, vec2(sdPlane(pos, vec3(-1.0, 0.0, 0.0), 3.0), OBJ_RIGHTWALL));
+    return res;
+}
+
+vec3 calcNormal( in vec3 pos )
+{
+    vec2 e = vec2(1.0,-1.0) * 0.5773 * 0.0005;
+    return normalize( e.xyy * Map2( pos + e.xyy ).x + 
+					  e.yyx * Map2( pos + e.yyx ).x + 
+					  e.yxy * Map2( pos + e.yxy ).x + 
+					  e.xxx * Map2( pos + e.xxx ).x );
+}
+
+vec2 RayCast(in vec3 ro, in vec3 rd)
+{
+    vec2 res = vec2(-1.0, -1.0);
+    float tmin = 0.3;
+    float tmax = 20.0;
+
+    vec2 tb = iBox(ro, rd, BOX_SIZE);
+    if(tb.x < tb.y && tb.y > 0.0 && tb.x < tmax)
     {
-        scatteredLight = pre_scat;
-        t = max(pre_t, t);
-        //transmittance = pre_scat.w;
-    }
+        tmin = max(tb.x, tmin);
+        tmax = min(tb.y, tmax);
 
-	for(int i=0; i<times; i++)
-	{
-		if(scatteredLight.a > 0.99)break;
-
-		vec3 pos = ro + t*rd;
-        vec2 mpv = map(pos);
-		float den = clamp(mpv.x-0.3,0.,1.)*1.12;
-		float dn = clamp((mpv.x + 2.),0.,3.);
-        
-		vec4 col = vec4(0);
-        if (mpv.x > 0.6)
+        float t = tmin;
+        for(int i = 0; i < 70 && t < tmax; ++i)
         {
-        
-            col = vec4(sin(vec3(5.,0.4,0.2) + mpv.y*0.1 +sin(pos.z*0.4)*0.5 + 1.8)*0.5 + 0.5,0.08);
-            col *= den*den*den;
-			col.rgb *= linstep(4.,-2.5, mpv.x)*2.3;
-            float dif =  clamp((den - map(pos+.8).x)/9., 0.001, 1. );
-            dif += clamp((den - map(pos+.35).x)/2.5, 0.001, 1. );
-            col.xyz *= den*(vec3(0.005,.045,.075) + 1.5*vec3(0.033,0.07,0.03)*dif);
+            vec2 h = Map(ro + rd * t);
+            if(abs(h.x) < (0.0001 * t))
+            {
+                res = vec2(t, h.y);
+                break;
+            }
+            t += h.x;
         }
-		
-		float fogC = exp(t*0.2 - 2.2);
-		col.rgba += vec4(0.06,0.11,0.11, 0.1)*clamp(fogC-fogT, 0., 1.);
-		fogT = fogC;
-		scatteredLight = scatteredLight + col*(1. - scatteredLight.a);
-		t += clamp(0.5 - dn*dn*.05, 0.09, 0.3);
-	}
-	return clamp(scatteredLight, 0.0, 1.0);
+        return res;
+    }
+    return res;
 }
 
-float getsat(vec3 c)
+vec2 RayCast2(in vec3 ro, in vec3 rd)
 {
-    float mi = min(min(c.x, c.y), c.z);
-    float ma = max(max(c.x, c.y), c.z);
-    return (ma - mi)/(ma+ 1e-7);
+    vec2 res = vec2(-1.0, -1.0);
+    float tmin = 0.3;
+    float tmax = 60.0;
+
+    vec2 tb = iBox(ro, rd, BOX_SIZE);
+    if(tb.x < tb.y && tb.y > 0.0 && tb.x < tmax)
+    {
+        tmin = max(tb.x, tmin);
+        tmax = min(tb.y, tmax);
+
+        float t = tmin;
+        for(int i = 0; i < 70 && t < tmax; ++i)
+        {
+            vec2 h = Map2(ro + rd * t);
+            if(abs(h.x) < (0.0001 * t))
+            {
+                res = vec2(t, h.y);
+                break;
+            }
+            t += h.x;
+        }
+        return res;
+    }
+    return res;
 }
 
-//from my "Will it blend" shader (https://www.shadertoy.com/view/lsdGzN)
-vec3 iLerp(in vec3 a, in vec3 b, in float x)
+void getParticipatingMedia(out float sigmaS, out float sigmaE, in vec3 pos)
 {
-    vec3 ic = mix(a, b, x) + vec3(1e-6,0.,0.);
-    float sd = abs(getsat(ic) - mix(getsat(a), getsat(b), x));
-    vec3 dir = normalize(vec3(2.*ic.x - ic.y - ic.z, 2.*ic.y - ic.x - ic.z, 2.*ic.z - ic.y - ic.x));
-    float lgt = dot(vec3(1.0), ic);
-    float ff = dot(dir, normalize(ic));
-    ic += 1.5*dir*sd*ff*lgt;
-    return clamp(ic,0.,1.);
-}
-
-float HistoryRejection(in vec3 N1, in vec3 N2)
-{
-    // 颜色无法考虑，因为我们不知道当前帧的颜色
-    // 距离因子：主要是由于移动导致的采样误差，以及突然的遮挡和出现。
-    float Dis_Factor = length(LastViewPosWS - viewPosWS);  /* 值越大，越触发 */
-    Dis_Factor = clamp(Dis_Factor / HISTORY_REJECTION_DIS_MAX, 0.0, 1.0);
-    float Angle_Factor = dot(normalize(view_center_dir), normalize(Last_view_center_dir));  /* 值越小，越触发 */
-    Angle_Factor = 1.0 - Angle_Factor;
-    float FOVEA_Factor = Map_HSV(HSV_PDF(degrees(acos(dot(N1, view_center_dir))))); /* 值越小，越触发 */
-    const float Const_Factor = 0.1;
-
-    float factor = (Dis_Factor * DIS_WEIGHT + Angle_Factor * ANGLE_WEIGHT) / (FOVEA_CONST_FACTOR + FOVEA_Factor);
-
+    float sphereFog = clamp((YushiRadius - length(pos - YuShiPos))/YushiRadius, 0.0, 1.0);
     
-    if(Angle_Factor > 0.01)
-        return -1.0;
-    return 1.0;
+    sigmaS = sphereFog * 0.3;
+    const float sigmaA = 0.00;
+    sigmaE = max(0.0000001, sigmaA + sigmaS);
+}
+
+float volumetricShadow(in vec3 from, in vec3 to)
+{
+    //return 2.0;
+    const float numStep = 36.0; // quality control. Bump to avoid shadow alisaing
+    float shadow = 1.0;
+    float sigmaS = 0.0;
+    float sigmaE = 0.0;
+    float dd = length(to-from) / numStep;
+    for(float s=0.5; s<(numStep-0.1); s+=1.0)// start at 0.5 to sample at center of integral part
+    {
+        vec3 pos = from + (to-from)*(s/(numStep));
+        getParticipatingMedia(sigmaS, sigmaE, pos);
+        shadow *= exp(-sigmaE * ShadowIntensity * dd);
+    }
+    return shadow;
+}
+
+vec3 evaluateLightWithPhase(in vec3 pos)
+{
+    vec3 light_sum = vec3(0.0);
+    vec3 V = normalize(pos - viewPosWS);
+    for(int i = 0; i < pointLightsNum; ++i)
+        light_sum += GetPointLightIllumiance(i, pos) * 
+        PhaseFunc(V, normalize(pointLights[i].position - viewPosWS), PHASE_G) * 
+        volumetricShadow(pos, pointLights[i].position);
+        
+    
+    return light_sum;
+}
+
+
+vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec4 pre_scat, in vec4 flags)
+{
+    pre_scat = vec4(0.0, 0.0, 0.0, 1.0);
+    if(ID < 0.5) return vec3(0.0);
+    if(ID < 1.5) return WhiteWallColor;
+    if(ID < 2.5) return RightWallColor;
+    if(ID < 3.5) return LeftWallColor;
+    else
+    {
+        vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, max(YushiRadius.x, YushiRadius.y) + 1.0));
+        float t = tmm.x;
+        float dt = .5;     //float dt = .2 - .195*cos(iTime*.05);//animated
+        float transmittance = 1.0;
+        vec3 scatteredLight = vec3(0.0);
+        float sigmaS = 0.0;
+        float sigmaE = 0.0;
+
+        
+        for( int i = 0; i < 10; ++i )
+        {
+            vec3 p = ro + t * rd;
+            getParticipatingMedia(sigmaS, sigmaE, p);
+
+            vec3 S = evaluateLightWithPhase(p) * sigmaS;
+            vec3 Sint = (S - S * exp(-sigmaE * dt)) / sigmaE;
+            scatteredLight += transmittance * Sint; // accumulate and also take into account the transmittance from previous steps
+            transmittance *= exp(-sigmaE * dt);
+                    
+            t += dt;
+            if(t > tmm.y)
+            { 
+                pre_pos.w = 1.0;
+                break;
+            }
+        }
+        
+        pre_pos = vec4(ro + t * rd, pre_pos.w);
+        pre_scat = vec4(scatteredLight, transmittance);
+        return vec3(0.0);
+    }
+}
+
+vec3 GetColor2(in float ID, in vec3 ro, in vec3 rd)
+{
+    if(ID < 0.5) return vec3(0.0);
+    if(ID < 1.5) return WhiteWallColor;
+    if(ID < 2.5) return RightWallColor;
+    if(ID < 3.5) return LeftWallColor;
+    return WhiteWallColor;
 }
 
 void main()
 {
-    vec2 q = TexCoords;
-    vec2 p = (TexCoords * Resolution - 0.5 * Resolution.xy) / Resolution.y;
-    
     vec3 orig = viewPosWS;
     vec4 rd = view_inv * projection_inv * (vec4(ReMapNDC_V3(vec3(TexCoords, 1.0)), 1.0) * far_plane);
     vec3 dir  = normalize(rd.xyz - orig);
-    prm1 = smoothstep(-0.4, 0.4,sin(iTime*0.3));
+    float W = rd.w;
 
     // Read history
     vec4 pos_tex;
     vec4 scat_tex;
     vec4 flags = vec4(1e-5);
 
-     // Read Pre Data
-    vec3 M_pos = orig + dir;
-    vec4 M_ndc = projection_pre * view_pre * vec4(M_pos, 1.0);
-    M_ndc = M_ndc / M_ndc.w;
-    vec2 M_uv = M_ndc.xy * 0.5 + 0.5;
-    vec3 M_dir = normalize(M_pos - LastViewPosWS);
+    // Ray Marching
+    vec2 res = RayCast(orig, dir);
+    vec2 res2 = RayCast2(orig, dir);
+    if(res.x < 0.0001) res.x = far_plane;
+    vec3 pos = orig + dir * res.x;
+    vec3 pos2 = orig + dir * res2.x;
+    vec3 N = calcNormal(pos2);
 
-    if(IsFirstFrame == 0)
-    {
-        pos_tex = vec4(orig, 0.0);
-        scat_tex = vec4(0.0, 0.0, 0.0, 1.0);
-    }
-    else
-    {
-        pos_tex = texture(posTex, M_uv);
-        scat_tex = texture(scatterTex, M_uv);
-    }
+    vec3 baseColor = GetColor(res.y, orig, dir, pos_tex, scat_tex, flags);
+    vec3 baseColor2 = GetColor2(res2.y, orig, dir);
 
-    if(HistoryRejection(dir, M_dir) < 0.001)
-    {
-        pos_tex = vec4(orig, 0.0);
-        scat_tex = vec4(0.0, 0.0, 0.0, 1.0);
-    }
+    // Light Compute
+    vec3 diffuse_color = BaseColorReMap(baseColor2, WALL_METALLIC);
+	float r = RoughnessReMap(WALL_ROUGHNESS);
+	vec3 f0 = GetF0_All(baseColor, WALL_METALLIC, WALL_REFLECTANCE);
 
-    if(inRange(M_uv) < -0.05)
-    {
-        pos_tex = vec4(orig, 0.0);
-        scat_tex = vec4(0.0, 0.0, 0.0, 1.0);
-    }
+    vec3 result = vec3(0.0);
+    float sd;
+    for(int i = 0; i < pointLightsNum; ++i)
+	{
+        sd = volumetricShadow(pos2, pointLights[i].position);
+		//light_Intensity * light_color * BRDF * NoL 
+		vec3 L = normalize(pointLights[i].position - pos2);
+		float NoL = clamp(dot(N, L), 0.001, 1.0);
+		result = result + GetPointLightColor(i) * GetPointLightIllumiance(i, pos2)
+		* Standard_BRDF_Torrance_DVF(diffuse_color, dir, L, N, r, f0, 1.0) 
+        * NoL * volumetricShadow(pos2, pointLights[i].position);
+	}	
 
-	vec4 scn = render(orig, dir, iTime*3.0 , degrees(acos(dot(dir, view_center_dir))), p, pos_tex, scat_tex, flags);
-		
-    vec3 col = scn.rgb;
-    col = iLerp(col.bgr, col.rgb, clamp(1.-prm1,0.05,1.));
-    
-    col = pow(col, vec3(.55,0.65,0.6))*vec3(1.,.97,.9);
+    //result += (vec3(0.1, 0.1, 0.1) * GetPointLightColor(0) * diffuse_color);
+    //if(res.y > 3.9)
+    result = scat_tex.xyz + result * scat_tex.w;
+    result = result/ (result + vec3(1.0));
+    result = GammaCorrection(result);
 
-    col *= pow( 16.0*q.x*q.y*(1.0-q.x)*(1.0-q.y), 0.12)*0.7+0.3; //Vign
-
-    FragColor = vec4(col.rgb, 1.0);
+    // Output
+    FragColor = vec4(result, 1.0);
     FinalPos = pos_tex;
     ScatterLight = scat_tex;
-} 
+    
+   // FragColor = vec4(scat_tex.xyz, 1.0);
+   // FragColor = vec4(N, 1.0);
+   //FragColor = vec4(NL, NL, NL, 1.0);
+   //FragColor = vec4(sd, sd, sd, 1.0);
+    // Test
+    //if(IsFirstFrame % 100 < 50)
+        //   FragColor = vec4(M_uv, 1.0, 1.0);
+    //else FragColor = vec4(TexCoords, 1.0, 1.0);
+
+    //FragColor = vec4(abs(M_uv - TexCoords) * 10.0, 0.0, 1.0);
+    // FinalPos = vec4(pos, 1.0);
+    // FragColor = texture(posTex, pre_uv);
+
+    // FragColor = vec4(IsFirstFrame / 1000.0);
+
+    // FragColor = vec4(baseColor, 1.0);
+
+    //  FragColor = vec4(dir, 1.0);
+    // FragColor = rd;
+    //FragColor = vec4(rd.www * 10.0, 1.0);
+
+    //FragColor = vec4(abs(Last_view_center_dir), 1.0);
+
+    // FragColor = vec4(StretchToFarPLane(orig + dir), 1.0);
+    
+    //if(inRange(M_uv) < 0.000001) FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+
+    //if(HistoryRejection(dir, M_dir) < 0.0001) FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+
+    //FragColor = vec4(vec3(dot(M_dir, dir)), 1.0);
+}
+

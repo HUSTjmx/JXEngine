@@ -136,6 +136,11 @@ namespace OPENGL_SCENE
 		// ...
 		PassPtr CreateOne(PassPtr pre_frame, MaterialPtr mat);
 
+		// Create a post-process obj by transporting a post-material.
+		// Do for we need change Resolution
+		// ...
+		PassPtr CreateOne(PassPtr pre_frame, MaterialPtr mat, float width, float height);
+
 		// Create a pass with only a sphere obj without considering depth.
 		// We usually use it to create sky box.
 		// We also use it to test ray marching.

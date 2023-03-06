@@ -1170,6 +1170,32 @@ OPENGL_SCENE::PostPassFactory::PassPtr OPENGL_SCENE::PostPassFactory::CreateOne(
 	return std::make_shared<Pass>(p);
 }
 
+OPENGL_SCENE::PostPassFactory::PassPtr OPENGL_SCENE::PostPassFactory::CreateOne(PassPtr pre_frame, MaterialPtr mat, float width, float height)
+{
+	/* 让前一帧的输出绑定到这个frameBuffer */
+	if (!pre_frame->GetOutput())
+	{
+		/* 让前一帧的输出绑定到这个frameBuffer */
+		auto frame = std::make_shared<FrameBuffer>(width, height);
+		frame->AddTexture(GL_RGB, "screenTexture", false);
+		frame->NotifyGL();
+		frame->AddRenderObject(true);
+		pre_frame->UpdateOutput(frame);
+	}
+
+	Scene scene = TestScene::Instance().GetScene_FoveatedRender_12();
+	Pass p;
+	p.UpdateGlobalMat(mat);
+	p.UpdateInput(std::make_shared<Scene>(scene));
+	p.GetMat()->AddTexture(pre_frame->GetOutput()->textureBuffers[0]);
+	p.GetMat()->LinkTextureForShader();
+
+	/*for(int i=0;i< p.GetMat()->textures.size();i++)
+		std::cout << p.GetMat()->textures[i]->GetType() << std::endl;*/
+
+	return std::make_shared<Pass>(p);
+}
+
 OPENGL_SCENE::PostPassFactory::PassPtr OPENGL_SCENE::PostPassFactory::CreateBackGround(OPENGL_SCENE::PostPassFactory::MaterialPtr mat)
 {
 	mat->Active();

@@ -1,19 +1,26 @@
-﻿App.obj : error LNK2019: unresolved external symbol glfwInit referenced in function "void __cdecl InitGlfw(void)" (?InitGlfw@@YAXXZ)
-App.obj : error LNK2019: unresolved external symbol glfwTerminate referenced in function "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z)
-App.obj : error LNK2019: unresolved external symbol glfwWindowHint referenced in function "void __cdecl InitGlfw(void)" (?InitGlfw@@YAXXZ)
-App.obj : error LNK2019: unresolved external symbol glfwCreateWindow referenced in function main
-App.obj : error LNK2019: unresolved external symbol glfwWindowShouldClose referenced in function "void __cdecl Loop(struct GLFWwindow *)" (?Loop@@YAXPEAUGLFWwindow@@@Z)
-App.obj : error LNK2019: unresolved external symbol glfwSetFramebufferSizeCallback referenced in function "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z)
-App.obj : error LNK2019: unresolved external symbol glfwPollEvents referenced in function "void __cdecl Loop(struct GLFWwindow *)" (?Loop@@YAXPEAUGLFWwindow@@@Z)
-App.obj : error LNK2019: unresolved external symbol glfwSetInputMode referenced in function "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z)
-App.obj : error LNK2019: unresolved external symbol glfwSetCursorPosCallback referenced in function "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z)
-App.obj : error LNK2019: unresolved external symbol glfwSetScrollCallback referenced in function "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z)
-App.obj : error LNK2019: unresolved external symbol glfwMakeContextCurrent referenced in function "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z)
-App.obj : error LNK2019: unresolved external symbol glfwSwapBuffers referenced in function "void __cdecl Loop(struct GLFWwindow *)" (?Loop@@YAXPEAUGLFWwindow@@@Z)
-App.obj : error LNK2019: unresolved external symbol glfwGetProcAddress referenced in function "void __cdecl LoadOpenGLFuncPoint(void)" (?LoadOpenGLFuncPoint@@YAXXZ)
-Input.obj : error LNK2019: unresolved external symbol glfwSetWindowShouldClose referenced in function "void __cdecl INPUT::processInput(struct GLFWwindow *)" (?processInput@INPUT@@YAXPEAUGLFWwindow@@@Z)
-Input.obj : error LNK2019: unresolved external symbol glfwGetKey referenced in function "void __cdecl INPUT::processInput(struct GLFWwindow *)" (?processInput@INPUT@@YAXPEAUGLFWwindow@@@Z)
-TestScene.obj : error LNK2019: unresolved external symbol glfwGetTime referenced in function "public: class std::shared_ptr<struct glm::mat<4,4,float,0> > __cdecl MatTool::GenerateModelMat_R<1000>(float,float)" (??$GenerateModelMat_R@$0DOI@@MatTool@@QEAA?AV?$shared_ptr@U?$mat@$03$03M$0A@@glm@@@std@@MM@Z)
-Timer.obj : error LNK2001: unresolved external symbol glfwGetTime
-C:\Users\xueyaojiang\Desktop\JMX\c++_OpenGL_Env\lib\glfw3.lib : warning LNK4272: library machine type 'x86' conflicts with target machine type 'x64'
-C:\Users\xueyaojiang\Desktop\JMX\JXEngine\x64\Debug\JXEngine.exe : fatal error LNK1120: 16 unresolved externals
+﻿Actor.obj : error LNK2019: 无法解析的外部符号 "public: __cdecl Assimp::Importer::Importer(void)" (??0Importer@Assimp@@QEAA@XZ)，函数 "public: void __cdecl Actor::loadModel(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &)" (?loadModel@Actor@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z) 中引用了该符号
+Actor.obj : error LNK2019: 无法解析的外部符号 "public: __cdecl Assimp::Importer::~Importer(void)" (??1Importer@Assimp@@QEAA@XZ)，函数 "public: void __cdecl Actor::loadModel(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &)" (?loadModel@Actor@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z) 中引用了该符号
+Actor.obj : error LNK2019: 无法解析的外部符号 "public: struct aiScene const * __cdecl Assimp::Importer::ReadFile(char const *,unsigned int)" (?ReadFile@Importer@Assimp@@QEAAPEBUaiScene@@PEBDI@Z)，函数 "public: struct aiScene const * __cdecl Assimp::Importer::ReadFile(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &,unsigned int)" (?ReadFile@Importer@Assimp@@QEAAPEBUaiScene@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@I@Z) 中引用了该符号
+Actor.obj : error LNK2019: 无法解析的外部符号 "public: char const * __cdecl Assimp::Importer::GetErrorString(void)const " (?GetErrorString@Importer@Assimp@@QEBAPEBDXZ)，函数 "public: void __cdecl Actor::loadModel(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &)" (?loadModel@Actor@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z) 中引用了该符号
+App.obj : error LNK2019: 无法解析的外部符号 glfwInit，函数 "void __cdecl InitGlfw(void)" (?InitGlfw@@YAXXZ) 中引用了该符号
+App.obj : error LNK2019: 无法解析的外部符号 glfwTerminate，函数 "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z) 中引用了该符号
+App.obj : error LNK2019: 无法解析的外部符号 glfwWindowHint，函数 "void __cdecl InitGlfw(void)" (?InitGlfw@@YAXXZ) 中引用了该符号
+App.obj : error LNK2019: 无法解析的外部符号 glfwCreateWindow，函数 main 中引用了该符号
+App.obj : error LNK2019: 无法解析的外部符号 glfwWindowShouldClose，函数 "void __cdecl Loop(struct GLFWwindow *)" (?Loop@@YAXPEAUGLFWwindow@@@Z) 中引用了该符号
+App.obj : error LNK2019: 无法解析的外部符号 glfwSetFramebufferSizeCallback，函数 "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z) 中引用了该符号
+App.obj : error LNK2019: 无法解析的外部符号 glfwPollEvents，函数 "void __cdecl Loop(struct GLFWwindow *)" (?Loop@@YAXPEAUGLFWwindow@@@Z) 中引用了该符号
+App.obj : error LNK2019: 无法解析的外部符号 glfwSetInputMode，函数 "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z) 中引用了该符号
+App.obj : error LNK2019: 无法解析的外部符号 glfwSetCursorPosCallback，函数 "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z) 中引用了该符号
+App.obj : error LNK2019: 无法解析的外部符号 glfwSetScrollCallback，函数 "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z) 中引用了该符号
+App.obj : error LNK2019: 无法解析的外部符号 glfwMakeContextCurrent，函数 "void __cdecl TestAndSetWindow(struct GLFWwindow *)" (?TestAndSetWindow@@YAXPEAUGLFWwindow@@@Z) 中引用了该符号
+App.obj : error LNK2019: 无法解析的外部符号 glfwSwapBuffers，函数 "void __cdecl Loop(struct GLFWwindow *)" (?Loop@@YAXPEAUGLFWwindow@@@Z) 中引用了该符号
+App.obj : error LNK2019: 无法解析的外部符号 glfwGetProcAddress，函数 "void __cdecl LoadOpenGLFuncPoint(void)" (?LoadOpenGLFuncPoint@@YAXXZ) 中引用了该符号
+Input.obj : error LNK2019: 无法解析的外部符号 glfwSetWindowShouldClose，函数 "void __cdecl INPUT::processInput(struct GLFWwindow *)" (?processInput@INPUT@@YAXPEAUGLFWwindow@@@Z) 中引用了该符号
+Input.obj : error LNK2019: 无法解析的外部符号 glfwGetKey，函数 "void __cdecl INPUT::processInput(struct GLFWwindow *)" (?processInput@INPUT@@YAXPEAUGLFWwindow@@@Z) 中引用了该符号
+Material.obj : error LNK2019: 无法解析的外部符号 aiGetMaterialTextureCount，函数 "public: unsigned int __cdecl aiMaterial::GetTextureCount(enum aiTextureType)const " (?GetTextureCount@aiMaterial@@QEBAIW4aiTextureType@@@Z) 中引用了该符号
+Material.obj : error LNK2019: 无法解析的外部符号 aiGetMaterialTexture，函数 "public: enum aiReturn __cdecl aiMaterial::GetTexture(enum aiTextureType,unsigned int,struct aiString *,enum aiTextureMapping *,unsigned int *,float *,enum aiTextureOp *,enum aiTextureMapMode *)const " (?GetTexture@aiMaterial@@QEBA?AW4aiReturn@@W4aiTextureType@@IPEAUaiString@@PEAW4aiTextureMapping@@PEAIPEAMPEAW4aiTextureOp@@PEAW4aiTextureMapMode@@@Z) 中引用了该符号
+TestScene.obj : error LNK2019: 无法解析的外部符号 glfwGetTime，函数 "public: class std::shared_ptr<struct glm::mat<4,4,float,0> > __cdecl MatTool::GenerateModelMat_R<1000>(float,float)" (??$GenerateModelMat_R@$0DOI@@MatTool@@QEAA?AV?$shared_ptr@U?$mat@$03$03M$0A@@glm@@@std@@MM@Z) 中引用了该符号
+Timer.obj : error LNK2001: 无法解析的外部符号 glfwGetTime
+D:\CodEnv\OpenGL\lib\glfw3.lib : warning LNK4272: 库计算机类型“x86”与目标计算机类型“x64”冲突
+D:\CodEnv\OpenGL\lib\assimp-vc140-mt.lib : warning LNK4272: 库计算机类型“x86”与目标计算机类型“x64”冲突
+D:\Projects\JXEngine\x64\Debug\JXEngine.exe : fatal error LNK1120: 22 个无法解析的外部命令

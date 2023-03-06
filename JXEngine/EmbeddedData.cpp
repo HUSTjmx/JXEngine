@@ -390,4 +390,20 @@ namespace SHADER_PATH
 			std::string FoveatedBlur_fs = Path + "FoveatedBlur.fs";
 		}
 	}
+
+	namespace PAPER
+	{
+		std::string Path = "shaders/Paper/";
+
+		// Paper Scene 01 : Sky atmosphere
+		std::string PaperScene_01_Sky_VS = Path + "PaperScene_01_Sky.vs";
+		std::string PaperScene_01_Sky_FS = Path + "PaperScene_01_Sky.fs";
+
+		// Paper Scene 02 : Fog Ball
+		std::string PaperScene_02_FogBall_VS = Path + "PaperScene_02_FogBall.vs";
+		std::string PaperScene_02_FogBall_01_N_FS = Path + "PaperScene_02_FogBall_01_N.fs";
+		std::string PaperScene_02_FogBall_01_T_FS = Path + "PaperScene_02_FogBall_01_T.fs";
+		std::string PaperScene_02_FogBall_02_N_FS = Path + "PaperScene_02_FogBall_02_N.fs";
+	
+	}
 }

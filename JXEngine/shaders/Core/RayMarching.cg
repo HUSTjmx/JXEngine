@@ -102,6 +102,11 @@ uniform vec3 betaM;
 #define D_FOG_NOISE 1.0
 
 
+float PhaseFunc_CON()
+{
+    return 1.0 / (4.0 * PI);
+}
+
 // Rayleigh Phase Function
 // ...
 float PhaseFunc_RAYLEIGH(float mu)

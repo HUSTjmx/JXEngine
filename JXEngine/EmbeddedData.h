@@ -244,4 +244,19 @@ namespace SHADER_PATH
 			extern std::string FoveatedBlur_fs;
 		}
 	}
+
+	namespace PAPER
+	{
+		extern std::string Path;
+
+		// Paper Scene 01 : Sky atmosphere
+		extern std::string PaperScene_01_Sky_VS;
+		extern std::string PaperScene_01_Sky_FS;
+
+		// Paper Scene 02 : Fog Ball
+		extern std::string PaperScene_02_FogBall_VS;
+		extern std::string PaperScene_02_FogBall_01_N_FS;
+		extern std::string PaperScene_02_FogBall_01_T_FS;
+		extern std::string PaperScene_02_FogBall_02_N_FS;
+	}
 }
