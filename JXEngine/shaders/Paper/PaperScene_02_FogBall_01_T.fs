@@ -1,10 +1,8 @@
 #version 330 core
 layout(location = 0) out vec4 FragColor;
-layout(location = 1) out vec4 LastColor;
-layout(location = 2) out vec4 ScatterLight;
-layout(location = 3) out vec4 FinalPos;
-
-in vec2 TexCoords;
+layout(location = 1) out vec4 ScatterLight_Out;
+layout(location = 2) out vec4 Transmittance_Out;
+layout(location = 3) out vec4 FinalPos_Out;
 
 uniform mat4 view;
 uniform mat4 view_inv;
@@ -12,14 +10,19 @@ uniform mat4 view_pre;
 uniform mat4 projection;
 uniform mat4 projection_inv;
 uniform mat4 projection_pre;
-
-uniform sampler2D preTexture;
-uniform sampler2D scatterTex;
-uniform sampler2D posTex;
 uniform int IsFirstFrame;
 
+// Fog Material Settings
+#define SCATTERING  (0.7 * vec3(0.95, 0.5, 0.0))
+#define ABSORPTION  (0.0 * vec3(0.75, 0.5, 0.0))
+
+// Light
+#define LIGHT_DENSITY 100.0
+#define LIGHT_COLOR (vec3(1.0, 1.0, 1.0) * LIGHT_DENSITY)
+#define LIGHT_SIZE 0.3
+
 // Box
-#define BOX_SIZE vec3(4.0, 4.0, 4.0)
+#define BOX_SIZE vec3(8.0, 8.0, 8.0)
 // White Wall
 #define OBJ_WHITEWALL 1.0
     const vec3 WhiteWallColor = vec3(0.7295, 0.7355, 0.729);
@@ -39,14 +42,8 @@ uniform int IsFirstFrame;
 #define WALL_REFLECTANCE 0.1
 #define WALL_ROUGHNESS 0.9
 
-// History Rejection
-#define HISTORY_REJECTION_COS_MIN 0.99
-#define HISTORY_REJECTION_DIS_MAX 1
-#define DIS_WEIGHT 0.4
-#define ANGLE_WEIGHT (1.0 - DIS_WEIGHT)
-#define FOVEA_CONST_FACTOR 0.5
-
-#define MAX_FACTOR 1.0
+// Shade Settings
+#define ShadowIntensity 5.0
 
 // Phase Func Mode
 #define PHASE_MODE 2.0
@@ -141,13 +138,30 @@ vec2 Map(in vec3 pos)
     return res;
 }
 
+vec2 Map2(in vec3 pos)
+{
+    vec2 res = vec2(1e10, 0.0);
+
+    // Ground
+    res = opU(res, vec2(sdPlane(pos, vec3(0.0, 1.0, 0.0), 3.0), OBJ_WHITEWALL));
+    // Top
+    res = opU(res, vec2(sdPlane(pos, vec3(0.0, -1.0, 0.0), 3.0), OBJ_WHITEWALL));
+    // Back
+    res = opU(res, vec2(sdPlane(pos, vec3(0.0, 0.0,- 1.0), 1.0), OBJ_WHITEWALL));
+    // left
+    res = opU(res, vec2(sdPlane(pos, vec3(1.0, 0.0, 0.0), 3.0), OBJ_LEFTWALL));
+    // Right
+    res = opU(res, vec2(sdPlane(pos, vec3(-1.0, 0.0, 0.0), 3.0), OBJ_RIGHTWALL));
+    return res;
+}
+
 vec3 calcNormal( in vec3 pos )
 {
     vec2 e = vec2(1.0,-1.0) * 0.5773 * 0.0005;
-    return normalize( e.xyy * Map( pos + e.xyy ).x + 
-					  e.yyx * Map( pos + e.yyx ).x + 
-					  e.yxy * Map( pos + e.yxy ).x + 
-					  e.xxx * Map( pos + e.xxx ).x );
+    return normalize( e.xyy * Map2( pos + e.xyy ).x + 
+					  e.yyx * Map2( pos + e.yyx ).x + 
+					  e.yxy * Map2( pos + e.yxy ).x + 
+					  e.xxx * Map2( pos + e.xxx ).x );
 }
 
 vec2 RayCast(in vec3 ro, in vec3 rd)
@@ -178,6 +192,34 @@ vec2 RayCast(in vec3 ro, in vec3 rd)
     return res;
 }
 
+vec2 RayCast2(in vec3 ro, in vec3 rd)
+{
+    vec2 res = vec2(-1.0, -1.0);
+    float tmin = 0.3;
+    float tmax = 60.0;
+
+    vec2 tb = iBox(ro, rd, BOX_SIZE);
+    if(tb.x < tb.y && tb.y > 0.0 && tb.x < tmax)
+    {
+        tmin = max(tb.x, tmin);
+        tmax = min(tb.y, tmax);
+
+        float t = tmin;
+        for(int i = 0; i < 70 && t < tmax; ++i)
+        {
+            vec2 h = Map2(ro + rd * t);
+            if(abs(h.x) < (0.0001 * t))
+            {
+                res = vec2(t, h.y);
+                break;
+            }
+            t += h.x;
+        }
+        return res;
+    }
+    return res;
+}
+
 float GetYushiColor(in vec3 p) {
 	
 	float res = 0.;
@@ -194,18 +236,29 @@ float GetYushiColor(in vec3 p) {
 	return res / 2.;
 }
 
-void getParticipatingMedia(out float sigmaS, out float sigmaE, in vec3 pos)
+void getParticipatingMedia(out vec3 sigmaS, out vec3 sigmaE, in vec3 pos)
 {
-    float sphereFog = clamp((YushiRadius - length(pos - YuShiPos))/YushiRadius, 0.0, 1.0);
-    
-    sigmaS = sphereFog * 0.1;
-    const float sigmaA = 0.00;
-    sigmaE = max(0.0000001, sigmaA + sigmaS);
+    float sphereFog = clamp((YushiRadius - length(pos - YuShiPos)) / YushiRadius, 0.0, 1.0);
+    sigmaS = sphereFog * SCATTERING;
+    sigmaE = max_f_v3(0.0000001, ABSORPTION + sigmaS);
 }
 
 float volumetricShadow(in vec3 from, in vec3 to)
 {
-    return 1.0;
+    //return 2.0;
+    const float numStep = 36.0; // quality control. Bump to avoid shadow alisaing
+    vec3 shadow = vec3(1.0);
+    vec3 sigmaS = vec3(0.0);
+    vec3 sigmaE = vec3(0.0);
+    float dd = length(to-from) / numStep;
+    for(float s = 0.5; s < (numStep - 0.1); s += 1.0)// start at 0.5 to sample at center of integral part
+    {
+        vec3 pos = from + (to - from) * (s / (numStep));
+        getParticipatingMedia(sigmaS, sigmaE, pos);
+        shadow = shadow * exp(-sigmaE * ShadowIntensity * dd);
+    }
+    return length(shadow) * 0.8;
+    //return max_v3_elem(shadow);
 }
 
 vec3 evaluateLightWithPhase(in vec3 pos)
@@ -213,103 +266,67 @@ vec3 evaluateLightWithPhase(in vec3 pos)
     vec3 light_sum = vec3(0.0);
     vec3 V = normalize(pos - viewPosWS);
     for(int i = 0; i < pointLightsNum; ++i)
-        light_sum += GetPointLightIllumiance(i, pos) * PhaseFunc(V, normalize(pointLights[i].position - viewPosWS), PHASE_G) * volumetricShadow(pos, pointLights[i].position);
-    
-    for(int i = 0; i < spotLightsNum; ++i)
-        light_sum += GetSpotLightIllumiance(i, pos) * PhaseFunc(V, normalize(spotLights[i].position - viewPosWS), PHASE_G) * volumetricShadow(pos, spotLights[i].position);
-
-    for(int i = 0; i < dirLightsNum; ++i)
-        light_sum += GetDirLightIllumiance(i) * PhaseFunc(V, dirLights[i].direction, PHASE_G);
+        light_sum += GetPointLightIllumiance(i, pos) * 
+        PhaseFunc(V, normalize(pointLights[i].position - viewPosWS), PHASE_G) * 
+        volumetricShadow(pos, pointLights[i].position);
+        
     
     return light_sum;
 }
 
 
-vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec4 pre_scat, in vec4 flags)
+vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec4 pre_scat, inout vec4 pre_transmittance)
+{
+    pre_scat = vec4(0.0, 0.0, 0.0, 1.0);
+    pre_transmittance = vec4(1.0, 1.0, 1.0, 0.0);
+    if(ID < 0.5) return vec3(0.0);
+    if(ID < 1.5) return WhiteWallColor;
+    if(ID < 2.5) return RightWallColor;
+    if(ID < 3.5) return LeftWallColor;
+    else
+    {
+        vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius));
+        float t = tmm.x;
+        float dt = .5;     //float dt = .2 - .195*cos(iTime*.05);//animated
+        vec3 transmittance = vec3(1.0, 1.0, 1.0);
+        vec3 scatteredLight = vec3(0.0);
+        vec3 sigmaS = vec3(0.0);
+        vec3 sigmaE = vec3(0.0);
+
+        
+        for( int i = 0; i < 10; ++i )
+        {
+            vec3 p = ro + t * rd;
+            getParticipatingMedia(sigmaS, sigmaE, p);
+
+            vec3 S = evaluateLightWithPhase(p) * sigmaS;
+            vec3 sigmaE_INV = vec3(1.0 / sigmaE.x, 1.0 / sigmaE.y, 1.0 / sigmaE.z); 
+            vec3 Sint = (S - S * exp(-sigmaE * dt)) * sigmaE_INV;
+            scatteredLight += transmittance * Sint; // accumulate and also take into account the transmittance from previous steps
+            transmittance *= exp(-sigmaE * dt);
+                    
+            t += dt;
+            if(t > tmm.y)
+            { 
+                pre_pos.w = 1.0;
+                break;
+            }
+        }
+        
+        pre_pos = vec4(ro + t * rd, pre_pos.w);
+        pre_scat = vec4(scatteredLight, 0.0);
+        pre_transmittance = vec4(transmittance, 0.0);
+        return vec3(0.0);
+    }
+}
+
+vec3 GetColor2(in float ID, in vec3 ro, in vec3 rd)
 {
     if(ID < 0.5) return vec3(0.0);
     if(ID < 1.5) return WhiteWallColor;
     if(ID < 2.5) return RightWallColor;
     if(ID < 3.5) return LeftWallColor;
-    if(ID < 4.5)
-    {
-        vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius));
-        float t = tmm.x;
-        float dt = .05;     //float dt = .2 - .195*cos(iTime*.05);//animated
-        float transmittance = 1.0;
-        vec3 scatteredLight = vec3(0.0);
-        float sigmaS = 0.0;
-        float sigmaE = 0.0;
-
-        float pre_t = length(pre_pos.xyz - ro);
-
-        if(IsFirstFrame > 0 && length(pre_scat.xyz) > 0.00001)
-        {
-            scatteredLight = pre_scat.xyz;
-            t = max(pre_t, t);
-            transmittance = pre_scat.w;
-        }
-
-        if(pre_pos.w < 0.5)
-        {
-            for( int i = 0; i < 10; ++i )
-            {
-                vec3 p = ro + t * rd;
-                getParticipatingMedia(sigmaS, sigmaE, p);
-
-                vec3 S = evaluateLightWithPhase(p) * sigmaS;
-                vec3 Sint = (S - S * exp(-sigmaE * dt)) / sigmaE;
-                scatteredLight += transmittance * Sint; // accumulate and also take into account the transmittance from previous steps
-                transmittance *= exp(-sigmaE * dt);
-                        
-                t += dt;
-                if(t > tmm.y)
-                { 
-                    pre_pos.w = 1.0;
-                    break;
-                }
-            }
-        }
-        else
-        {
-            pre_pos.w = 1.0;
-        }
-
-        
-        pre_pos = vec4(ro + t * rd, pre_pos.w);
-        pre_scat = vec4(scatteredLight, transmittance);
-        //if(IsFirstFrame % 50 < 25)
-        //{
-        //    return normalize(pre_pos.xyz - ro);
-        //}
-        //else{
-        //    return rd;
-        //}
-        
-        //return vec3(text_);
-        //return pre_t;
-        return vec3(0.0);
-    }
-    return vec3(0.0);
-}
-
-float HistoryRejection(in vec3 N1, in vec3 N2)
-{
-    // 颜色无法考虑，因为我们不知道当前帧的颜色
-    // 距离因子：主要是由于移动导致的采样误差，以及突然的遮挡和出现。
-    float Dis_Factor = length(LastViewPosWS - viewPosWS);  /* 值越大，越触发 */
-    Dis_Factor = clamp(Dis_Factor / HISTORY_REJECTION_DIS_MAX, 0.0, 1.0);
-    float Angle_Factor = dot(normalize(view_center_dir), normalize(Last_view_center_dir));  /* 值越小，越触发 */
-    Angle_Factor = 1.0 - Angle_Factor;
-    float FOVEA_Factor = Map_HSV(HSV_PDF(degrees(acos(dot(N1, view_center_dir))))); /* 值越小，越触发 */
-    const float Const_Factor = 0.1;
-
-    float factor = (Dis_Factor * DIS_WEIGHT + Angle_Factor * ANGLE_WEIGHT) / (FOVEA_CONST_FACTOR + FOVEA_Factor);
-
-    
-    if(Angle_Factor > 0.01)
-        return -1.0;
-    return 1.0;
+    return WhiteWallColor;
 }
 
 void main()
@@ -322,50 +339,22 @@ void main()
     // Read history
     vec4 pos_tex;
     vec4 scat_tex;
-    vec4 flags = vec4(1e-5);
+    vec4 trans_tex;
+    //vec4 flags = vec4(1e-5);
 
     // Ray Marching
     vec2 res = RayCast(orig, dir);
+    vec2 res2 = RayCast2(orig, dir);
     if(res.x < 0.0001) res.x = far_plane;
     vec3 pos = orig + dir * res.x;
-    vec3 N = calcNormal(pos);
+    vec3 pos2 = orig + dir * res2.x;
+    vec3 N = calcNormal(pos2);
 
-    // Read Pre Data
-    vec3 M_pos = pos;
-    vec4 M_ndc = projection_pre * view_pre * vec4(M_pos, 1.0);
-    M_ndc = M_ndc / M_ndc.w;
-    vec2 M_uv = M_ndc.xy * 0.5 + 0.5;
-    vec3 M_dir = normalize(M_pos - LastViewPosWS);
-
-    if(IsFirstFrame == 0)
-    {
-        pos_tex = vec4(orig, 0.0);
-        scat_tex = vec4(0.0, 0.0, 0.0, 1.0);
-    }
-    else
-    {
-        pos_tex = texture(posTex, M_uv);
-        scat_tex = texture(scatterTex, M_uv);
-    }
-
-    if(HistoryRejection(dir, M_dir) < 0.001)
-    {
-        pos_tex = vec4(orig, 0.0);
-        scat_tex = vec4(0.0, 0.0, 0.0, 1.0);
-    }
-
-    if(inRange(M_uv) < -0.05)
-    {
-        pos_tex = vec4(orig, 0.0);
-        scat_tex = vec4(0.0, 0.0, 0.0, 1.0);
-    }
-
-   
-
-    vec3 baseColor = GetColor(res.y, orig, dir, pos_tex, scat_tex, flags);
+    vec3 baseColor = GetColor(res.y, orig, dir, pos_tex, scat_tex, trans_tex);
+    vec3 baseColor2 = GetColor2(res2.y, orig, dir);
 
     // Light Compute
-    vec3 diffuse_color = BaseColorReMap(baseColor, WALL_METALLIC);
+    vec3 diffuse_color = BaseColorReMap(baseColor2, WALL_METALLIC);
 	float r = RoughnessReMap(WALL_ROUGHNESS);
 	vec3 f0 = GetF0_All(baseColor, WALL_METALLIC, WALL_REFLECTANCE);
 
@@ -373,23 +362,36 @@ void main()
     for(int i = 0; i < pointLightsNum; ++i)
 	{
 		//light_Intensity * light_color * BRDF * NoL 
-		vec3 L = normalize(pointLights[i].position - pos);
-		float NoL = clamp(dot(N, L), 0.0, 1.0);
-		result = result + GetPointLightColor(i) * GetPointLightIllumiance(i, pos)
-		* Standard_BRDF_Torrance_DVF(diffuse_color, dir, L, N, r, f0, 1.0) * NoL; 
+		vec3 L = normalize(pointLights[i].position - pos2);
+		float NoL = clamp(dot(N, L), 0.001, 1.0);
+		result = result + GetPointLightColor(i) * GetPointLightIllumiance(i, pos2)
+		* Standard_BRDF_Torrance_DVF(diffuse_color, dir, L, N, r, f0, 1.0) 
+        * NoL * volumetricShadow(pos2, pointLights[i].position);
 	}	
 
-    result += (vec3(0.1, 0.1, 0.1) * GetPointLightColor(0) * diffuse_color);
-    if(res.y > 3.9)
-        result += scat_tex.xyz;
+    result = scat_tex.xyz + result *  length(trans_tex);
+    // result = scat_tex.xyz + result *  max_v3_elem(trans_tex.xyz);
+    // Show Light
+    for(int i = 0; i < pointLightsNum; ++i)
+	{
+        vec2 re = iSphere(orig, dir, vec4(pointLights[i].position, LIGHT_SIZE));
+        bool isLight = re.x < re. y && re.y > 0.0;
+        result = mix(result, LIGHT_COLOR, isLight);
+    }
+
+    // Show
     result = result/ (result + vec3(1.0));
     result = GammaCorrection(result);
 
     // Output
     FragColor = vec4(result, 1.0);
-    FinalPos = pos_tex;
-    ScatterLight = scat_tex;
+    //FinalPos_Out = pos_tex;
+   // ScatterLight_Out = scat_tex;
     
+   // FragColor = vec4(scat_tex.xyz, 1.0);
+   // FragColor = vec4(N, 1.0);
+   //FragColor = vec4(NL, NL, NL, 1.0);
+   //FragColor = vec4(sd, sd, sd, 1.0);
     // Test
     //if(IsFirstFrame % 100 < 50)
         //   FragColor = vec4(M_uv, 1.0, 1.0);
@@ -403,7 +405,7 @@ void main()
 
     // FragColor = vec4(baseColor, 1.0);
 
-       FragColor = vec4(dir, 1.0);
+    //  FragColor = vec4(dir, 1.0);
     // FragColor = rd;
     //FragColor = vec4(rd.www * 10.0, 1.0);
 

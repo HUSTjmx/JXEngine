@@ -1,9 +1,5 @@
 #version 330 core
 layout(location = 0) out vec4 FragColor;
-layout(location = 1) out vec4 LastColor;
-layout(location = 2) out vec4 ScatterLight;
-layout(location = 3) out vec4 FinalPos;
-
 in vec2 TexCoords;
 
 uniform mat4 view;
@@ -13,6 +9,17 @@ uniform mat4 projection;
 uniform mat4 projection_inv;
 uniform mat4 projection_pre;
 uniform int IsFirstFrame;
+
+// Fog Material Settings
+#define SCATTERING  (0.7 * vec3(0.95, 0.5, 0.0))
+#define ABSORPTION  (0.0 * vec3(0.75, 0.5, 0.0))
+//0, 1 or 2
+#define BASIC_ANIMATED_MEDIA 1
+
+// Light
+#define LIGHT_DENSITY 100.0
+#define LIGHT_COLOR (vec3(1.0, 1.0, 1.0) * LIGHT_DENSITY)
+#define LIGHT_SIZE 0.3
 
 // Box
 #define BOX_SIZE vec3(8.0, 8.0, 8.0)
@@ -29,7 +36,8 @@ uniform int IsFirstFrame;
 #define OBJ_YUSHI_SPHERE 4.0
     const vec3 YuShiPos = vec3(0.0, 0.0, -1.5);
     // Change 1
-    const vec2 YushiRadius = vec2(1.0, 0.5); 
+    const vec2 YushiRadius = vec2(1.0, 0.5);
+    const float rotateSpeed = 0.3;
 
 // Wall Material
 #define WALL_METALLIC 0.0
@@ -42,6 +50,11 @@ uniform int IsFirstFrame;
 // Phase Func Mode
 #define PHASE_MODE 2.0
 #define PHASE_G 0.5
+
+float rand(vec3 co)
+{
+    return -1.0 + fract(sin(dot(co.xy,vec2(12.9898 + co.z,78.233))) * 43758.5453) * 2.0;
+}
 
 float HSV_PDF(float e)
 {
@@ -87,14 +100,10 @@ float sdTorus(vec3 p, vec3 center, vec2 t)
   vec2 q = vec2(length(p.xy) - t.x, p.z);
   return length(q) - t.y;
 }
-float sdBoxFrame( vec3 p, vec3 b, float e )
+
+float sdSphere(vec3 p, vec3 center, float s)
 {
-       p = abs(p  )-b;
-  vec3 q = abs(p+e)-e;
-  return min(min(
-      length(max(vec3(p.x,q.y,q.z),0.0))+min(max(p.x,max(q.y,q.z)),0.0),
-      length(max(vec3(q.x,p.y,q.z),0.0))+min(max(q.x,max(p.y,q.z)),0.0)),
-      length(max(vec3(q.x,q.y,p.z),0.0))+min(max(q.x,max(q.y,p.z)),0.0));
+    return length(p - center) - s;
 }
 
 vec2 iBox(in vec3 ro, in vec3 rd, in vec3 rad)
@@ -140,7 +149,7 @@ vec2 Map(in vec3 pos)
     res = opU(res, vec2(sdPlane(pos, vec3(-1.0, 0.0, 0.0), 3.0), OBJ_RIGHTWALL));
     // YuShi
     // Change 3
-    res = opU(res, vec2(sdTorus(pos, YuShiPos, YushiRadius), OBJ_YUSHI_SPHERE));
+    res = opU(res, vec2(sdSphere(pos, YuShiPos, YushiRadius.x + 2.5), OBJ_YUSHI_SPHERE));
 
     return res;
 }
@@ -228,30 +237,45 @@ vec2 RayCast2(in vec3 ro, in vec3 rd)
 }
 
 // Change 4
-void getParticipatingMedia(out float sigmaS, out float sigmaE, in vec3 pos)
+void getParticipatingMedia(out vec3 sigmaS, out vec3 sigmaE, in vec3 pos)
 {
+    pos = (pos - YuShiPos) * rotate_around_y(180 * sin(iTime * rotateSpeed)) + YuShiPos;
     float sphereFog = clamp(sdTorus(pos, YuShiPos, YushiRadius) * -3.2, 0.0, 1.0);
     
-    sigmaS = sphereFog * 0.3;
-    const float sigmaA = 0.00;
-    sigmaE = max(0.0000001, sigmaA + sigmaS);
+    sigmaS = sphereFog * SCATTERING;
+    sigmaE = ABSORPTION + sigmaS;
+
+#if BASIC_ANIMATED_MEDIA==1
+    float r = floor(iTime);
+    sigmaS = sphereFog * abs(5.0* vec3(rand(vec3(r,0.0,1.0)),rand(vec3(r,0.0,5.0)),rand(vec3(r,0.0,9.0))));
+    vec3 absorption = abs(0.1* vec3(rand(vec3(r,1.0,2.0)),rand(vec3(r,1.0,7.0)),rand(vec3(r,1.0,7.0))));
+    sigmaE = sigmaS + absorption;
+#elif BASIC_ANIMATED_MEDIA==2
+    float r = iTime*0.2;
+    sigmaS = sphereFog * abs(5.0* vec3(sin(r*1.1),sin(r*3.3),sin(r*5.5)));
+    vec3 absorption = abs( 0.1* vec3(sin(r*2.2),sin(r*4.4),sin(r*6.6)));
+    sigmaE = sigmaS + absorption;
+#endif
+
+    sigmaE = max_f_v3(0.0000001, sigmaE);
 }
 
 float volumetricShadow(in vec3 from, in vec3 to)
 {
     //return 2.0;
     const float numStep = 36.0; // quality control. Bump to avoid shadow alisaing
-    float shadow = 1.0;
-    float sigmaS = 0.0;
-    float sigmaE = 0.0;
+    vec3 shadow = vec3(1.0);
+    vec3 sigmaS = vec3(0.0);
+    vec3 sigmaE = vec3(0.0);
     float dd = length(to-from) / numStep;
-    for(float s=0.5; s<(numStep-0.1); s+=1.0)// start at 0.5 to sample at center of integral part
+    for(float s = 0.5; s < (numStep - 0.1); s += 1.0)// start at 0.5 to sample at center of integral part
     {
-        vec3 pos = from + (to-from)*(s/(numStep));
+        vec3 pos = from + (to - from) * (s / (numStep));
         getParticipatingMedia(sigmaS, sigmaE, pos);
-        shadow *= exp(-sigmaE * ShadowIntensity * dd);
+        shadow = shadow * exp(-sigmaE * ShadowIntensity * dd);
     }
-    return shadow;
+    return length(shadow) * 0.8;
+    //return max_v3_elem(shadow);
 }
 
 vec3 evaluateLightWithPhase(in vec3 pos)
@@ -268,9 +292,10 @@ vec3 evaluateLightWithPhase(in vec3 pos)
 }
 
 
-vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec4 pre_scat, in vec4 flags)
+vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec4 pre_scat, inout vec4 pre_transmittance)
 {
     pre_scat = vec4(0.0, 0.0, 0.0, 1.0);
+    pre_transmittance = vec4(1.0, 1.0, 1.0, 0.0);
     if(ID < 0.5) return vec3(0.0);
     if(ID < 1.5) return WhiteWallColor;
     if(ID < 2.5) return RightWallColor;
@@ -281,10 +306,10 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
         vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, max(YushiRadius.x, YushiRadius.y) + 1.0));
         float t = tmm.x;
         float dt = .5;     //float dt = .2 - .195*cos(iTime*.05);//animated
-        float transmittance = 1.0;
+        vec3 transmittance = vec3(1.0, 1.0, 1.0);
         vec3 scatteredLight = vec3(0.0);
-        float sigmaS = 0.0;
-        float sigmaE = 0.0;
+        vec3 sigmaS = vec3(0.0);
+        vec3 sigmaE = vec3(0.0);
 
         
         for( int i = 0; i < 10; ++i )
@@ -306,7 +331,8 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
         }
         
         pre_pos = vec4(ro + t * rd, pre_pos.w);
-        pre_scat = vec4(scatteredLight, transmittance);
+        pre_scat = vec4(scatteredLight, 0.0);
+        pre_transmittance = vec4(transmittance, 0.0);
         return vec3(0.0);
     }
 }
@@ -330,7 +356,8 @@ void main()
     // Read history
     vec4 pos_tex;
     vec4 scat_tex;
-    vec4 flags = vec4(1e-5);
+    vec4 trans_tex;
+    //vec4 flags = vec4(1e-5);
 
     // Ray Marching
     vec2 res = RayCast(orig, dir);
@@ -340,7 +367,7 @@ void main()
     vec3 pos2 = orig + dir * res2.x;
     vec3 N = calcNormal(pos2);
 
-    vec3 baseColor = GetColor(res.y, orig, dir, pos_tex, scat_tex, flags);
+    vec3 baseColor = GetColor(res.y, orig, dir, pos_tex, scat_tex, trans_tex);
     vec3 baseColor2 = GetColor2(res2.y, orig, dir);
 
     // Light Compute
@@ -363,14 +390,22 @@ void main()
 
     //result += (vec3(0.1, 0.1, 0.1) * GetPointLightColor(0) * diffuse_color);
     //if(res.y > 3.9)
-    result = scat_tex.xyz + result * scat_tex.w;
+    result = scat_tex.xyz + result *  length(trans_tex);
+    // result = scat_tex.xyz + result *  max_v3_elem(trans_tex.xyz);
+
+    // Show Light
+    for(int i = 0; i < pointLightsNum; ++i)
+	{
+        vec2 re = iSphere(orig, dir, vec4(pointLights[i].position, LIGHT_SIZE));
+        bool isLight = re.x < re. y && re.y > 0.0;
+        result = mix(result, LIGHT_COLOR, isLight);
+    }
+
     result = result/ (result + vec3(1.0));
     result = GammaCorrection(result);
 
     // Output
     FragColor = vec4(result, 1.0);
-    FinalPos = pos_tex;
-    ScatterLight = scat_tex;
     
    // FragColor = vec4(scat_tex.xyz, 1.0);
    // FragColor = vec4(N, 1.0);

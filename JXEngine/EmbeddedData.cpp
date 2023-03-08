@@ -404,6 +404,11 @@ namespace SHADER_PATH
 		std::string PaperScene_02_FogBall_01_N_FS = Path + "PaperScene_02_FogBall_01_N.fs";
 		std::string PaperScene_02_FogBall_01_T_FS = Path + "PaperScene_02_FogBall_01_T.fs";
 		std::string PaperScene_02_FogBall_02_N_FS = Path + "PaperScene_02_FogBall_02_N.fs";
+
+		// Paper Scene 03 : Stanford Rabbits
+		std::string PaperScene_03_StanfordRabbits_VS = Path + "PaperScene_03_StanfordRabbits.vs";
+		std::string PaperScene_03_StanfordRabbits_01_N_FS = Path + "PaperScene_03_StanfordRabbits_01_N.fs";
+		std::string PaperScene_03_StanfordRabbits_01_T_FS = Path + "PaperScene_03_StanfordRabbits_01_T.fs";
 	
 	}
 }
