@@ -10,6 +10,25 @@
 #include "Actor.h"
 #include "Tools.h"
 
+Material::Material()
+{
+	baseColor = glm::vec3(1.0);
+
+	metallic = 0.0;
+
+	roughness = 0.9;
+
+	reflectance = 0.1;
+
+	emissive = glm::vec3(0.0);
+
+	CanMove = true;
+
+	IsJitter = false;
+
+	engineSetting = std::make_shared<EngineSetting>();
+}
+
 Material::Material(std::shared_ptr<ShaderCompiler> s)
 {
 	UpdateShader(s);
@@ -81,7 +100,7 @@ void Material::LinkTextureForShader()
 
 		//i->get()->SetUniformPos(i - textures.begin());
 		i->get()->SetType(name + number);
-		//std::cout << name + number << " ";
+		std::cout << name + number << " "<< std::endl;
 		//i->get()->SetForShader(*shader);
 		
 		
@@ -234,6 +253,22 @@ std::shared_ptr<Material> Material::Copy() const
 	m->roughness = roughness;
 	//m->engineSetting = engineSetting;
 	//m->textures = textures;
+	return m;
+}
+
+std::shared_ptr<Material> Material::CopyWithTex()
+{
+	std::shared_ptr<ShaderCompiler> shader2 = std::make_shared<ShaderCompiler>();
+	shader->Copy(*shader2.get());
+
+	std::shared_ptr<Material> m = std::make_shared<Material>(shader2);
+	m->baseColor = baseColor;
+	m->emissive = emissive;
+	m->metallic = metallic;
+	m->reflectance = reflectance;
+	m->roughness = roughness;
+	//m->engineSetting = engineSetting;
+	m->textures = textures;
 	return m;
 }
 

@@ -1,8 +1,8 @@
 #version 330 core
 layout(location = 0) out vec4 FragColor;
-layout(location = 1) out vec4 LastColor;
-layout(location = 2) out vec4 ScatterLight;
-layout(location = 3) out vec4 FinalPos;
+layout(location = 1) out vec4 ScatterLight_Out;
+layout(location = 2) out vec4 Transmittance_Out;
+layout(location = 3) out vec4 FinalPos_Out;
 
 in vec2 TexCoords;
 
@@ -13,9 +13,10 @@ uniform mat4 projection;
 uniform mat4 projection_inv;
 uniform mat4 projection_pre;
 
-uniform sampler2D preTexture;
-uniform sampler2D scatterTex;
-uniform sampler2D posTex;
+uniform sampler2D ScatterLight_In;
+uniform sampler2D Transmittance_In;
+uniform sampler2D FinalPos_In;
+
 uniform int IsFirstFrame;
 
 
@@ -191,8 +192,8 @@ void main()
     }
     else
     {
-        pos_tex = texture(posTex, M_uv);
-        scat_tex = texture(scatterTex, M_uv);
+        pos_tex = texture(FinalPos_In, M_uv);
+        scat_tex = texture(ScatterLight_In, M_uv);
     }
 
     if(HistoryRejection(dir, M_dir) < 0.001)
@@ -217,6 +218,7 @@ void main()
     col *= pow( 16.0*q.x*q.y*(1.0-q.x)*(1.0-q.y), 0.12)*0.7+0.3; //Vign
 
     FragColor = vec4(col.rgb, 1.0);
-    FinalPos = pos_tex;
-    ScatterLight = scat_tex;
+    FinalPos_Out = pos_tex;
+    ScatterLight_Out = scat_tex;
+    FragColor = pos_tex;
 } 

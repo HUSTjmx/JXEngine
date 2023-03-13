@@ -1097,6 +1097,9 @@ float SelectPhaseFunction(float mu, float g, bool isFoveal)
 
 
 layout(location = 0) out vec4 FragColor;
+layout(location = 1) out vec4 ScatterLight_Out;
+layout(location = 2) out vec4 Transmittance_Out;
+layout(location = 3) out vec4 FinalPos_Out;
 in vec2 TexCoords;
 
 uniform mat4 view;
@@ -1105,7 +1108,11 @@ uniform mat4 view_pre;
 uniform mat4 projection;
 uniform mat4 projection_inv;
 uniform mat4 projection_pre;
-uniform int IsFirstFrame;
+uniform int FrameIndex;
+
+uniform sampler2D ScatterLight_In;
+uniform sampler2D Transmittance_In;
+uniform sampler2D FinalPos_In;
 
 // Fog Material Settings
 #define SCATTERING  (0.7 * vec3(0.95, 0.5, 0.0))
@@ -1133,7 +1140,7 @@ uniform int IsFirstFrame;
 // YuShi Sphere
 #define OBJ_YUSHI_SPHERE 4.0
 // 0 : (default) sphere ; 1 : Torus ; 2 : Octahedron
-#define OBJ_TYPE 3
+#define OBJ_TYPE 0
     const vec3 YuShiPos = vec3(0.0, 0.0, -1.5);
 #if OBJ_TYPE == 0
     const float YushiRadius = 2.0;
@@ -1249,6 +1256,26 @@ float sdOctahedron( vec3 p, vec3 center, float s)
 #define M_PI_2 (2.0*M_PI)
 #define M_PI_O_2 (M_PI/2.0)
 
+vec2 rotate(vec2 v, float angle){
+    float c = cos(angle);
+    float s = sin(angle);
+    return vec2(
+        c * v.x - s * v.y,
+        s * v.x + c * v.y
+    );
+}
+
+// vector to transform, translation to apply, ZYX euler angles *in degrees*
+vec3 transform(vec3 p, vec3 t, vec3 r){
+    vec3 rP = p - t;
+    vec3 angles = M_PI/180.0 * r;
+    rP.xy = rotate(rP.xy, angles.x);
+    rP.xz = rotate(rP.xz, angles.y);
+    rP.yz = rotate(rP.yz, angles.z);
+    return rP;
+}
+
+
 float sdPlane(vec3 p, vec3 n /* normalized */, float h)
 {
     return dot(p, n) + h;
@@ -1256,7 +1283,7 @@ float sdPlane(vec3 p, vec3 n /* normalized */, float h)
 
 float sdSphere(vec3 p, vec3 center, float s)
 {
-    return length(p - center) - s * s;
+    return length(p - center) - s;
 }
 
 float sdBox(vec3 p, vec3 r){
@@ -1573,7 +1600,7 @@ float sdDragon(vec3 p){
     vec2 dragonHead = mapDragonHead(headPos);
 
     // Merge everything.
-    return miniSoft(miniSoft(vec2(dragonMain, 8.0), feetMerged, 0.2), dragonHead, 0.2).x;
+    return miniSoft(miniSoft(vec2(dragonMain, 8.0), feetMerged, 0.2), dragonHead, 0.2).x - 0.15;
 }
   
 #endif
@@ -1627,7 +1654,7 @@ vec2 Map(in vec3 pos)
 #elif OBJ_TYPE == 2
     res = opU(res, vec2(sdSphere(pos, YuShiPos, YushiRadius + 2.5), OBJ_YUSHI_SPHERE));
 #elif OBJ_TYPE == 3
-    res = opU(res, vec2(sdSphere(pos, YuShiPos, YushiRadius + 10.5), OBJ_YUSHI_SPHERE));
+    res = opU(res, vec2(sdSphere(pos, YuShiPos, YushiRadius + 5.5), OBJ_YUSHI_SPHERE));
 #endif
     return res;
 }
@@ -1732,16 +1759,18 @@ float GetYushiColor(in vec3 p) {
 
 void getParticipatingMedia(out vec3 sigmaS, out vec3 sigmaE, in vec3 pos)
 {
-    pos = (pos - YuShiPos) * rotate_around_y(180 * sin(iTime * rotateSpeed)) + YuShiPos;
+   // pos = (pos - YuShiPos) * rotate_around_y(180 * sin(iTime * rotateSpeed)) + YuShiPos;
 
 #if OBJ_TYPE == 0
     float sphereFog = clamp((YushiRadius - length(pos - YuShiPos)) / YushiRadius, 0.0, 1.0);
 #elif OBJ_TYPE == 1
+    //pos = (pos - YuShiPos) * rotate_around_y(180 * sin(iTime * rotateSpeed)) + YuShiPos;
     float sphereFog = clamp(sdTorus(pos, YuShiPos, YushiRadius) * -3.2, 0.0, 1.0);
 #elif OBJ_TYPE == 2
     float sphereFog = clamp(sdOctahedron(pos, YuShiPos, YushiRadius) * -3.2, 0.0, 1.0);
 #elif OBJ_TYPE == 3
-    float sphereFog = clamp(sdDragon(pos - YuShiPos) * -3.2, 0.0, 1.0);
+    pos = (pos + vec3(-0.9, 1.0, 0.0) - YuShiPos) * rotate_around_y(90) + YuShiPos;
+    float sphereFog = clamp(sdDragon(pos) * -3.2, 0.0, 1.0);
 #endif
     
     sigmaS = sphereFog * SCATTERING;
@@ -1750,7 +1779,7 @@ void getParticipatingMedia(out vec3 sigmaS, out vec3 sigmaE, in vec3 pos)
 #if BASIC_ANIMATED_MEDIA==1
     float r = floor(iTime);
     sigmaS = sphereFog * abs(5.0* vec3(rand(vec3(r,0.0,1.0)),rand(vec3(r,0.0,5.0)),rand(vec3(r,0.0,9.0))));
-    vec3 absorption = abs(0.1* vec3(rand(vec3(r,1.0,2.0)),rand(vec3(r,1.0,7.0)),rand(vec3(r,1.0,7.0))));
+    vec3 absorption = abs(0.0* vec3(rand(vec3(r,1.0,2.0)),rand(vec3(r,1.0,7.0)),rand(vec3(r,1.0,7.0))));
     sigmaE = sigmaS + absorption;
 #elif BASIC_ANIMATED_MEDIA==2
     float r = iTime*0.2;
@@ -1764,7 +1793,7 @@ void getParticipatingMedia(out vec3 sigmaS, out vec3 sigmaE, in vec3 pos)
 
 float volumetricShadow(in vec3 from, in vec3 to)
 {
-    //return 2.0;
+    //return 1.0;
     const float numStep = 36.0; // quality control. Bump to avoid shadow alisaing
     vec3 shadow = vec3(1.0);
     vec3 sigmaS = vec3(0.0);
@@ -1811,18 +1840,42 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
 #elif OBJ_TYPE == 2
         vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius + 2.0));
 #elif OBJ_TYPE == 3
-        vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius + 10.0));
+        vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius));
 #endif
         float t = tmm.x;
-        float dt = .5;     //float dt = .2 - .195*cos(iTime*.05);//animated
+        float dt = .05;     //float dt = .2 - .195*cos(iTime*.05);
         vec3 transmittance = vec3(1.0, 1.0, 1.0);
         vec3 scatteredLight = vec3(0.0);
         vec3 sigmaS = vec3(0.0);
         vec3 sigmaE = vec3(0.0);
 
-        
-        for( int i = 0; i < 10; ++i )
+        float pre_t = length(pre_pos.xyz - ro);
+
+        if(FrameIndex > 0)
         {
+            scatteredLight = pre_scat.xyz;
+            t = max(pre_t, t);
+            transmittance = pre_transmittance.xyz;
+        }
+
+        /*if(pre_pos.w == 1.0 && t > tmm.y)
+        {
+            t = tmm.x;
+            pre_pos.w = 0.0;
+            transmittance = vec3(1.0, 1.0, 1.0);
+            scatteredLight = vec3(0.0);
+        }*/
+
+      
+        for( int i = 0; i < 4; ++i )
+        {
+            if(t > tmm.y)
+            { 
+                //pre_pos.w = 1.0;
+                return;
+                break;
+            }
+    
             vec3 p = ro + t * rd;
             getParticipatingMedia(sigmaS, sigmaE, p);
 
@@ -1833,16 +1886,13 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
             transmittance *= exp(-sigmaE * dt);
                     
             t += dt;
-            if(t > tmm.y)
-            { 
-                pre_pos.w = 1.0;
-                break;
-            }
+
         }
-        
+    
         pre_pos = vec4(ro + t * rd, pre_pos.w);
         pre_scat = vec4(scatteredLight, 0.0);
         pre_transmittance = vec4(transmittance, 0.0);
+
         return vec3(0.0);
     }
 }
@@ -1877,6 +1927,25 @@ void main()
     vec3 pos2 = orig + dir * res2.x;
     vec3 N = calcNormal(pos2);
 
+    // Read History Data
+    vec3 M_pos = pos;
+    vec4 M_ndc = projection_pre * view_pre * vec4(M_pos, 1.0);
+    M_ndc = M_ndc / M_ndc.w;
+    vec2 M_uv = M_ndc.xy * 0.5 + 0.5;
+    vec3 M_dir = normalize(M_pos - LastViewPosWS);
+
+    // Solve History Data
+    bool isFirstFrame = FrameIndex == 0;
+    pos_tex = mix(texture(FinalPos_In, M_uv), vec4(orig, 0.0), isFirstFrame);
+    scat_tex = mix(texture(ScatterLight_In, M_uv), vec4(10.0, 1.0, 0.0, 1.0), isFirstFrame);
+    trans_tex = mix(texture(Transmittance_In, M_uv), vec4(1.0, 1.0, 1.0, 1.0), isFirstFrame);
+    
+    //bool isOutRange = inRange(M_uv) < -0.05;
+    //pos_tex = mix(pos_tex, vec4(orig, 0.0), isOutRange);
+    //scat_tex = mix(scat_tex, vec4(0.0, 0.0, 0.0, 1.0), isOutRange);
+    //trans_tex = mix(trans_tex, vec4(1.0, 1.0, 1.0, 1.0), isOutRange);
+
+    // Compute ScatterLight
     vec3 baseColor = GetColor(res.y, orig, dir, pos_tex, scat_tex, trans_tex);
     vec3 baseColor2 = GetColor2(res2.y, orig, dir);
 
@@ -1884,7 +1953,6 @@ void main()
     vec3 diffuse_color = BaseColorReMap(baseColor2, WALL_METALLIC);
 	float r = RoughnessReMap(WALL_ROUGHNESS);
 	vec3 f0 = GetF0_All(baseColor, WALL_METALLIC, WALL_REFLECTANCE);
-
     vec3 result = vec3(0.0);
     for(int i = 0; i < pointLightsNum; ++i)
 	{
@@ -1896,8 +1964,10 @@ void main()
         * NoL * volumetricShadow(pos2, pointLights[i].position);
 	}	
 
+    // Blend
     result = scat_tex.xyz + result *  length(trans_tex);
     // result = scat_tex.xyz + result *  max_v3_elem(trans_tex.xyz);
+
     // Show Light
     for(int i = 0; i < pointLightsNum; ++i)
 	{
@@ -1906,202 +1976,22 @@ void main()
         result = mix(result, LIGHT_COLOR, isLight);
     }
 
-    // Show
+    // Color Solve
     result = result/ (result + vec3(1.0));
     result = GammaCorrection(result);
 
     // Output
     FragColor = vec4(result, 1.0);
-    
-    //if(res.y > 3.9)
-    //    FragColor = vec4(1.0, 1.0, 0.0, 1.0);
-    //FinalPos_Out = pos_tex;
-   // ScatterLight_Out = scat_tex;
-    
-   // FragColor = vec4(scat_tex.xyz, 1.0);
-   // FragColor = vec4(N, 1.0);
-   //FragColor = vec4(NL, NL, NL, 1.0);
-   //FragColor = vec4(sd, sd, sd, 1.0);
-    // Test
-    //if(IsFirstFrame % 100 < 50)
-        //   FragColor = vec4(M_uv, 1.0, 1.0);
-    //else FragColor = vec4(TexCoords, 1.0, 1.0);
+    ScatterLight_Out = scat_tex;
+    Transmittance_Out = trans_tex;
+    FinalPos_Out = pos_tex;
 
-    //FragColor = vec4(abs(M_uv - TexCoords) * 10.0, 0.0, 1.0);
-    // FinalPos = vec4(pos, 1.0);
-    // FragColor = texture(posTex, pre_uv);
-
-    // FragColor = vec4(IsFirstFrame / 1000.0);
-
-    // FragColor = vec4(baseColor, 1.0);
-
-    //  FragColor = vec4(dir, 1.0);
-    // FragColor = rd;
-    //FragColor = vec4(rd.www * 10.0, 1.0);
-
-    //FragColor = vec4(abs(Last_view_center_dir), 1.0);
-
-    // FragColor = vec4(StretchToFarPLane(orig + dir), 1.0);
-    
-    //if(inRange(M_uv) < 0.000001) FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-
-    //if(HistoryRejection(dir, M_dir) < 0.0001) FragColor = vec4(1.0, 1.0, 0.0, 1.0);
-
-    //FragColor = vec4(vec3(dot(M_dir, dir)), 1.0);
+    //FragColor = vec4(baseColor, 1.0);
+    //FragColor = texture(FinalPos_In, M_uv);
+    //FragColor = vec4(vec3(dot(M_dir, dir) * 10.0), 1.0);
+    //FragColor = scat_tex;
+    //FragColor = vec4(FrameIndex / 1000.0);
+    FragColor = texture(ScatterLight_In, M_uv);
 }
 
 
-/*
-
-  // https://iquilezles.org/articles/distfunctions
-vec2 sdSegment( in vec3 p, in vec3 a, in vec3 b )
-{
-	vec3 pa = p-a, ba = b-a;
-	float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
-	return vec2( length( pa - ba*h ), h );
-}
-
-// https://iquilezles.org/articles/distfunctions
-float sdEllipsoid( in vec3 p, in vec3 r )
-{
-    return (length(p/r) - 1.0) * min(min(r.x,r.y),r.z);
-}
-
-// https://iquilezles.org/articles/smin
-float smin( float a, float b, float k )
-{
-    float h = max( k-abs(a-b), 0.0 )/k;
-    return min( a, b ) - h*h*h*k*(1.0/6.0);
-}
-
-// https://iquilezles.org/articles/distfunctions
-float opS( float d1, float d2 )
-{
-    return max(-d1,d2);
-}
-
-
-//----------------------------------------------------------------
-
-float sdMonster( vec3 p , vec3 center)
-{
-    p = p - center;
-    //p *= 0.1;
-	p.y += 0.8;
-    p.z -= 3.0;
-    p.x += 1.0;
-	p.x = abs(p.x);
-
-	vec3 q = p;
-	q.y -= 0.3*pow(1.0-length(p.xz),1.0)*smoothstep(0.0, 0.2, p.y);
-	q.y *= 1.05;
-	q.z *= 1.0 + 0.1*smoothstep( 0.0, 0.5, q.z )*smoothstep( -0.5, 0.5, p.y );
-    float dd = length( (p - vec3(0.0,0.65,0.8))*vec3(1.0,0.75,1.0) );
-	float am = clamp( 4.0*abs(p.y-0.45), 0.0, 1.0 );
-	float fo = -0.03*(1.0-smoothstep( 0.0, 0.04*am, abs(dd-0.42) ))*am;
-    float dd2 = length( (p - vec3(0.0,0.65,0.8))*vec3(1.0,0.25,1.0) );
-	float am2 = clamp( 1.5*(p.y-0.45), 0.0, 1.0 );
-	float fo2 = -0.085*(1.0-smoothstep( 0.0, 0.08*am2, abs(dd2-0.42) ))*am2;
-    q.y += -0.05+0.05*length(q.x);
-	
-	float d1 = length( q ) - 0.9 + fo + fo2;
-    vec2 res = vec2( d1, 1.0 );
-
-	// arms
-	vec2 h = sdSegment( p, vec3(.83,0.15,0.0), vec3(1.02,-0.6,-.1) );
-	float d2 = h.x - 0.07;
-	res.x = smin( res.x, d2, 0.03 );
-	h = sdSegment( p, vec3(1.02,-0.6,-.1), vec3(0.95,-1.2,0.1) );
-	d2 = h.x - 0.07 + h.y*0.02;
-	res.x = smin( res.x, d2, 0.02 );
-	
-	// hands
-	if( p.y<-1.0 )
-	{
-    float fa = sin(3.0*iTime);
-	h = sdSegment( p, vec3(0.95,-1.2,0.1), vec3(0.97,-1.5,0.0) );
-	d2 = h.x - 0.03;
-	res.x = smin( res.x, d2, 0.01 );
-	h = sdSegment( p, vec3(0.97,-1.5,0.0), vec3(0.95,-1.7,0.0)-0.01*fa );
-	d2 = h.x - 0.03 + 0.01*h.y;
-	res.x = smin( res.x, d2, 0.02 );
-	h = sdSegment( p, vec3(0.95,-1.2,0.1), vec3(1.05,-1.5,0.1) );
-	d2 = h.x - 0.03;
-	res.x = smin( res.x, d2, 0.02 );
-	h = sdSegment( p, vec3(1.05,-1.5,0.1), vec3(1.0,-1.75,0.1)-0.01*fa );
-	d2 = h.x - 0.03 + 0.01*h.y;
-	res.x = smin( res.x, d2, 0.02 );
-	h = sdSegment( p, vec3(0.95,-1.2,0.1), vec3(0.98,-1.5,0.2) );
-	d2 = h.x - 0.03;
-	res.x = smin( res.x, d2, 0.03 );
-	h = sdSegment( p, vec3(0.98,-1.5,0.2), vec3(0.95,-1.7,0.15)-0.01*fa );
-	d2 = h.x - 0.03 + 0.01*h.y;
-	res.x = smin( res.x, d2, 0.03 );
-	h = sdSegment( p, vec3(0.95,-1.2,0.1), vec3(0.85,-1.4,0.2) );
-	d2 = h.x - 0.04 + 0.01*h.y;
-	res.x = smin( res.x, d2, 0.05 );
-	h = sdSegment( p, vec3(0.85,-1.4,0.2), vec3(0.85,-1.63,0.15)+0.01*fa );
-	d2 = h.x - 0.03 + 0.01*h.y;
-	res.x = smin( res.x, d2, 0.03 );
-	}
-	
-	// legs
-	if( p.y<0.0 )
-	{
-	h = sdSegment( p, vec3(0.5,-0.5,0.0), vec3(0.6,-1.2,0.1) );
-	d2 = h.x - 0.14 + h.y*0.08;
-	res.x = smin( res.x, d2, 0.06 );
-	h = sdSegment( p, vec3(0.6,-1.2,0.1), vec3(0.5,-1.8,0.0) );
-	d2 = h.x - 0.06;
-	res.x = smin( res.x, d2, 0.06 );
-	}
-
-    // feet
-	if( p.y<-0.5 )
-	{
-	h = sdSegment( p, vec3(0.5,-1.8,0.0), vec3(0.6,-1.8,0.4) );
-	d2 = h.x - 0.09 + 0.02*h.y;
-	res.x = smin( res.x, d2, 0.06 );
-	h = sdSegment( p, vec3(0.5,-1.8,0.0), vec3(0.77,-1.8,0.35) );
-	d2 = h.x - 0.08 + 0.02*h.y;
-	res.x = smin( res.x, d2, 0.06 );
-	h = sdSegment( p, vec3(0.5,-1.8,0.0), vec3(0.9,-1.8,0.2) );
-	d2 = h.x - 0.07 + 0.02*h.y;
-	res.x = smin( res.x, d2, 0.06 );
-	}
-	
-	// horns
-	vec3 hp = p - vec3(0.25,0.7,0.0);
-    hp.xy = mat2(0.6,0.8,-0.8,0.6)*hp.xy;
-    hp.x += 0.8*hp.y*hp.y;
-    float d4 = sdEllipsoid( hp, vec3(0.13,0.5,0.16) );
-	if( d4<res.x ) res = vec2( d4, 3.0 );
-    
-	// eyes
-	float d3 = length( (p - vec3(0.0,0.25,0.35))*vec3(1.0,0.8,1.0) ) - 0.5;
-	if( d3<res.x ) res = vec2( d3, 2.0 );
-
-	// mouth
-	float mo = length( (q-vec3(0.0,-0.35,1.0))*vec3(1.0,1.2,0.25)/1.2 ) -0.3/1.2;
-	float of = 0.1*pow(smoothstep( 0.0, 0.2, abs(p.x-0.3) ),0.5);
-	mo = max( mo, -q.y-0.35-of );
-
-	float li = smoothstep( 0.0, 0.05, mo+0.02 ) - smoothstep( 0.05, 0.10, mo+0.02 );
-	res.x -= 0.03*li*clamp( (-q.y-0.4)*10.0, 0.0, 1.0 );
-	
-	if( -mo > res.x )
-		res = vec2( -mo, 4.0 );
-
-    res.x += 0.01*(smoothstep( 0.0, 0.05, mo+0.062 ) - smoothstep( 0.05, 0.10, mo+0.062 ));
-
-    // teeth	
-	if( p.x<0.3 )
-	{
-    p.x = mod( p.x, 0.16 )-0.08;	
-    float d5 = length( (p-vec3(0.0,-0.37,0.65))*vec3(1.0,2.0,1.0))-0.08;
-	if( d5<res.x )
-		res = vec2( d5, 2.0 );
-	}
-	
-	return res.x * 0.3;
-}*/

@@ -538,6 +538,7 @@ public:
 
 	~Counter()
 	{
+		if (times > 10000)times = 1;
 		times++;
 	}
 };

@@ -89,6 +89,8 @@ class Material : public Observer
 
 public:
 
+	Material();
+
 	Material(std::shared_ptr<ShaderCompiler> s);
 
 	// The design pattern, observer pattern.
@@ -160,6 +162,8 @@ public:
 	void SetUniformAttri(const std::string& name, T value, void(*pf)(const std::string&, T));
 
 	std::shared_ptr<Material> Copy() const;
+
+	std::shared_ptr<Material> CopyWithTex();
 
 	std::vector<std::shared_ptr<Texture>> textures;
 

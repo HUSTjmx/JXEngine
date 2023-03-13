@@ -389,6 +389,13 @@ namespace SHADER_PATH
 			std::string FoveatedBlur_vs = Path + "FoveatedBlur.vs";
 			std::string FoveatedBlur_fs = Path + "FoveatedBlur.fs";
 		}
+
+		namespace ColorGrading
+		{
+			std::string Path = "shaders/PostRendering/ColorGrading/";
+			std::string OriginShow_vs = Path + "OriginShow.vs";
+			std::string OriginShow_fs = Path + "OriginShow.fs";;
+		}
 	}
 
 	namespace PAPER

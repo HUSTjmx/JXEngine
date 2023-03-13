@@ -10,5 +10,80 @@ D:\Projects\JXEngine\JXEngine\Counted.h(41): message : 查看对正在编译的�
 D:\Projects\JXEngine\JXEngine\Counted.h(40): message : 在编译 类 模板 成员函数“Counted<DirectionalLight>::Counted(void)”时
 D:\Projects\JXEngine\JXEngine\Light.h(63): message : 查看对正在编译的函数 模板 实例化“Counted<DirectionalLight>::Counted(void)”的引用
 D:\Projects\JXEngine\JXEngine\Light.h(59): message : 查看对正在编译的 类 模板 实例化“Counted<DirectionalLight>”的引用
+  Atmosphere.cpp
+D:\Projects\JXEngine\JXEngine\Material.h(21,16): warning C4099: “Transform”: 类型名称以前使用“struct”现在使用的是“class”
+D:\Projects\JXEngine\JXEngine\Actor.h(16): message : 参见“Transform”的声明
+  FrameBuffer.cpp
+D:\Projects\JXEngine\JXEngine\FrameBuffer.cpp(5,1): warning C4103: 包括标题后更改了对齐方式，可能是由于缺少 #pragma pack(pop)
+  Material.cpp
+D:\Projects\JXEngine\JXEngine\Actor.h(16,18): warning C4099: “Transform”: 类型名称以前使用“class”现在使用的是“struct”
+D:\Projects\JXEngine\JXEngine\Actor.h(16): message : 参见“Transform”的声明
+D:\Projects\JXEngine\JXEngine\Material.cpp(19,17): warning C4305: “=”: 从“double”到“float”截断
+D:\Projects\JXEngine\JXEngine\Material.cpp(21,19): warning C4305: “=”: 从“double”到“float”截断
+D:\Projects\JXEngine\JXEngine\Material.cpp(40,17): warning C4305: “=”: 从“double”到“float”截断
+D:\Projects\JXEngine\JXEngine\Material.cpp(42,19): warning C4305: “=”: 从“double”到“float”截断
+D:\Projects\JXEngine\JXEngine\Tools.h(525,1): warning C4244: “+=”: 从“double”转换到“T”，可能丢失数据
+          with
+          [
+              T=float
+          ]
+D:\Projects\JXEngine\JXEngine\Material.cpp(150): message : 查看对正在编译的函数 模板 实例化“glm::mat4 MatTool::JitterMat<16>(glm::mat4,unsigned int,int,int)”的引用
+D:\Projects\JXEngine\JXEngine\Tools.h(526,1): warning C4244: “+=”: 从“double”转换到“T”，可能丢失数据
+          with
+          [
+              T=float
+          ]
+  TestScene.cpp
+D:\Projects\JXEngine\JXEngine\Actor.h(16,18): warning C4099: “Transform”: 类型名称以前使用“class”现在使用的是“struct”
+D:\Projects\JXEngine\JXEngine\Actor.h(16): message : 参见“Transform”的声明
+D:\Projects\JXEngine\JXEngine\TestScene.cpp(55,32): warning C4305: “参数”: 从“double”到“T”截断
+          with
+          [
+              T=float
+          ]
+D:\Projects\JXEngine\JXEngine\TestScene.cpp(61,20): warning C4018: “<”: 有符号/无符号不匹配
+D:\Projects\JXEngine\JXEngine\TestScene.cpp(307,29): warning C4305: “参数”: 从“double”到“T”截断
+          with
+          [
+              T=float
+          ]
+D:\Projects\JXEngine\JXEngine\TestScene.cpp(586,19): warning C4305: “=”: 从“double”到“float”截断
+D:\Projects\JXEngine\JXEngine\TestScene.cpp(694,19): warning C4305: “=”: 从“double”到“float”截断
+D:\Projects\JXEngine\JXEngine\Tools.h(394,19): warning C4244: “参数”: 从“double”转换到“unsigned int”，可能丢失数据
+D:\Projects\JXEngine\JXEngine\TestScene.cpp(334): message : 查看对正在编译的函数 模板 实例化“std::shared_ptr<glm::mat4> MatTool::GenerateModelMat_R<1000>(float,float)”的引用
+D:\Projects\JXEngine\JXEngine\Tools.h(410,15): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+D:\Projects\JXEngine\JXEngine\Tools.h(414,18): warning C4244: “初始化”: 从“int”转换到“float”，可能丢失数据
+D:\Projects\JXEngine\JXEngine\Counted.h(53,17): warning C4018: “>=”: 有符号/无符号不匹配
+D:\Projects\JXEngine\JXEngine\Counted.h(52): message : 在编译 类 模板 成员函数“void Counted<DirectionalLight>::init(void)”时
+D:\Projects\JXEngine\JXEngine\Counted.h(41): message : 查看对正在编译的函数 模板 实例化“void Counted<DirectionalLight>::init(void)”的引用
+D:\Projects\JXEngine\JXEngine\Counted.h(40): message : 在编译 类 模板 成员函数“Counted<DirectionalLight>::Counted(void)”时
+D:\Projects\JXEngine\JXEngine\Light.h(63): message : 查看对正在编译的函数 模板 实例化“Counted<DirectionalLight>::Counted(void)”的引用
+D:\Projects\JXEngine\JXEngine\Light.h(59): message : 查看对正在编译的 类 模板 实例化“Counted<DirectionalLight>”的引用
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include\xutility(149,77): warning C4244: “参数”: 从“float”转换到“unsigned int”，可能丢失数据
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include\memory(2006): message : 查看对正在编译的函数 模板 实例化“void std::_Construct_in_place<_Ty,float&,float&>(_Ty &,float &,float &) noexcept(false)”的引用
+          with
+          [
+              _Ty=FrameBuffer
+          ]
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include\memory(2725): message : 查看对正在编译的函数 模板 实例化“std::_Ref_count_obj2<_Ty>::_Ref_count_obj2<float&,float&>(float &,float &)”的引用
+          with
+          [
+              _Ty=FrameBuffer
+          ]
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include\memory(2726): message : 查看对正在编译的函数 模板 实例化“std::_Ref_count_obj2<_Ty>::_Ref_count_obj2<float&,float&>(float &,float &)”的引用
+          with
+          [
+              _Ty=FrameBuffer
+          ]
+D:\Projects\JXEngine\JXEngine\TestScene.cpp(1181): message : 查看对正在编译的函数 模板 实例化“std::shared_ptr<FrameBuffer> std::make_shared<FrameBuffer,float&,float&>(float &,float &)”的引用
+  Tools.cpp
+D:\Projects\JXEngine\JXEngine\Tools.cpp(1,1): warning C4103: 包括标题后更改了对齐方式，可能是由于缺少 #pragma pack(pop)
+D:\Projects\JXEngine\JXEngine\Tools.cpp(217,21): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
+  UniformBuffer.cpp
+D:\Projects\JXEngine\JXEngine\UniformBuffer.cpp(3,1): warning C4103: 包括标题后更改了对齐方式，可能是由于缺少 #pragma pack(pop)
+  正在生成代码...
+D:\Projects\JXEngine\JXEngine\UniformBuffer.cpp(28): warning C4715: “GetSizeByType”: 不是所有的控件路径都返回值
+D:\Projects\JXEngine\JXEngine\Tools.cpp(233): warning C4715: “BufferTool::GetFormatByInternalFormat”: 不是所有的控件路径都返回值
+D:\Projects\JXEngine\JXEngine\FrameBuffer.cpp(35): warning C4715: “GetAttachmentByIndex”: 不是所有的控件路径都返回值
 D:\Projects\JXEngine\JXEngine\App.cpp(129): warning C4715: “CheckExtension”: 不是所有的控件路径都返回值
   JXEngine.vcxproj -> D:\Projects\JXEngine\Debug\JXEngine.exe

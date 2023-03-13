@@ -437,7 +437,7 @@ void main()
 
     //if(HistoryRejection(dir, M_dir) < 0.0001) FragColor = vec4(1.0, 1.0, 0.0, 1.0);
 
-    //FragColor = vec4(vec3(dot(M_dir, dir)), 1.0);
+    FragColor = vec4(vec3(dot(M_dir, dir)), 1.0);
 }
 
 

@@ -243,6 +243,13 @@ namespace SHADER_PATH
 			extern std::string FoveatedBlur_vs;
 			extern std::string FoveatedBlur_fs;
 		}
+
+		namespace ColorGrading
+		{
+			extern std::string Path;
+			extern std::string OriginShow_vs;
+			extern std::string OriginShow_fs;
+		}
 	}
 
 	namespace PAPER

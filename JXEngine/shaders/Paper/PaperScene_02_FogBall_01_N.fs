@@ -36,7 +36,7 @@ uniform int IsFirstFrame;
 // YuShi Sphere
 #define OBJ_YUSHI_SPHERE 4.0
 // 0 : (default) sphere ; 1 : Torus ; 2 : Octahedron
-#define OBJ_TYPE 3
+#define OBJ_TYPE 1
     const vec3 YuShiPos = vec3(0.0, 0.0, -1.5);
 #if OBJ_TYPE == 0
     const float YushiRadius = 2.0;
@@ -739,14 +739,14 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
         vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius));
 #endif
         float t = tmm.x;
-        float dt = .5;     //float dt = .2 - .195*cos(iTime*.05);//animated
+        float dt = .05;     //float dt = .2 - .195*cos(iTime*.05);//animated
         vec3 transmittance = vec3(1.0, 1.0, 1.0);
         vec3 scatteredLight = vec3(0.0);
         vec3 sigmaS = vec3(0.0);
         vec3 sigmaE = vec3(0.0);
 
         
-        for( int i = 0; i < 10; ++i )
+        for( int i = 0; i < 50; ++i )
         {
             vec3 p = ro + t * rd;
             getParticipatingMedia(sigmaS, sigmaE, p);
