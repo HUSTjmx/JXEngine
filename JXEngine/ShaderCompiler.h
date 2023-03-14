@@ -45,6 +45,12 @@ public:
 	// Note: the sort of library is inverse, for example: light rely on math, we should firstly add light, then add math.
 	// ...
 	void AddIncludeFile(const std::string& filePath);
+	
+	// Todo
+	void AddMacroDefine(const std::string& key, const std::string& value);
+
+	// Todo
+	void AddMacroDefine(const std::string& key, const int value);
 
 	// ...
 	void SetBool(const std::string& name, bool value) const;

@@ -5,21 +5,29 @@
 // Uniform变量
 uniform float MAX_DISTANCE_IS_FOVEAL_REGION;
 uniform float MIN_SIZE_IS_FOVEAL_REGION;
-uniform bool MEDIASIZE_IS_LEQ_LIGHTZSIZE;
+
+uniform float FOVEATED_REGION_BOUND;
 
 // 区域判断算法
-void IsFovealRegion(in float theta, in float L, in float R, out bool rel)
+float IsFovealRegion(in float theta, in float L, in float R, out bool rel)
 {
-    bool A = (theta * 180.0) / PI < 5.79;
+    bool A = theta < FOVEATED_REGION_BOUND;
     bool B = L < MAX_DISTANCE_IS_FOVEAL_REGION;
     bool C = R > MAX_DISTANCE_IS_FOVEAL_REGION;
     
     //rel = A & B & C;
     rel = A;
+
+    // 为了平滑过渡
+    float x = abs(theta - FOVEATED_REGION_BOUND) / 30.0;
+    x = 1.0 - smoothstep(x);
+    x = rel ? 1.0 : x;
+    x = x < 0.0001 ? 0.0001 : x;
+    return x;
 }
 
 // 自适应的相位函数选择算法
-float SelectPhaseFunction(float mu, float g, bool isFoveal)
+/*float SelectPhaseFunction(float mu, float g, bool isFoveal)
 {
     if(isFoveal)
     {
@@ -37,4 +45,4 @@ float SelectPhaseFunction(float mu, float g, bool isFoveal)
         return PhaseFunc_CON();
     }
 }
-
+*/

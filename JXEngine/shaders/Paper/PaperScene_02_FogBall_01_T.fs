@@ -17,12 +17,17 @@ uniform sampler2D ScatterLight_In;
 uniform sampler2D Transmittance_In;
 uniform sampler2D FinalPos_In;
 
+// TFRM
+uniform float F_DIS;
+uniform float F_ANG;
+
 // Fog Material Settings
 #define SCATTERING  (0.7 * vec3(0.95, 0.5, 0.0))
 #define ABSORPTION  (0.0 * vec3(0.75, 0.5, 0.0))
 //0, 1 or 2
 #define BASIC_ANIMATED_MEDIA 0
-
+// 0, 1
+#define ROTATE_MEDIA 0
 
 // Light
 #define LIGHT_DENSITY 100.0
@@ -43,7 +48,7 @@ uniform sampler2D FinalPos_In;
 // YuShi Sphere
 #define OBJ_YUSHI_SPHERE 4.0
 // 0 : (default) sphere ; 1 : Torus ; 2 : Octahedron
-#define OBJ_TYPE 0
+#define OBJ_TYPE 1
     const vec3 YuShiPos = vec3(0.0, 0.0, -1.5);
 #if OBJ_TYPE == 0
     const float YushiRadius = 2.0;
@@ -662,7 +667,9 @@ float GetYushiColor(in vec3 p) {
 
 void getParticipatingMedia(out vec3 sigmaS, out vec3 sigmaE, in vec3 pos)
 {
-   // pos = (pos - YuShiPos) * rotate_around_y(180 * sin(iTime * rotateSpeed)) + YuShiPos;
+#if ROTATE_MEDIA == 1
+    pos = (pos - YuShiPos) * rotate_around_y(180 * sin(iTime * rotateSpeed)) + YuShiPos;
+#endif
 
 #if OBJ_TYPE == 0
     float sphereFog = clamp((YushiRadius - length(pos - YuShiPos)) / YushiRadius, 0.0, 1.0);
@@ -768,7 +775,7 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
         }*/
 
       
-        for( int i = 0; i < 3; ++i )
+        for( int i = 0; i < 15; ++i )
         {
              if(t > tmm.y)
             { 
@@ -807,6 +814,16 @@ vec3 GetColor2(in float ID, in vec3 ro, in vec3 rd)
     return WhiteWallColor;
 }
 
+bool HistoryRejection(in vec3 N1)
+{
+    float FOVEA_Factor = 1.0 - Map_HSV(HSV_PDF(degrees(acos(dot(N1, view_center_dir))))); /* 值越小，越触发 */
+    const float Const_Factor = 0.05;
+    //return F_ANG > 1.01;
+    //return F_ANG + (FOVEA_Factor * Const_Factor)  > 1.04;
+    // F_ANG / (FOVEA_Factor * Const_Factor) < 1.0;
+    return F_DIS > 1.2 || F_ANG > 1.01;
+}
+
 void main()
 {
     vec3 orig = viewPosWS;
@@ -841,10 +858,21 @@ void main()
     scat_tex = mix(texture(ScatterLight_In, M_uv), vec4(0.0, 0.0, 0.0, 1.0), isFirstFrame);
     trans_tex = mix(texture(Transmittance_In, M_uv), vec4(1.0, 1.0, 1.0, 1.0), isFirstFrame);
     
-    //bool isOutRange = inRange(M_uv) < -0.05;
-    //pos_tex = mix(pos_tex, vec4(orig, 0.0), isOutRange);
-    //scat_tex = mix(scat_tex, vec4(0.0, 0.0, 0.0, 1.0), isOutRange);
-    //trans_tex = mix(trans_tex, vec4(1.0, 1.0, 1.0, 1.0), isOutRange);
+    bool isOutRange = inRange(M_uv) < -0.05;
+    pos_tex = mix(pos_tex, vec4(orig, 0.0), isOutRange);
+    scat_tex = mix(scat_tex, vec4(0.0, 0.0, 0.0, 1.0), isOutRange);
+    trans_tex = mix(trans_tex, vec4(1.0, 1.0, 1.0, 1.0), isOutRange);
+
+    bool isReStart = HistoryRejection(dir);
+    float blend_op = isReStart ? 0.6 : 0.0;
+    pos_tex = mix(pos_tex, vec4(orig, 0.0), isReStart);
+    scat_tex = mix(scat_tex, vec4(0.0, 0.0, 0.0, 1.0), blend_op);
+    trans_tex = mix(trans_tex, vec4(1.0, 1.0, 1.0, 1.0), blend_op);
+
+    /*bool isRefresh = FrameIndex % 200 == 0;
+    pos_tex = mix(pos_tex, vec4(orig, 0.0), isRefresh);
+    scat_tex = mix(scat_tex, vec4(0.0, 0.0, 0.0, 1.0), isRefresh);
+    trans_tex = mix(trans_tex, vec4(1.0, 1.0, 1.0, 1.0), isRefresh);*/
 
     // Compute ScatterLight
     vec3 baseColor = GetColor(res.y, orig, dir, pos_tex, scat_tex, trans_tex);
@@ -894,6 +922,9 @@ void main()
     //FragColor = vec4(FrameIndex / 1000.0);
     //FragColor = scat_tex;
     //FragColor = trans_tex;
+    //if(isReStart)FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    //if(isRefresh)FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    //FragColor = vec4(1.0 - Map_HSV(HSV_PDF(degrees(acos(dot(dir, view_center_dir))))));
 }
 
 

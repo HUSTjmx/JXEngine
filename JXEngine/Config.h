@@ -159,6 +159,8 @@ namespace CONFIG
 		extern const std::string MIN_SIZE_IS_FOVEAL_REGION;
 		// Type : Bool
 		extern const std::string MEDIASIZE_IS_LEQ_LIGHTZSIZE;
+		// Type : Float
+		extern const std::string FOVEATED_REGION_BOUND;
 	}
 
 	namespace SHADING_INCLUDE_CORE
@@ -177,10 +179,11 @@ namespace CONFIG
 	}
 }
 
-enum class SCENE_TYPE
+enum class METHOD_TYPE
 {
 	GroudTruth,
 	MyMethod,
-	ContrastMethod
+	ContrastMethod_T,
+	ContrastMethod_F
 };
 

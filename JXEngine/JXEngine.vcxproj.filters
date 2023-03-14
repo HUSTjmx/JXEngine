@@ -156,6 +156,9 @@
     <ClCompile Include="..\..\..\CodEnv\OpenGL\src\glad.c">
       <Filter>源文件\ExtendLibrary</Filter>
     </ClCompile>
+    <ClCompile Include="TFRM_Algorithm.cpp">
+      <Filter>源文件\Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h">
@@ -238,6 +241,9 @@
     </ClInclude>
     <ClInclude Include="Atmosphere.h">
       <Filter>头文件\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="TFRM_Algorithm.h">
+      <Filter>头文件\Core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

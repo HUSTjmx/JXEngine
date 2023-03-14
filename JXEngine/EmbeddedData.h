@@ -264,6 +264,7 @@ namespace SHADER_PATH
 		extern std::string PaperScene_02_FogBall_VS;
 		extern std::string PaperScene_02_FogBall_01_N_FS;
 		extern std::string PaperScene_02_FogBall_01_T_FS;
+		extern std::string PaperScene_02_FogBall_01_S_FS;
 		extern std::string PaperScene_02_FogBall_02_N_FS;
 
 		// Paper Scene 03 : Stanford Rabbits

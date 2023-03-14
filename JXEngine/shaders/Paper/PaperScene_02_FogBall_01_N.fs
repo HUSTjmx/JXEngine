@@ -15,7 +15,8 @@ uniform int IsFirstFrame;
 #define ABSORPTION  (0.0 * vec3(0.75, 0.5, 0.0))
 //0, 1 or 2
 #define BASIC_ANIMATED_MEDIA 1
-
+// 0, 1
+#define ROTATE_MEDIA 0
 
 // Light
 #define LIGHT_DENSITY 100.0
@@ -655,12 +656,15 @@ float GetYushiColor(in vec3 p) {
 
 void getParticipatingMedia(out vec3 sigmaS, out vec3 sigmaE, in vec3 pos)
 {
+#if ROTATE_MEDIA == 1
+    pos = (pos - YuShiPos) * rotate_around_y(180 * sin(iTime * rotateSpeed)) + YuShiPos;
+#endif
    // pos = (pos - YuShiPos) * rotate_around_y(180 * sin(iTime * rotateSpeed)) + YuShiPos;
 
 #if OBJ_TYPE == 0
     float sphereFog = clamp((YushiRadius - length(pos - YuShiPos)) / YushiRadius, 0.0, 1.0);
 #elif OBJ_TYPE == 1
-    pos = (pos - YuShiPos) * rotate_around_y(180 * sin(iTime * rotateSpeed)) + YuShiPos;
+    //pos = (pos - YuShiPos) * rotate_around_y(180 * sin(iTime * rotateSpeed)) + YuShiPos;
     float sphereFog = clamp(sdTorus(pos, YuShiPos, YushiRadius) * -3.2, 0.0, 1.0);
 #elif OBJ_TYPE == 2
     float sphereFog = clamp(sdOctahedron(pos, YuShiPos, YushiRadius) * -3.2, 0.0, 1.0);

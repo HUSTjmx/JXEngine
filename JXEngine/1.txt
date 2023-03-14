@@ -1,4 +1,8 @@
 #version 430 core
+#define PHASE_FUNCTION_BLEND_OP 0.500000
+
+#define PHASE_FUNCTION_MEDIA 2
+
 uniform vec2 Resolution;
 #define PIXEL_SIZE vec2(1.0 / Resolution)
 
@@ -1066,7 +1070,7 @@ uniform bool MEDIASIZE_IS_LEQ_LIGHTZSIZE;
 // 区域判断算法
 void IsFovealRegion(in float theta, in float L, in float R, out bool rel)
 {
-    bool A = (theta * 180.0) / PI < 5.79;
+    bool A = theta < 5.79;
     bool B = L < MAX_DISTANCE_IS_FOVEAL_REGION;
     bool C = R > MAX_DISTANCE_IS_FOVEAL_REGION;
     
@@ -1097,9 +1101,6 @@ float SelectPhaseFunction(float mu, float g, bool isFoveal)
 
 
 layout(location = 0) out vec4 FragColor;
-layout(location = 1) out vec4 ScatterLight_Out;
-layout(location = 2) out vec4 Transmittance_Out;
-layout(location = 3) out vec4 FinalPos_Out;
 in vec2 TexCoords;
 
 uniform mat4 view;
@@ -1108,18 +1109,15 @@ uniform mat4 view_pre;
 uniform mat4 projection;
 uniform mat4 projection_inv;
 uniform mat4 projection_pre;
-uniform int FrameIndex;
-
-uniform sampler2D ScatterLight_In;
-uniform sampler2D Transmittance_In;
-uniform sampler2D FinalPos_In;
+uniform int IsFirstFrame;
 
 // Fog Material Settings
 #define SCATTERING  (0.7 * vec3(0.95, 0.5, 0.0))
 #define ABSORPTION  (0.0 * vec3(0.75, 0.5, 0.0))
 //0, 1 or 2
 #define BASIC_ANIMATED_MEDIA 0
-
+// 0, 1
+#define ROTATE_MEDIA 0
 
 // Light
 #define LIGHT_DENSITY 100.0
@@ -1140,7 +1138,7 @@ uniform sampler2D FinalPos_In;
 // YuShi Sphere
 #define OBJ_YUSHI_SPHERE 4.0
 // 0 : (default) sphere ; 1 : Torus ; 2 : Octahedron
-#define OBJ_TYPE 0
+#define OBJ_TYPE 1
     const vec3 YuShiPos = vec3(0.0, 0.0, -1.5);
 #if OBJ_TYPE == 0
     const float YushiRadius = 2.0;
@@ -1164,6 +1162,8 @@ uniform sampler2D FinalPos_In;
 // Phase Func Mode
 #define PHASE_MODE 2.0
 #define PHASE_G 0.5
+
+float eyeAngle = 1.0;
 
 float rand(vec3 co)
 {
@@ -1195,10 +1195,40 @@ vec3 StretchToFarPLane(in vec3 pos)
 
 float PhaseFunc(vec3 V, vec3 L, float g)
 {
+
+#ifndef PHASE_FUNCTION_MEDIA
     float mu = dot(V, L);
     if(PHASE_MODE < 0.5) return PhaseFunc_CON();
     if(PHASE_MODE < 1.5) return PhaseFunc_RAYLEIGH(mu);
     if(PHASE_MODE < 2.5) return PhaseFunc_MIE(mu, g);
+#endif
+
+#ifdef PHASE_FUNCTION_MEDIA
+    float re = 0.0;
+    float mu = dot(V, L);
+    bool isFoveatedRegion = true;
+    IsFovealRegion(eyeAngle, 1.0, 1.0, isFoveatedRegion);
+
+#if PHASE_FUNCTION_MEDIA == 1
+    re =  PhaseFunc_RAYLEIGH(mu);
+#elif PHASE_FUNCTION_MEDIA == 2
+    re =  PhaseFunc_MIE(mu, g);
+#elif PHASE_FUNCTION_MEDIA == 3
+
+#ifdef PHASE_FUNCTION_BLEND_OP
+    float op = clamp(PHASE_FUNCTION_BLEND_OP, 0.001, 1.0);
+    re =  PhaseFunc_RAYLEIGH(mu) * op + PhaseFunc_MIE(mu, g) * (1.0 - op);
+#else
+    re = PhaseFunc_MIE(mu, g);
+#endif 
+
+#else
+    re = PhaseFunc_CON(); 
+
+#endif
+
+#endif
+
     return PhaseFunc_CON();
 }
 
@@ -1759,7 +1789,9 @@ float GetYushiColor(in vec3 p) {
 
 void getParticipatingMedia(out vec3 sigmaS, out vec3 sigmaE, in vec3 pos)
 {
-   // pos = (pos - YuShiPos) * rotate_around_y(180 * sin(iTime * rotateSpeed)) + YuShiPos;
+#if ROTATE_MEDIA == 1
+    pos = (pos - YuShiPos) * rotate_around_y(180 * sin(iTime * rotateSpeed)) + YuShiPos;
+#endif
 
 #if OBJ_TYPE == 0
     float sphereFog = clamp((YushiRadius - length(pos - YuShiPos)) / YushiRadius, 0.0, 1.0);
@@ -1843,39 +1875,15 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
         vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius));
 #endif
         float t = tmm.x;
-        float dt = .05;     //float dt = .2 - .195*cos(iTime*.05);
+        float dt = .05;     //float dt = .2 - .195*cos(iTime*.05);//animated
         vec3 transmittance = vec3(1.0, 1.0, 1.0);
         vec3 scatteredLight = vec3(0.0);
         vec3 sigmaS = vec3(0.0);
         vec3 sigmaE = vec3(0.0);
 
-        float pre_t = length(pre_pos.xyz - ro);
-
-        if(FrameIndex > 0)
+        
+        for( int i = 0; i < 50; ++i )
         {
-            scatteredLight = pre_scat.xyz;
-            t = max(pre_t, t);
-            transmittance = pre_transmittance.xyz;
-        }
-
-        /*if(pre_pos.w == 1.0 && t > tmm.y)
-        {
-            t = tmm.x;
-            pre_pos.w = 0.0;
-            transmittance = vec3(1.0, 1.0, 1.0);
-            scatteredLight = vec3(0.0);
-        }*/
-
-      
-        for( int i = 0; i < 4; ++i )
-        {
-            if(t > tmm.y)
-            { 
-                //pre_pos.w = 1.0;
-                return;
-                break;
-            }
-    
             vec3 p = ro + t * rd;
             getParticipatingMedia(sigmaS, sigmaE, p);
 
@@ -1886,13 +1894,16 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
             transmittance *= exp(-sigmaE * dt);
                     
             t += dt;
-
+            if(t > tmm.y)
+            { 
+                pre_pos.w = 1.0;
+                break;
+            }
         }
-    
+        
         pre_pos = vec4(ro + t * rd, pre_pos.w);
         pre_scat = vec4(scatteredLight, 0.0);
         pre_transmittance = vec4(transmittance, 0.0);
-
         return vec3(0.0);
     }
 }
@@ -1913,6 +1924,8 @@ void main()
     vec3 dir  = normalize(rd.xyz - orig);
     float W = rd.w;
 
+    eyeAngle = degrees(acos(dot(N1, view_center_dir)));
+
     // Read history
     vec4 pos_tex;
     vec4 scat_tex;
@@ -1927,25 +1940,6 @@ void main()
     vec3 pos2 = orig + dir * res2.x;
     vec3 N = calcNormal(pos2);
 
-    // Read History Data
-    vec3 M_pos = pos;
-    vec4 M_ndc = projection_pre * view_pre * vec4(M_pos, 1.0);
-    M_ndc = M_ndc / M_ndc.w;
-    vec2 M_uv = M_ndc.xy * 0.5 + 0.5;
-    vec3 M_dir = normalize(M_pos - LastViewPosWS);
-
-    // Solve History Data
-    bool isFirstFrame = FrameIndex == 0;
-    pos_tex = mix(texture(FinalPos_In, M_uv), vec4(orig, 0.0), isFirstFrame);
-    scat_tex = mix(texture(ScatterLight_In, M_uv), vec4(10.0, 1.0, 0.0, 1.0), isFirstFrame);
-    trans_tex = mix(texture(Transmittance_In, M_uv), vec4(1.0, 1.0, 1.0, 1.0), isFirstFrame);
-    
-    //bool isOutRange = inRange(M_uv) < -0.05;
-    //pos_tex = mix(pos_tex, vec4(orig, 0.0), isOutRange);
-    //scat_tex = mix(scat_tex, vec4(0.0, 0.0, 0.0, 1.0), isOutRange);
-    //trans_tex = mix(trans_tex, vec4(1.0, 1.0, 1.0, 1.0), isOutRange);
-
-    // Compute ScatterLight
     vec3 baseColor = GetColor(res.y, orig, dir, pos_tex, scat_tex, trans_tex);
     vec3 baseColor2 = GetColor2(res2.y, orig, dir);
 
@@ -1953,6 +1947,7 @@ void main()
     vec3 diffuse_color = BaseColorReMap(baseColor2, WALL_METALLIC);
 	float r = RoughnessReMap(WALL_ROUGHNESS);
 	vec3 f0 = GetF0_All(baseColor, WALL_METALLIC, WALL_REFLECTANCE);
+
     vec3 result = vec3(0.0);
     for(int i = 0; i < pointLightsNum; ++i)
 	{
@@ -1964,10 +1959,8 @@ void main()
         * NoL * volumetricShadow(pos2, pointLights[i].position);
 	}	
 
-    // Blend
     result = scat_tex.xyz + result *  length(trans_tex);
     // result = scat_tex.xyz + result *  max_v3_elem(trans_tex.xyz);
-
     // Show Light
     for(int i = 0; i < pointLightsNum; ++i)
 	{
@@ -1976,22 +1969,17 @@ void main()
         result = mix(result, LIGHT_COLOR, isLight);
     }
 
-    // Color Solve
+    // Show
     result = result/ (result + vec3(1.0));
     result = GammaCorrection(result);
 
     // Output
     FragColor = vec4(result, 1.0);
-    ScatterLight_Out = scat_tex;
-    Transmittance_Out = trans_tex;
-    FinalPos_Out = pos_tex;
 
-    //FragColor = vec4(baseColor, 1.0);
-    //FragColor = texture(FinalPos_In, M_uv);
-    //FragColor = vec4(vec3(dot(M_dir, dir) * 10.0), 1.0);
-    //FragColor = scat_tex;
-    //FragColor = vec4(FrameIndex / 1000.0);
-    FragColor = texture(ScatterLight_In, M_uv);
+
+    bool isFoveatedRegion = true;
+    IsFovealRegion(eyeAngle, 1.0, 1.0, isFoveatedRegion);
+    if(isFoveatedRegion)FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 }
 
 

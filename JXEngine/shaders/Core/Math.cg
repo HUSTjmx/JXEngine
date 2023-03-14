@@ -396,3 +396,8 @@ float max_v3_elem(vec3 v)
 {
     return max(v.x, max(v.y, v.z));
 }
+
+float smoothstep( float x )
+{
+  return x*x*(3.0-2.0*x);
+}

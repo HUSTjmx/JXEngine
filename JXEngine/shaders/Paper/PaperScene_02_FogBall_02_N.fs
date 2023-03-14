@@ -13,8 +13,10 @@ uniform int IsFirstFrame;
 // Fog Material Settings
 #define SCATTERING  (0.7 * vec3(0.95, 0.5, 0.0))
 #define ABSORPTION  (0.0 * vec3(0.75, 0.5, 0.0))
-//0, 1 or 2
+// 0, 1 or 2
 #define BASIC_ANIMATED_MEDIA 1
+// 0, 1
+#define ROTATE_MEDIA 0
 
 // Light
 #define LIGHT_DENSITY 100.0

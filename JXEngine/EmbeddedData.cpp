@@ -410,6 +410,7 @@ namespace SHADER_PATH
 		std::string PaperScene_02_FogBall_VS = Path + "PaperScene_02_FogBall.vs";
 		std::string PaperScene_02_FogBall_01_N_FS = Path + "PaperScene_02_FogBall_01_N.fs";
 		std::string PaperScene_02_FogBall_01_T_FS = Path + "PaperScene_02_FogBall_01_T.fs";
+		std::string PaperScene_02_FogBall_01_S_FS = Path + "PaperScene_02_FogBall_01_S.fs";
 		std::string PaperScene_02_FogBall_02_N_FS = Path + "PaperScene_02_FogBall_02_N.fs";
 
 		// Paper Scene 03 : Stanford Rabbits

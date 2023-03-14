@@ -20,6 +20,7 @@
 #include "ShaderCompiler.h"
 #include "VertexModel.h"
 #include "Light.h"
+#include "TFRM_Algorithm.h"
 
 //#define  __MSAA__ 1
 
@@ -191,7 +192,18 @@ void Test()
 // 1 : Temporal Method
 // 2 : Foveated Method
 // 3 : Full Method
-#define METHOD_ID 1
+#define METHOD_ID 2
+
+// 0 : Constant Phase Function
+// 1 : RAYLEIGH Phase Function
+// 2 : MIE Phase Function
+// 3 : Blend Function
+#define PHASE_ID 2
+#define PHASE_OP 0.5
+
+// FOVEATED_REGION_BOUND 
+// Default : 5.79
+#define FOVEATED_BOUND 5.79
 
 void Loop(GLFWwindow* window)
 {
@@ -350,7 +362,7 @@ void Loop(GLFWwindow* window)
 #endif 
 #pragma endregion
 
-	 //Paper Scene 02 , case : <N T> : Fog Ball
+	//Paper Scene 02: Fog Ball, case : N 
 #pragma region PaperScene_02_FogBall_N
 #if SCENE_ID == 1 && METHOD_ID == 0
 	// 01
@@ -372,7 +384,7 @@ void Loop(GLFWwindow* window)
 #endif
 #pragma endregion
 
-	// Paper Scene 02 , case : <N T> : Fog Ball
+	//Paper Scene 02: Fog Ball, case : T
 #pragma region PaperScene_02_FogBall_T
 #if SCENE_ID == 1 && METHOD_ID == 1
 	// 01
@@ -395,6 +407,30 @@ void Loop(GLFWwindow* window)
 	PaperScene_02_FogBall_T->Active();
 
 	PaperScene_Show = PaperScene_02_FogBall_T->CopyWithTex();
+#endif
+#pragma endregion
+
+	//Paper Scene 02: Fog Ball, case : S
+#pragma region PaperScene_02_FogBall_S
+#if SCENE_ID == 1 && METHOD_ID == 2
+	// 01
+	//auto FB_02_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_02_FogBall_VS.c_str(), SHADER_PATH::PAPER::PaperScene_02_FogBall_01_N_FS.c_str());
+	// 02
+	auto FB_02_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_02_FogBall_VS.c_str(), SHADER_PATH::PAPER::PaperScene_02_FogBall_01_S_FS.c_str());
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::PAPER);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	FB_02_sh->AddMacroDefine("PHASE_FUNCTION_MEDIA", PHASE_ID);
+	FB_02_sh->AddMacroDefine("PHASE_FUNCTION_BLEND_OP", std::to_string(PHASE_OP));
+	FB_02_sh->Compile();
+	auto PaperScene_02_FogBall_S = std::make_shared<Material>(FB_02_sh);
+	PaperScene_02_FogBall_S->SetJitter(false);
+	PaperScene_02_FogBall_S->Active();
+
+	PaperScene_Show = PaperScene_02_FogBall_S->CopyWithTex();
 #endif
 #pragma endregion
 
@@ -502,7 +538,29 @@ void Loop(GLFWwindow* window)
 
 	const int blurTimes = 0;
 	
-	int frame_index = 0;
+
+#if METHOD_ID == 1 || METHOD_ID == 3
+	float F_dis, F_ang = 0.0;
+#endif
+
+#if METHOD_ID == 2 || METHOD_ID == 3 || METHOD_ID == 1
+	mainScenePass->GetMat()->GetShader()->SetFloat(CONFIG::PAPER_DEFAULT_SETTINGS::FOVEATED_REGION_BOUND, FOVEATED_BOUND);
+#endif
+
+	// 结果保存的相关设置
+	METHOD_TYPE methodType_;
+	int sceneType = SCENE_ID;
+#if METHOD_ID == 0
+	methodType_ = METHOD_TYPE::GroudTruth;
+#elif METHOD_ID == 1
+	methodType_ = METHOD_TYPE::ContrastMethod_T;
+#elif METHOD_ID == 2
+	methodType_ = METHOD_TYPE::ContrastMethod_F;
+#else
+	methodType_ = METHOD_TYPE::MyMethod;
+#endif
+	int maxImgSaveNum = 30;
+	int imgIndex = 0;
 
 	// 测试
 	//Test();
@@ -518,11 +576,20 @@ void Loop(GLFWwindow* window)
 		// -----
 		INPUT::processInput(window);
 
+		// 计算历史算法的因子
+#if METHOD_ID == 1 || METHOD_ID == 3
+		Algorithm::TFRM::ComputeTFRM(F_dis, F_ang, INPUT::inputCamera);
+#endif
+
 		// render
 		// ------
 		//std::cout << Counter<0>::times<< std::endl;
 		mainScenePass->BindOutput();
 		mainScenePass->GetMat()->GetShader()->SetInt("FrameIndex", Counter<0>::times);
+#if METHOD_ID == 1 || METHOD_ID == 3
+		mainScenePass->GetMat()->GetShader()->SetFloat(Algorithm::TFRM::UNIFORM_NAME::FACTOR_DIS, F_dis);
+		mainScenePass->GetMat()->GetShader()->SetFloat(Algorithm::TFRM::UNIFORM_NAME::FACTOR_ANG, F_ang);
+#endif
 		glClear(GL_DEPTH_BUFFER_BIT);
 		mainScenePass->Draw();
 
@@ -578,15 +645,20 @@ void Loop(GLFWwindow* window)
 		//OPENGL_SCENE::TestPass::Intance().Draw_FrameTest_04(p1, p2);
 		//OPENGL_SCENE::TestPass::Intance().DrawShadowTest_05(p0, p_debug);
 
-		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-		// -------------------------------------------------------------------------------
+
+		// 更新相机的历史数据
 		INPUT::inputCamera->UpdatePreMat();
 		INPUT::inputCamera->UpdatePreAttr();
 
-		//BMPTool::Instance().GetScreenShot(SCENE_TYPE::MyMethod, 0, frame_index++);
 
-		if (frame_index > 100) frame_index = 0;
 
+		// 保存结果
+		BMPTool::Instance().GetScreenShot(methodType_, sceneType, imgIndex++);
+
+		if (imgIndex > maxImgSaveNum) imgIndex = 0;
+
+		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
+		// -------------------------------------------------------------------------------
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 

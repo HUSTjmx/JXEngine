@@ -10,6 +10,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <sstream>
 #include <algorithm>
 #include <vector>
 #include <map>
@@ -30,6 +31,10 @@
 //}
 
 
+
+
+
+
 // Some string operations that are not included in stl.
 // Use Singleton Pattern, so can use anywhere, 
 // and you can not create any object of this class outside it
@@ -44,7 +49,7 @@ class StringTool
 public:
 
 	// Return this only instance of the class.
-	StringTool& Instance()
+	static StringTool& Instance() 
 	{
 		static StringTool* instance = new StringTool();
 		return *instance;
@@ -59,6 +64,9 @@ public:
 	// Warn: the length of a line must less 1024.
 	// ...
 	std::string DelLineFromFile(std::ifstream& file, unsigned int num);
+
+	// Todo
+	std::string Convert(float Num) const noexcept;
 
 private:
 
@@ -538,7 +546,7 @@ public:
 
 	~Counter()
 	{
-		if (times > 10000)times = 1;
+		if (times > 500)times = 1;
 		times++;
 	}
 };
@@ -600,7 +608,7 @@ public:
 
 	void ReadBMP(const char* FileName, RGBColor* ColorBuffer);
 
-	void GetScreenShot(SCENE_TYPE type_, int scene_id, int frame);
+	void GetScreenShot(METHOD_TYPE type_, int scene_id, int frame);
 
 private:
 	BMPTool() {}

@@ -21,6 +21,14 @@ std::string StringTool::DelLineFromFile(std::ifstream& file, unsigned int num)
 	return result;
 }
 
+std::string StringTool::Convert(float Num) const noexcept
+{
+	std::ostringstream oss;
+	oss << Num;
+	std::string str(oss.str());
+	return str;
+}
+
 void SortPosByDistance(std::vector<glm::vec3>& v, glm::vec3 c_pos)
 {
 	auto func = [c_pos](glm::vec3 a, glm::vec3 b)
@@ -306,7 +314,7 @@ void BMPTool::ReadBMP(const char* FileName, RGBColor* ColorBuffer)
 	fclose(fp);
 }
 
-void BMPTool::GetScreenShot(SCENE_TYPE type_, int scene_id, int frame)
+void BMPTool::GetScreenShot(METHOD_TYPE type_, int scene_id, int frame)
 {
 	//申请颜色数据内存
 	RGBColor* ColorBuffer = new RGBColor[CONFIG::SCREEN_CONFIG::SCR_WIDTH * CONFIG::SCREEN_CONFIG::SCR_HEIGHT];
@@ -316,14 +324,18 @@ void BMPTool::GetScreenShot(SCENE_TYPE type_, int scene_id, int frame)
 
 	std::string fileName = "Output\\Scene(" + std::to_string(scene_id)+")\\";
 
-	if (type_ == SCENE_TYPE::GroudTruth)
+	if (type_ == METHOD_TYPE::GroudTruth)
 		fileName += "GroudTruth\\";
-	if (type_ == SCENE_TYPE::MyMethod)
+	if (type_ == METHOD_TYPE::MyMethod)
 		fileName += "MyMethod\\";
-	if (type_ == SCENE_TYPE::ContrastMethod)
-		fileName += "ContrastMethod\\";
+	if (type_ == METHOD_TYPE::ContrastMethod_T)
+		fileName += "ContrastMethod_T\\";
+	if (type_ == METHOD_TYPE::ContrastMethod_F)
+		fileName += "ContrastMethod_F\\";
 
 	fileName = fileName  + std::to_string(frame) + ".bmp";
+
+	//std::cout << fileName << std::endl;
 	
 	//将数据写入文件
 	WriteBMP(fileName.c_str(), ColorBuffer, CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);

@@ -163,6 +163,7 @@
     <ClCompile Include="ShaderCompiler.cpp" />
     <ClCompile Include="TestScene.cpp" />
     <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="TFRM_Algorithm.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="Tools.cpp" />
     <ClCompile Include="UniformBuffer.cpp" />
@@ -192,6 +193,7 @@
     <ClInclude Include="StingShaderTest.h" />
     <ClInclude Include="TestScene.h" />
     <ClInclude Include="Texture.h" />
+    <ClInclude Include="TFRM_Algorithm.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Tools.h" />
     <ClInclude Include="UniformBuffer.h" />
