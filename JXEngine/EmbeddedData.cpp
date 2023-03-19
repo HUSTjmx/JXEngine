@@ -411,12 +411,22 @@ namespace SHADER_PATH
 		std::string PaperScene_02_FogBall_01_N_FS = Path + "PaperScene_02_FogBall_01_N.fs";
 		std::string PaperScene_02_FogBall_01_T_FS = Path + "PaperScene_02_FogBall_01_T.fs";
 		std::string PaperScene_02_FogBall_01_S_FS = Path + "PaperScene_02_FogBall_01_S.fs";
+		std::string PaperScene_02_FogBall_01_ST_FS = Path + "PaperScene_02_FogBall_01_ST.fs";
 		std::string PaperScene_02_FogBall_02_N_FS = Path + "PaperScene_02_FogBall_02_N.fs";
 
 		// Paper Scene 03 : Stanford Rabbits
 		std::string PaperScene_03_StanfordRabbits_VS = Path + "PaperScene_03_StanfordRabbits.vs";
 		std::string PaperScene_03_StanfordRabbits_01_N_FS = Path + "PaperScene_03_StanfordRabbits_01_N.fs";
 		std::string PaperScene_03_StanfordRabbits_01_T_FS = Path + "PaperScene_03_StanfordRabbits_01_T.fs";
+		std::string PaperScene_03_StanfordRabbits_01_S_FS = Path + "PaperScene_03_StanfordRabbits_01_S.fs";
+		std::string PaperScene_03_StanfordRabbits_01_ST_FS = Path + "PaperScene_03_StanfordRabbits_01_ST.fs";
+
+		// Paper Scene 04 : Cloud Of Sea
+		std::string PaperScene_04_CloudOfSea_VS = Path + "PaperScene_04_CloudOfSea.vs";
+		std::string PaperScene_04_CloudOfSea_01_N_FS = Path + "PaperScene_04_CloudOfSea_01_N.fs";
+		std::string PaperScene_04_CloudOfSea_01_T_FS = Path + "PaperScene_04_CloudOfSea_01_T.fs";
+		std::string PaperScene_04_CloudOfSea_01_S_FS = Path + "PaperScene_04_CloudOfSea_01_S.fs";
+		std::string PaperScene_04_CloudOfSea_01_ST_FS = Path + "PaperScene_04_CloudOfSea_01_ST.fs";
 	
 	}
 }

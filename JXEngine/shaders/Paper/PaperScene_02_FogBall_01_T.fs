@@ -20,6 +20,7 @@ uniform sampler2D FinalPos_In;
 // TFRM
 uniform float F_DIS;
 uniform float F_ANG;
+uniform float TEMPORAL_ACCELERATION_MUL;
 
 // Fog Material Settings
 #define SCATTERING  (0.7 * vec3(0.95, 0.5, 0.0))
@@ -78,6 +79,7 @@ float rand(vec3 co)
     return -1.0 + fract(sin(dot(co.xy,vec2(12.9898 + co.z,78.233))) * 43758.5453) * 2.0;
 }
 
+/*
 float HSV_PDF(float e)
 {
     const float M = 1.0;
@@ -98,7 +100,7 @@ vec3 StretchToFarPLane(in vec3 pos)
     //return vec3(far_plane / len);
     return LastViewPosWS + v * vec3(len);
 }
-
+*/
 
 
 float PhaseFunc(vec3 V, vec3 L, float g)
@@ -703,8 +705,15 @@ void getParticipatingMedia(out vec3 sigmaS, out vec3 sigmaE, in vec3 pos)
 
 float volumetricShadow(in vec3 from, in vec3 to)
 {
-    //return 1.0;
-    const float numStep = 36.0; // quality control. Bump to avoid shadow alisaing
+#ifndef IS_SHOW_SHADOW
+    return 1.0;
+#endif
+
+#ifdef IS_SHOW_SHADOW
+#if IS_SHOW_SHADOW == false
+    return 1.0;
+#else
+    const float numStep = MAX_SHADOW_STEP_NUM;  // quality control. Bump to avoid shadow alisaing
     vec3 shadow = vec3(1.0);
     vec3 sigmaS = vec3(0.0);
     vec3 sigmaE = vec3(0.0);
@@ -716,8 +725,11 @@ float volumetricShadow(in vec3 from, in vec3 to)
         shadow = shadow * exp(-sigmaE * ShadowIntensity * dd);
     }
     return length(shadow) * 0.8;
+#endif
+#endif
     //return max_v3_elem(shadow);
 }
+
 
 vec3 evaluateLightWithPhase(in vec3 pos)
 {
@@ -749,14 +761,15 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
 #if OBJ_TYPE == 0
         vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius));
 #elif OBJ_TYPE == 1
-        vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, max(YushiRadius.x, YushiRadius.y) + 1.0));
+        vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, max(YushiRadius.x, YushiRadius.y) + 0.5));
 #elif OBJ_TYPE == 2
-        vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius + 2.0));
+        vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius + 0.5));
 #elif OBJ_TYPE == 3
         vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius));
 #endif
         float t = tmm.x;
-        float dt = .05;     //float dt = .2 - .195*cos(iTime*.05);
+        float stepsNum = MAX_STEP_NUM;
+        float dt = (tmm.y - tmm.x) / stepsNum;     //float dt = .2 - .195*cos(iTime*.05);
         vec3 transmittance = pre_transmittance.xyz;
         vec3 scatteredLight = pre_scat.xyz;
         vec3 sigmaS = vec3(0.0);
@@ -773,9 +786,9 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
             transmittance = vec3(1.0, 1.0, 1.0);
             scatteredLight = vec3(0.0);
         }*/
-
+        stepsNum *= TEMPORAL_ACCELERATION_MUL;
       
-        for( int i = 0; i < 15; ++i )
+        for( int i = 0; i < stepsNum; ++i )
         {
              if(t > tmm.y)
             { 
@@ -869,10 +882,10 @@ void main()
     scat_tex = mix(scat_tex, vec4(0.0, 0.0, 0.0, 1.0), blend_op);
     trans_tex = mix(trans_tex, vec4(1.0, 1.0, 1.0, 1.0), blend_op);
 
-    /*bool isRefresh = FrameIndex % 200 == 0;
+    bool isRefresh = FrameIndex % 200 == 0;
     pos_tex = mix(pos_tex, vec4(orig, 0.0), isRefresh);
     scat_tex = mix(scat_tex, vec4(0.0, 0.0, 0.0, 1.0), isRefresh);
-    trans_tex = mix(trans_tex, vec4(1.0, 1.0, 1.0, 1.0), isRefresh);*/
+    trans_tex = mix(trans_tex, vec4(1.0, 1.0, 1.0, 1.0), isRefresh);
 
     // Compute ScatterLight
     vec3 baseColor = GetColor(res.y, orig, dir, pos_tex, scat_tex, trans_tex);

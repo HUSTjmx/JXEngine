@@ -58,6 +58,7 @@ float rand(vec3 co)
     return -1.0 + fract(sin(dot(co.xy,vec2(12.9898 + co.z,78.233))) * 43758.5453) * 2.0;
 }
 
+/*
 float HSV_PDF(float e)
 {
     const float M = 1.0;
@@ -79,7 +80,7 @@ vec3 StretchToFarPLane(in vec3 pos)
     return LastViewPosWS + v * vec3(len);
 }
 
-
+*/
 
 float PhaseFunc(vec3 V, vec3 L, float g)
 {

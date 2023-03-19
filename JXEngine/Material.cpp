@@ -100,7 +100,7 @@ void Material::LinkTextureForShader()
 
 		//i->get()->SetUniformPos(i - textures.begin());
 		i->get()->SetType(name + number);
-		std::cout << name + number << " "<< std::endl;
+		//std::cout << name + number << " "<< std::endl;
 		//i->get()->SetForShader(*shader);
 		
 		

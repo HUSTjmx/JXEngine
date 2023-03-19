@@ -8,7 +8,15 @@ uniform mat4 view_pre;
 uniform mat4 projection;
 uniform mat4 projection_inv;
 uniform mat4 projection_pre;
-uniform int IsFirstFrame;
+
+//StepAlloc Alg Select
+#ifndef STEP_ALLOC_METHOD
+    #define STEP_ALLOC_METHOD 1
+#endif
+
+#ifndef SHADOW_STEP_ALLOC_METHOD
+    #define SHADOW_STEP_ALLOC_METHOD 1
+#endif
 
 // Fog Material Settings
 #define SCATTERING  (0.7 * vec3(0.95, 0.5, 0.0))
@@ -69,29 +77,6 @@ float rand(vec3 co)
     return -1.0 + fract(sin(dot(co.xy,vec2(12.9898 + co.z,78.233))) * 43758.5453) * 2.0;
 }
 
-float HSV_PDF(float e)
-{
-    const float M = 1.0;
-    if(e <= 5.79)return 1.0 * M * 1.0;
-    return 7.49 / pow(0.3 * e + 1.0, 2.0) * M;
-}
-
-float Map_HSV(float v)
-{
-    return exp(1.0 - v) - 1.0;
-}
-
-vec3 StretchToFarPLane(in vec3 pos)
-{
-    vec3 v = normalize(pos - LastViewPosWS);
-    float cos_theta = dot(normalize(Last_view_center_dir), v);
-    float len = far_plane / cos_theta;
-    //return vec3(far_plane / len);
-    return LastViewPosWS + v * vec3(len);
-}
-
-
-
 float PhaseFunc(vec3 V, vec3 L, float g)
 {
 
@@ -106,7 +91,7 @@ float PhaseFunc(vec3 V, vec3 L, float g)
     float re = 0.0;
     float mu = dot(V, L);
     bool isFoveatedRegion = true;
-    float op = IsFovealRegion(eyeAngle, 1.0, 1.0, isFoveatedRegion);
+    float op2 = 1.0 - IsFovealRegion(eyeAngle, 1.0, 1.0, isFoveatedRegion);
 
 #if PHASE_FUNCTION_MEDIA == 1
     re =  PhaseFunc_RAYLEIGH(mu);
@@ -119,15 +104,16 @@ float PhaseFunc(vec3 V, vec3 L, float g)
     re =  PhaseFunc_RAYLEIGH(mu) * op + PhaseFunc_MIE(mu, g) * (1.0 - op);
 #else
     re = PhaseFunc_MIE(mu, g);
-#endif 
-
 #endif
 
-    re = mix(re, PhaseFunc_CON(), op);
+#else
+    re = PhaseFunc_CON();
+    
+#endif
+
+    re = mix(re, PhaseFunc_CON(), op2);
     return re;
 #endif
-
-    return PhaseFunc_CON();
 }
 
 #if OBJ_TYPE == 0
@@ -723,8 +709,25 @@ void getParticipatingMedia(out vec3 sigmaS, out vec3 sigmaE, in vec3 pos)
 
 float volumetricShadow(in vec3 from, in vec3 to)
 {
-    //return 1.0;
-    const float numStep = 36.0; // quality control. Bump to avoid shadow alisaing
+#ifndef IS_SHOW_SHADOW
+    return 1.0;
+#endif
+
+#ifdef IS_SHOW_SHADOW
+#if IS_SHOW_SHADOW == false
+    return 1.0;
+#else
+
+#if SHADOW_STEP_ALLOC_METHOD == 1
+    bool isFoveal = true;
+    float fovealIndensity = IsFovealRegion(eyeAngle, 1.0, 1.0, isFoveal);
+    float numStep = ConstantStepAlloc(fovealIndensity, MIN_SHADOW_STEP_NUM, MAX_SHADOW_STEP_NUM);
+#elif SHADOW_STEP_ALLOC_METHOD == 2
+    float numStep = FoveatedStepAlloc(eyeAngle, MIN_SHADOW_STEP_NUM, MAX_SHADOW_STEP_NUM);
+#else
+    float numStep = MAX_SHADOW_STEP_NUM; // quality control. Bump to avoid shadow alisaing
+#endif
+
     vec3 shadow = vec3(1.0);
     vec3 sigmaS = vec3(0.0);
     vec3 sigmaE = vec3(0.0);
@@ -736,6 +739,8 @@ float volumetricShadow(in vec3 from, in vec3 to)
         shadow = shadow * exp(-sigmaE * ShadowIntensity * dd);
     }
     return length(shadow) * 0.8;
+#endif
+#endif
     //return max_v3_elem(shadow);
 }
 
@@ -773,14 +778,26 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
         vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius));
 #endif
         float t = tmm.x;
-        float dt = .05;     //float dt = .2 - .195*cos(iTime*.05);//animated
+        // change
+#if STEP_ALLOC_METHOD == 1
+        bool isFoveal = true;
+        float fovealIndensity = IsFovealRegion(eyeAngle, 1.0, 1.0, isFoveal);
+        float stepsNum = ConstantStepAlloc(fovealIndensity, MIN_STEP_NUM, MAX_STEP_NUM);
+         //float dt = .2 - .195*cos(iTime*.05);//animated
+#elif STEP_ALLOC_METHOD == 2
+        float stepsNum = FoveatedStepAlloc(eyeAngle, MIN_STEP_NUM, MAX_STEP_NUM);
+#else
+        float stepsNum = MAX_STEP_NUM;
+#endif      
+
+        float dt = (tmm.y - tmm.x) / stepsNum;
         vec3 transmittance = vec3(1.0, 1.0, 1.0);
         vec3 scatteredLight = vec3(0.0);
         vec3 sigmaS = vec3(0.0);
         vec3 sigmaE = vec3(0.0);
 
         
-        for( int i = 0; i < 50; ++i )
+        for( float i = 0.0; i < stepsNum; i += 1.0 )
         {
             vec3 p = ro + t * rd;
             getParticipatingMedia(sigmaS, sigmaE, p);
@@ -875,9 +892,21 @@ void main()
     FragColor = vec4(result, 1.0);
 
 
+    // 注视点区域判断的视觉显示
     /*bool isFoveatedRegion = true;
     IsFovealRegion(eyeAngle, 1.0, 1.0, isFoveatedRegion);
     if(isFoveatedRegion)FragColor = vec4(1.0, 0.0, 0.0, 1.0);*/
+
+    // 常熟分配法的视觉显示
+    /* 
+    bool isFoveal = true;
+    float fovealIndensity = IsFovealRegion(eyeAngle, 1.0, 1.0, isFoveal);
+    float numStep = ConstantStepAlloc(fovealIndensity, MIN_SHADOW_STEP_NUM, MAX_SHADOW_STEP_NUM);
+    FragColor = vec4(numStep /  MAX_SHADOW_STEP_NUM);
+    */
+
+    // 注视点分配法的视觉显示
+    //FragColor = vec4(FoveatedStepAlloc(eyeAngle, MIN_STEP_NUM, MAX_STEP_NUM) / MAX_STEP_NUM);
 }
 
 

@@ -132,7 +132,7 @@ float getsat(vec3 c)
     return (ma - mi)/(ma+ 1e-7);
 }
 
-//from my "Will it blend" shader (https://www.shadertoy.com/view/lsdGzN)
+
 vec3 iLerp(in vec3 a, in vec3 b, in float x)
 {
     vec3 ic = mix(a, b, x) + vec3(1e-6,0.,0.);

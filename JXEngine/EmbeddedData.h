@@ -265,11 +265,21 @@ namespace SHADER_PATH
 		extern std::string PaperScene_02_FogBall_01_N_FS;
 		extern std::string PaperScene_02_FogBall_01_T_FS;
 		extern std::string PaperScene_02_FogBall_01_S_FS;
+		extern std::string PaperScene_02_FogBall_01_ST_FS;
 		extern std::string PaperScene_02_FogBall_02_N_FS;
 
 		// Paper Scene 03 : Stanford Rabbits
 		extern std::string PaperScene_03_StanfordRabbits_VS;
 		extern std::string PaperScene_03_StanfordRabbits_01_N_FS;
 		extern std::string PaperScene_03_StanfordRabbits_01_T_FS;
+		extern std::string PaperScene_03_StanfordRabbits_01_S_FS;
+		extern std::string PaperScene_03_StanfordRabbits_01_ST_FS;
+
+		// Paper Scene 04 : Cloud Of Sea
+		extern std::string PaperScene_04_CloudOfSea_VS;
+		extern std::string PaperScene_04_CloudOfSea_01_N_FS;
+		extern std::string PaperScene_04_CloudOfSea_01_T_FS;
+		extern std::string PaperScene_04_CloudOfSea_01_S_FS;
+		extern std::string PaperScene_04_CloudOfSea_01_ST_FS;
 	}
 }

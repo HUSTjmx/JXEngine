@@ -1,8 +1,5 @@
 #version 330 core
 layout(location = 0) out vec4 FragColor;
-layout(location = 1) out vec4 LastColor;
-layout(location = 2) out vec4 ScatterLight;
-layout(location = 3) out vec4 FinalPos;
 
 in vec2 TexCoords;
 
@@ -14,9 +11,6 @@ uniform mat4 projection;
 uniform mat4 projection_inv;
 uniform mat4 projection_pre;
 
-uniform sampler2D preTexture;
-uniform sampler2D scatterTex;
-uniform sampler2D posTex;
 uniform int IsFirstFrame;
 
 vec3 computeIncidentLight_T(vec3 orig, vec3 dir, vec3 sunDirection, float tmin, float tmax)
@@ -97,42 +91,7 @@ void main()
     vec3 orig = viewPosWS;
     vec4 rd = view_inv * projection_inv * (vec4(ReMapNDC_V3(vec3(TexCoords, 1.0)), 1.0) * far_plane);
     vec3 dir  = normalize(rd.xyz);
-    orig = orig + vec3(0.0, earthRadius, 0.0);
-
-    // Read Pre Data
-    vec3 M_pos = orig + dir * 3.0;
-    vec4 M_ndc = projection_pre * view_pre * vec4(M_pos, 1.0);
-    M_ndc = M_ndc / M_ndc.w;
-    vec2 M_uv = M_ndc.xy * 0.5 + 0.5;
-    vec3 M_dir = normalize(M_pos - LastViewPosWS);
-
-    // Read history
-    vec4 pos_tex;
-    vec4 scat_tex;
-    vec4 flags = vec4(1e-5);
-
-    // 如果是第一帧，就不读去历史数据区
-    if(IsFirstFrame == 0)
-    {
-        pos_tex = vec4(orig, 0.0);
-        scat_tex = vec4(0.0, 0.0, 0.0, 1.0);
-    }
-    else
-    {
-        pos_tex = texture(posTex, M_uv);
-        scat_tex = texture(scatterTex, M_uv);
-    }
-
-    //历史拒绝算法
-    // ToDo
-
-    // 范围判断
-    if(inRange(M_uv) < -0.05)
-    {
-        pos_tex = vec4(orig, 0.0);
-        scat_tex = vec4(0.0, 0.0, 0.0, 1.0);
-    }
-
+    orig = orig + vec3(0.0, earthRadius + 3.0, 0.0);
 
     // 计算实际的大气颜色
     vec3 sun = normalize(-dirLights[0].direction);

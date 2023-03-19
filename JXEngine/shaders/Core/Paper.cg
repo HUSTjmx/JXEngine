@@ -8,6 +8,34 @@ uniform float MIN_SIZE_IS_FOVEAL_REGION;
 
 uniform float FOVEATED_REGION_BOUND;
 
+uniform float MAX_STEP_NUM;
+uniform float MIN_STEP_NUM;
+
+uniform float MAX_SHADOW_STEP_NUM;
+uniform float MIN_SHADOW_STEP_NUM;
+
+float HSV_PDF(float e)
+{
+    const float M = 1.0;
+    if(e <= 5.79)return 1.0 * M * 1.0;
+    return 7.49 / pow(0.3 * e + 1.0, 2.0) * M;
+}
+
+float Map_HSV(float v)
+{
+    return exp(1.0 - v) - 1.0;
+}
+
+vec3 StretchToFarPLane(in vec3 pos)
+{
+    vec3 v = normalize(pos - LastViewPosWS);
+    float cos_theta = dot(normalize(Last_view_center_dir), v);
+    float len = far_plane / cos_theta;
+    //return vec3(far_plane / len);
+    return LastViewPosWS + v * vec3(len);
+}
+
+
 // 区域判断算法
 float IsFovealRegion(in float theta, in float L, in float R, out bool rel)
 {
@@ -20,10 +48,24 @@ float IsFovealRegion(in float theta, in float L, in float R, out bool rel)
 
     // 为了平滑过渡
     float x = abs(theta - FOVEATED_REGION_BOUND) / 30.0;
-    x = 1.0 - smoothstep(x);
+    x = 1.0 - M_smoothstep(x);
     x = rel ? 1.0 : x;
     x = x < 0.0001 ? 0.0001 : x;
     return x;
+}
+
+/***********步数分配算法************/
+/**********************************/
+float ConstantStepAlloc(in float x, in float min_, in float max_)
+{
+    return max_ - (max_ - min_) * (1.0 - x);
+}
+
+float FoveatedStepAlloc(in float eyeAngle, in float min_, in float max_)
+{
+    float a = HSV_PDF(eyeAngle);
+    a = Map_HSV(a);
+    return max_ - (max_ - min_) * a;
 }
 
 // 自适应的相位函数选择算法

@@ -10,18 +10,34 @@ namespace Algorithm
 	{
 		namespace UNIFORM_NAME
 		{
+			std::string TEMPORAL_ACCELERATION_MUL_NAME = "TEMPORAL_ACCELERATION_MUL";
+
 			std::string FACTOR_DIS = "F_DIS";
 			std::string FACTOR_ANG = "F_ANG";
+
+			std::string MAX_SHADOW_STEP_NAME = "MAX_SHADOW_STEP_NUM";
+			std::string MIN_SHADOW_STEP_NAME = "MIN_SHADOW_STEP_NUM";
+
+		    std::string MAX_STEP_NAME = "MAX_STEP_NUM";
+			std::string MIN_STEP_NAME = "MIN_STEP_NUM";
 		}
 
 		namespace Setting
 		{
+			float TEMPORAL_ACCELERATION_MUL = 1.0;
+
 			float MAX_DISTANCE_IS_FOVEAL_REGION = 80.0f;
 			float MIN_SIZE_IS_FOVEAL_REGION = 4;
 			bool MEDIASIZE_IS_LEQ_LIGHTZSIZE = false;
 			
 			float F_DIS_SCALING = 1.0;
 			float F_ANG_SCALING = 1.0;
+
+			float MAX_SHADOW_STEP_NUM = 32;
+			float MIN_SHADOW_STEP_NUM = 8;
+			
+			float MAX_STEP_NUM = 64.0;
+			float MIN_STEP_NUM = 32.0;
 		}
 
 		namespace MathFunc

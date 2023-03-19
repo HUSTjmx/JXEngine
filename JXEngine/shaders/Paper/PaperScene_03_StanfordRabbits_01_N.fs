@@ -21,6 +21,17 @@ uniform int IsFirstFrame;
 #define SCATTERING  (0.7 * vec3(0.95, 0.5, 2.0))
 #define ABSORPTION  (0.1 * vec3(0.75, 0.5, 0.0))
 
+//0, 1 or 2
+#define BASIC_ANIMATED_MEDIA 0
+// 0, 1
+#define ROTATE_MEDIA 0
+
+#define VOLUME_FILTERING_NEAREST 0
+
+#define FBM_NOISE 1
+
+#define BASIC_ANIMATED_NOISE 1
+
 // Light
 #define LIGHT_DENSITY 100.0
 #define LIGHT_COLOR (vec3(1.0, 1.0, 1.0) * LIGHT_DENSITY)
@@ -54,27 +65,6 @@ uniform int IsFirstFrame;
 // Phase Func Mode
 #define PHASE_MODE 2.0
 #define PHASE_G 0.5
-
-float HSV_PDF(float e)
-{
-    const float M = 1.0;
-    if(e <= 5.79)return 1.0 * M * 1.0;
-    return 7.49 / pow(0.3 * e + 1.0, 2.0) * M;
-}
-
-float Map_HSV(float v)
-{
-    return exp(1.0 - v) - 1.0;
-}
-
-vec3 StretchToFarPLane(in vec3 pos)
-{
-    vec3 v = normalize(pos - LastViewPosWS);
-    float cos_theta = dot(normalize(Last_view_center_dir), v);
-    float len = far_plane / cos_theta;
-    //return vec3(far_plane / len);
-    return LastViewPosWS + v * vec3(len);
-}
 
 float PhaseFunc(vec3 V, vec3 L, float g)
 {
@@ -121,15 +111,6 @@ vec2 iSphere( in vec3 ro, in vec3 rd, in vec4 sph )//from iq
 // Packed 32^3 bunny data as 32x32 uint where each bit represents density per voxel
 #define BUNNY_VOLUME_SIZE 32
 const uint packedBunny[1024] = uint[1024](0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,917504u,917504u,917504u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,1966080u,12531712u,16742400u,16742400u,16723968u,16711680u,8323072u,4128768u,2031616u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,6144u,2063360u,16776704u,33553920u,33553920u,33553920u,33553920u,33520640u,16711680u,8323072u,8323072u,2031616u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,268435456u,402653184u,134217728u,201326592u,67108864u,0u,0u,7168u,2031104u,16776960u,33554176u,33554176u,33554304u,33554176u,33554176u,33554176u,33553920u,16744448u,8323072u,4128768u,1572864u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,805306368u,939524096u,402653184u,478150656u,260046848u,260046848u,260046848u,125832192u,130055680u,67108608u,33554304u,33554304u,33554304u,33554304u,33554304u,33554304u,33554304u,33554176u,16776704u,8355840u,4128768u,917504u,0u,0u,0u,0u,0u,0u,0u,0u,0u,805306368u,1056964608u,1056964608u,528482304u,528482304u,260046848u,260046848u,260046848u,130039296u,130154240u,67108739u,67108807u,33554375u,33554375u,33554370u,33554368u,33554368u,33554304u,33554304u,16776960u,8330240u,4128768u,393216u,0u,0u,0u,0u,0u,0u,0u,0u,939524096u,1040187392u,1040187392u,520093696u,251658240u,251658240u,260046848u,125829120u,125829120u,130088704u,63045504u,33554375u,33554375u,33554375u,33554407u,33554407u,33554370u,33554370u,33554374u,33554310u,16776966u,4144642u,917504u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,15360u,130816u,262017u,4194247u,33554383u,67108847u,33554415u,33554407u,33554407u,33554375u,33554375u,33554318u,2031502u,32262u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,31744u,130816u,262019u,2097151u,134217727u,134217727u,67108863u,33554415u,33554407u,33554415u,33554383u,2097102u,982926u,32262u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,31744u,130816u,524263u,117964799u,127926271u,134217727u,67108863u,16777215u,4194303u,4194303u,2097151u,1048574u,65422u,16134u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,3u,31751u,130951u,524287u,252182527u,261095423u,261095423u,59768830u,2097150u,1048574u,1048575u,262143u,131070u,65534u,16134u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,7u,31751u,130959u,503840767u,520617982u,529530879u,261095423u,1048575u,1048574u,1048574u,524286u,524287u,131070u,65534u,16134u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,3u,1799u,32527u,134348750u,1040449534u,1057488894u,520617982u,51380223u,1048575u,1048575u,524287u,524287u,524287u,131070u,65534u,15886u,6u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,1536u,3968u,8175u,65535u,1006764030u,1040449534u,1057488894u,50855934u,524286u,524286u,524287u,524287u,524286u,262142u,131070u,65534u,32270u,14u,6u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,3968u,8160u,8191u,805371903u,2080505854u,2114191358u,101187582u,34078718u,524286u,524286u,524286u,524286u,524286u,524286u,262142u,131070u,32766u,8078u,3590u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,8128u,8176u,16383u,2013331455u,2080505854u,235143166u,101187582u,524286u,1048574u,1048574u,1048574u,1048574u,524286u,524286u,262142u,131070u,32766u,16382u,8070u,1024u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,8160u,8184u,1879064574u,2013331455u,470024190u,67371006u,524286u,1048574u,1048574u,1048574u,1048574u,1048574u,1048574u,524286u,524286u,262142u,65534u,16382u,8160u,1024u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,8128u,8184u,805322750u,402718719u,134479870u,524286u,524286u,1048574u,1048574u,1048574u,1048574u,1048574u,1048574u,1048574u,524286u,262142u,65534u,16382u,16368u,1792u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,3968u,8184u,16382u,131071u,262142u,524286u,1048574u,1048574u,1048574u,1048574u,1048574u,1048574u,1048574u,1048574u,524286u,262142u,65534u,16382u,16368u,1792u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,1792u,8184u,16380u,65535u,262143u,524286u,524286u,1048574u,1048574u,1048575u,1048574u,1048574u,1048574u,1048574u,524286u,262142u,65534u,16376u,16368u,1792u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,8176u,16376u,32767u,262143u,524286u,1048574u,1048574u,1048575u,1048575u,1048575u,1048575u,1048574u,1048574u,524286u,262142u,32766u,16376u,8176u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,4032u,8184u,32766u,262142u,524286u,524286u,1048575u,1048574u,1048574u,1048574u,1048574u,1048574u,1048574u,524286u,262142u,32766u,16376u,8176u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,384u,8184u,32766u,131070u,262142u,524286u,1048575u,1048574u,1048574u,1048574u,1048574u,1048574u,524286u,524286u,131070u,32766u,16368u,1920u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,4080u,32764u,65534u,262142u,524286u,524286u,524286u,1048574u,1048574u,524286u,524286u,524286u,262142u,131070u,32764u,8160u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,256u,16376u,32760u,131068u,262140u,262142u,524286u,524286u,524286u,524286u,524286u,262142u,131070u,65532u,16368u,3840u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,3968u,32752u,65528u,131068u,262142u,262142u,262142u,262142u,262142u,262142u,262140u,131064u,32752u,7936u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,8064u,32736u,65528u,131070u,131070u,131070u,131070u,131070u,131070u,65532u,32752u,8160u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,3456u,16376u,32764u,65534u,65534u,65534u,32766u,32764u,16380u,4048u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,48u,2680u,8188u,8188u,8188u,8188u,4092u,120u,16u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,120u,248u,508u,508u,508u,248u,240u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,96u,240u,504u,504u,504u,240u,96u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,224u,224u,224u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u);
-
-#define VOLUME_FILTERING_NEAREST 0
-
-#define FBM_NOISE 1
-
-#define BASIC_ANIMATED_NOISE 1
-
-//0, 1 or 2
-#define BASIC_ANIMATED_MEDIA 1
 
 // Default noise erosion strength
 float erosionStrength = 1.0;
@@ -227,7 +208,11 @@ float linearRandFBM(vec3 uv)
 
 float3 worldPosTocubePos(float3 worldPos)
 {
+#if ROTATE_MEDIA == 1
     worldPos = worldPos * rotate_around_y(180 * sin(iTime * rotateSpeed));
+#else
+    worldPos = worldPos * rotate_around_y(90.0);
+#endif
     // cube of world space size 4 with bottom face on the ground y=0
     return worldPos * (vec3(1.0, -1.0, 1.0) * -0.38) + float3(0.5,0.5,0.5);
 }
@@ -392,12 +377,20 @@ void getParticipatingMedia(out vec3 sigmaS, out vec3 sigmaE, in vec3 pos)
     float3 absorption = abs( 2.0* float3(sin(r*2.2),sin(r*4.4),sin(r*6.6)));
     sigmaE = sigmaS + absorption;
 #endif
+    sigmaE = max_f_v3(0.0000001, sigmaE);
 }
 
 float volumetricShadow(in vec3 from, in vec3 to)
 {
-    //return 2.0;
-    const float numStep = 36.0; // quality control. Bump to avoid shadow alisaing
+#ifndef IS_SHOW_SHADOW
+    return 1.0;
+#endif
+
+#ifdef IS_SHOW_SHADOW
+#if IS_SHOW_SHADOW == false
+    return 1.0;
+#else
+    const float numStep = MAX_SHADOW_STEP_NUM; // quality control. Bump to avoid shadow alisaing
     vec3 shadow = vec3(1.0);
     vec3 sigmaS = vec3(0.0);
     vec3 sigmaE = vec3(0.0);
@@ -406,12 +399,15 @@ float volumetricShadow(in vec3 from, in vec3 to)
     {
         vec3 pos = from + (to - from) * (s / (numStep));
         getParticipatingMedia(sigmaS, sigmaE, pos);
-         float density = getDensity(pos - YuShiPos);
+        float density = getDensity(pos - YuShiPos);
         shadow = shadow * exp(-sigmaE * density * ShadowIntensity * dd);
     }
     return length(shadow) * 0.8;
+#endif
+#endif
     //return max_v3_elem(shadow);
 }
+
 
 vec3 evaluateLightWithPhase(in vec3 pos)
 {
@@ -439,14 +435,16 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
     {
         vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius));
         float t = tmm.x;
-        float dt = .5;     //float dt = .2 - .195*cos(iTime*.05);//animated
+        float stepsNum = MAX_STEP_NUM;
+        //float dt = .3;     //float dt = .2 - .195*cos(iTime*.05);//animated
+         float dt = (tmm.y - tmm.x) / stepsNum;   
         vec3 transmittance = vec3(1.0, 1.0, 1.0);
         vec3 scatteredLight = vec3(0.0);
         vec3 sigmaS = vec3(0.0);
         vec3 sigmaE = vec3(0.0);
 
         
-        for( int i = 0; i < 10; ++i )
+        for( int i = 0; i < stepsNum; ++i )
         {
             vec3 p = ro + t * rd;
             float density = getDensity(p - YuShiPos);
@@ -539,39 +537,6 @@ void main()
 
     // Output
     FragColor = vec4(result, 1.0);
-    //FinalPos_Out = pos_tex;
-   // ScatterLight_Out = scat_tex;
-    
-   // FragColor = vec4(scat_tex.xyz, 1.0);
-   // FragColor = vec4(N, 1.0);
-   //FragColor = vec4(NL, NL, NL, 1.0);
-   //FragColor = vec4(sd, sd, sd, 1.0);
-    // Test
-    //if(IsFirstFrame % 100 < 50)
-        //   FragColor = vec4(M_uv, 1.0, 1.0);
-    //else FragColor = vec4(TexCoords, 1.0, 1.0);
-
-    //FragColor = vec4(abs(M_uv - TexCoords) * 10.0, 0.0, 1.0);
-    // FinalPos = vec4(pos, 1.0);
-    // FragColor = texture(posTex, pre_uv);
-
-    // FragColor = vec4(IsFirstFrame / 1000.0);
-
-    // FragColor = vec4(baseColor, 1.0);
-
-    //  FragColor = vec4(dir, 1.0);
-    // FragColor = rd;
-    //FragColor = vec4(rd.www * 10.0, 1.0);
-
-    //FragColor = vec4(abs(Last_view_center_dir), 1.0);
-
-    // FragColor = vec4(StretchToFarPLane(orig + dir), 1.0);
-    
-    //if(inRange(M_uv) < 0.000001) FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-
-    //if(HistoryRejection(dir, M_dir) < 0.0001) FragColor = vec4(1.0, 1.0, 0.0, 1.0);
-
-    //FragColor = vec4(vec3(dot(M_dir, dir)), 1.0);
 }
 
 

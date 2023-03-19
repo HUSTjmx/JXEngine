@@ -271,7 +271,7 @@ void BMPTool::WriteBMP(const char* FileName, RGBColor* ColorBuffer, int ImageWid
 
 	if (fp == nullptr)
 	{
-		std::cout << "creat <" << FileName << "> SnapShot Failure!";
+		std::cout << "creat <" << FileName << "> SnapShot Failure!" << std::endl;
 		return;
 	}
 
@@ -341,7 +341,7 @@ void BMPTool::GetScreenShot(METHOD_TYPE type_, int scene_id, int frame)
 
 	fileName = fileName  + std::to_string(frame) + ".bmp";
 
-	std::cout << fileName << std::endl;
+	//std::cout << fileName << std::endl;
 	
 	//将数据写入文件
 	WriteBMP(fileName.c_str(), ColorBuffer, CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
