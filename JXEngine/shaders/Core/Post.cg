@@ -28,16 +28,16 @@ float K_inv(float a){
 
 // Get Fovea Point
 // ...
-vec2 getFovea(){
-    return Resolution.xy /2.;
+vec2 getFovea(vec2 iResolution){
+    return iResolution * 0.5;
     //return iMouse.xy;
 }
 
 // Tool function for fovea
 // ...
 float getL(){
-    float x = getFovea().x;
-    float y = getFovea().y;
+    float x = getFovea(Resolution).x;
+    float y = getFovea(Resolution).y;
     
     float l1 = L2(x ,y);
     float l2 = L2(W - x, H - y);
@@ -65,8 +65,8 @@ vec3 FoveatedRendering_Pass_1(sampler2D frame, vec2 uv)
     float cos_b = cos(b_v);
     float sin_b = sin(b_v);
     
-    float x = A_K_u * cos_b + getFovea().x;
-    float y = A_K_u * sin_b + getFovea().y;
+    float x = A_K_u * cos_b + getFovea(Resolution).x;
+    float y = A_K_u * sin_b + getFovea(Resolution).y;
     
     uv = vec2(x / w, y / h);
     
@@ -82,7 +82,7 @@ vec3 FoveatedRendering_Pass_2(sampler2D frame, vec2 uv)
 {
     uv = uv * Resolution;
 
-    uv = uv - getFovea();
+    uv = uv - getFovea(Resolution);
     
     float dis = L2(uv.x, uv.y);
     float L = getL();

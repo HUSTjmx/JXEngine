@@ -161,6 +161,21 @@ void ShaderCompiler::AddIncludeFile(const std::string& filePath)
 
 }
 
+void ShaderCompiler::AddMacroDefine(const std::string& key, const std::string& value)
+{
+	std::string content = "";
+	content = content + "\#define" + ' ' + key + ' ' + value;
+	std::cout << content << std::endl;
+	fragmentShader = std::string(fragmentShader, fragmentShader.find("\n"));
+	fragmentShader = content + "\n" + fragmentShader;
+	fragmentShader = FILE_HEAD + "\n" + fragmentShader;
+}
+
+void ShaderCompiler::AddMacroDefine(const std::string& key, const int value)
+{
+	AddMacroDefine(key, std::to_string(value));
+}
+
 void ShaderCompiler::SetBool(const std::string& name, bool value) const
 {
 	UseSelf();

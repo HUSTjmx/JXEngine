@@ -10,8 +10,8 @@ namespace CONFIG
 
 		namespace FOVEA
 		{
-			unsigned int FOVEA_WIDTH = 999;
-			unsigned int FOVEA_HEIGHT = 799;
+			unsigned int FOVEA_WIDTH = 1000;
+			unsigned int FOVEA_HEIGHT = 800;
 		}
 	}
 
@@ -20,7 +20,7 @@ namespace CONFIG
 		float NEAR_PLANE = 0.1f;
 		float FAR_PLANE = 100.0f;
 		float ASPECT = (float)SCREEN_CONFIG::SCR_WIDTH / (float)SCREEN_CONFIG::SCR_HEIGHT;
-		
+
 		namespace SHADER {
 			std::string VIEW_POS_IN_WORLD = "viewPosWS";
 			std::string CENTER_DIR = "view_center_dir";
@@ -74,9 +74,9 @@ namespace CONFIG
 
 	namespace LIGHT_SETTINGS
 	{
-		 unsigned int MAX_DIRECTION_LIGHT_NUM = 1;
-		 unsigned int MAX_POINT_LIGHT_NUM = 4;
-		 unsigned int MAX_SPOT_LIGHT_NUM = 4;
+		unsigned int MAX_DIRECTION_LIGHT_NUM = 1;
+		unsigned int MAX_POINT_LIGHT_NUM = 4;
+		unsigned int MAX_SPOT_LIGHT_NUM = 4;
 
 		namespace SHADER_DIR_LIGHT
 		{
@@ -147,10 +147,10 @@ namespace CONFIG
 		namespace SKY_MODEL
 		{
 			const std::string EARTH_RADIUS = "earthRadius";
-		    const std::string ATMOSHERE_RADIUS = "atmosphereRadius";
+			const std::string ATMOSHERE_RADIUS = "atmosphereRadius";
 			const std::string HR = "Hr";
 			const std::string HM = "Hm";
-		    const std::string BETA_R = "betaR";
+			const std::string BETA_R = "betaR";
 			const std::string BETA_M = "betaM";
 		}
 
@@ -158,6 +158,14 @@ namespace CONFIG
 		{
 			std::string RESOLUTION_NAME = "LowResolution";
 		}
+	}
+
+	namespace PAPER_DEFAULT_SETTINGS
+	{
+		const std::string MAX_DISTANCE_IS_FOVEAL_REGION = "MAX_DISTANCE_IS_FOVEAL_REGION";
+		const std::string MIN_SIZE_IS_FOVEAL_REGION = "MIN_SIZE_IS_FOVEAL_REGION";
+		const std::string MEDIASIZE_IS_LEQ_LIGHTZSIZE = "MEDIASIZE_IS_LEQ_LIGHTZSIZE";
+		const std::string FOVEATED_REGION_BOUND = "FOVEATED_REGION_BOUND";
 	}
 
 	namespace SHADING_INCLUDE_CORE
@@ -170,6 +178,7 @@ namespace CONFIG
 		const std::string SHADOW = address + "Shadow.cg";
 		const std::string RAY_MARCHING = address + "RayMarching.cg";
 		const std::string POST_PROCESSING = address + "Post.cg";
-		const std::string COLOR = address + "Color.cg"; 
+		const std::string COLOR = address + "Color.cg";
+		const std::string PAPER = address + "Paper.cg";
 	}
 }

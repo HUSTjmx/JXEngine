@@ -90,17 +90,22 @@ bool raySphereIntersect(vec3 orig, vec3 dir, float radius, inout float t0, inout
 
 #define MIE_G 0.76
 
-uniform float earthRadius;
-uniform float atmosphereRadius;
-uniform float Hr;
-uniform float Hm;
+float earthRadius = 6360e3;
+float atmosphereRadius = 6420e3;
+float Hr = 7994;
+float Hm = 1200;
 
-uniform vec3 betaR;
-uniform vec3 betaM;
+vec3 betaR = vec3(3.8e-6f, 13.5e-6f, 33.1e-6f);
+vec3 betaM = vec3(21e-6f);
 
 #define D_STRONG_FOG 2.0
 #define D_FOG_NOISE 1.0
 
+
+float PhaseFunc_CON()
+{
+    return 1.0 / (4.0 * PI);
+}
 
 // Rayleigh Phase Function
 // ...

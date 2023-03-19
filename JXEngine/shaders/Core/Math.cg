@@ -371,4 +371,33 @@ float almostIdentity( float x )
     return x*x*(2.0-x);
 }
 
+mat3 rotate_around_x(in float angle_degrees)
+{
+	float angle = radians(angle_degrees);
+	float _sin = sin(angle);
+	float _cos = cos(angle);
+	return mat3(1, 0, 0, 0, _cos, -_sin, 0, _sin, _cos);
+}
 
+mat3 rotate_around_y(in float angle_degrees)
+{
+	float angle = radians(angle_degrees);
+	float _sin = sin(angle);
+	float _cos = cos(angle);
+	return mat3(_cos, 0, _sin, 0, 1, 0, -_sin, 0, _cos);
+}
+
+vec3 max_f_v3(float min_, vec3 v)
+{
+    return vec3(max(min_, v.x), max(min_, v.y), max(min_, v.z));
+}
+
+float max_v3_elem(vec3 v)
+{
+    return max(v.x, max(v.y, v.z));
+}
+
+float M_smoothstep( float x )
+{
+  return x*x*(3.0-2.0*x);
+}

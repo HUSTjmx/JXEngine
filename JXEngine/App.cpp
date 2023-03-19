@@ -20,6 +20,7 @@
 #include "ShaderCompiler.h"
 #include "VertexModel.h"
 #include "Light.h"
+#include "TFRM_Algorithm.h"
 
 //#define  __MSAA__ 1
 
@@ -145,7 +146,7 @@ void SET_LIGHT(Scene& scene)
 	//auto pointLight0 = std::make_shared<PointLight>(glm::vec3(1.0, 1.0, 1.0));
 	pointLight0->SetColor(glm::vec3(1.0, 0.9, 0.5));
 	pointLight0->SetRadius(10.0);
-	pointLight0->SetValue(200.0);
+	pointLight0->SetValue(60.0);
 	scene.AddLight(pointLight0);
 
 
@@ -155,6 +156,7 @@ void SET_LIGHT(Scene& scene)
 	dir1->value = 1.6;
 	scene.AddLight(dir1);
 }
+
 
 void Test()
 {
@@ -179,6 +181,36 @@ void Test()
 	glm::vec3 new_pos = INPUT::inputCamera->Position + v * len;
 	JMX_INPUT_GLM(new_pos);
 }
+
+// 0 : Sky
+// 1 : Fog Ball
+// 2 : Standford Rabbits
+// 3 : Cloud Sea
+#define SCENE_ID 0
+
+// 0 : Origin Method
+// 1 : Temporal Method
+// 2 : Foveated Method
+// 3 : Full Method
+#define METHOD_ID 3
+
+// false : No Shadow
+// true : Shadow
+#define SHADOW_ID true
+
+// 0 : Constant Phase Function
+// 1 : RAYLEIGH Phase Function
+// 2 : MIE Phase Function
+// 3 : Blend Function
+#define PHASE_ID 2
+#define PHASE_OP 0.5
+
+// FOVEATED_REGION_BOUND 
+// Default : 5.79
+#define FOVEATED_BOUND 5.79
+
+// 用于测试输出
+#define TEST_NO_BLUR_AND_FOVEAL 0
 
 void Loop(GLFWwindow* window)
 {
@@ -208,15 +240,17 @@ void Loop(GLFWwindow* window)
 	auto preTex = std::make_shared<Texture>("preTexture");
 
 	auto frame = std::make_shared<FrameBuffer>(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
-	frame->AddTexture(GL_RGB, "screenTexture", false);
-	frame->AddTexture(GL_RGB, "preTexture", false);
-	frame->AddTexture(GL_RGBA32F, "scatterTex", false);
-	frame->AddTexture(GL_RGBA32F, "posTex", false);
+	frame->AddTexture(GL_RGB, "screenTex", false);
+#if METHOD_ID == 1 || METHOD_ID == 3
+	frame->AddTexture(GL_RGBA32F, "ScatterLight_In", false);
+	frame->AddTexture(GL_RGBA32F, "Transmittance_In", false);
+	frame->AddTexture(GL_RGBA32F, "FinalPos_In", false);
+#endif
 	frame->NotifyGL();
 	frame->AddRenderObject(true);
 
 #pragma region CloudScene_MAT_0
-	auto cloud_shader_01 = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_02_vs.c_str(),
+	/*auto cloud_shader_01 = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_02_vs.c_str(),
 		SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_02_fs.c_str());
 	cloud_shader_01->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
 	cloud_shader_01->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
@@ -227,11 +261,11 @@ void Loop(GLFWwindow* window)
 	cloud_mat_01->AddTexture(frame->textureBuffers[2]);
 	cloud_mat_01->AddTexture(frame->textureBuffers[3]);
 	cloud_mat_01->LinkTextureForShader();
-	cloud_mat_01->SetJitter(true);
+	cloud_mat_01->SetJitter(true);*/
 #pragma endregion
 
 #pragma region MysteryMountains_MAT
-	auto MysteryMoutains_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::FBM_GREAT_EFFECT::MysteryMoutains_vs.c_str(),
+	/*auto MysteryMoutains_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::FBM_GREAT_EFFECT::MysteryMoutains_vs.c_str(),
 		SHADER_PATH::RAY_MARCHING::FBM_GREAT_EFFECT::MysteryMoutains_fs.c_str());
 	MysteryMoutains_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
 	MysteryMoutains_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
@@ -241,42 +275,42 @@ void Loop(GLFWwindow* window)
 	auto MysteryMoutains_mat = std::make_shared<Material>(MysteryMoutains_shader);
 	MysteryMoutains_mat->AddTexture(noisyTex);
 	MysteryMoutains_mat->AddTexture(preTex);
-	MysteryMoutains_mat->LinkTextureForShader();
+	MysteryMoutains_mat->LinkTextureForShader();*/
 #pragma endregion
 
 #pragma region PlayingMarble
-	auto PlayingMarble_Shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::MEDIA::PlayingMarble_vs.c_str(),
-		SHADER_PATH::RAY_MARCHING::MEDIA::PlayingMarble_fs.c_str());
-	PlayingMarble_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
-	PlayingMarble_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
-	PlayingMarble_Shader->Compile();
-	auto PlayingMarble_mat = std::make_shared<Material>(PlayingMarble_Shader);
-	// Todo. Add history texture.
-	cloud_mat_01->AddTexture(frame->textureBuffers[1]);
-	cloud_mat_01->AddTexture(frame->textureBuffers[2]);
-	cloud_mat_01->AddTexture(frame->textureBuffers[3]);
-	PlayingMarble_mat->LinkTextureForShader();
-	PlayingMarble_mat->SetJitter(false);
+	//auto PlayingMarble_Shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::MEDIA::PlayingMarble_vs.c_str(),
+	//	SHADER_PATH::RAY_MARCHING::MEDIA::PlayingMarble_fs.c_str());
+	//PlayingMarble_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	//PlayingMarble_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	//PlayingMarble_Shader->Compile();
+	//auto PlayingMarble_mat = std::make_shared<Material>(PlayingMarble_Shader);
+	//// Todo. Add history texture.
+	//cloud_mat_01->AddTexture(frame->textureBuffers[1]);
+	//cloud_mat_01->AddTexture(frame->textureBuffers[2]);
+	//cloud_mat_01->AddTexture(frame->textureBuffers[3]);
+	//PlayingMarble_mat->LinkTextureForShader();
+	//PlayingMarble_mat->SetJitter(false);
 #pragma endregion
 
 #pragma region StaicScene_01
-	auto StaticScene_01_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PAPER::StaticScene_01_vs.c_str(),
-		SHADER_PATH::RAY_MARCHING::PAPER::StaticScene_01_fs.c_str());
-	StaticScene_01_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
-	StaticScene_01_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
-	StaticScene_01_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
-	StaticScene_01_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
-	StaticScene_01_shader->Compile();
-	auto StaticScene_01_Mat = std::make_shared<Material>(StaticScene_01_shader);
-	StaticScene_01_Mat->AddTexture(frame->textureBuffers[1]);
-	StaticScene_01_Mat->AddTexture(frame->textureBuffers[2]);
-	StaticScene_01_Mat->AddTexture(frame->textureBuffers[3]);
-	StaticScene_01_Mat->LinkTextureForShader();
-	StaticScene_01_Mat->SetJitter(false);
-#pragma endregion
+//	auto StaticScene_01_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PAPER::StaticScene_01_vs.c_str(),
+//		SHADER_PATH::RAY_MARCHING::PAPER::StaticScene_01_fs.c_str());
+//	StaticScene_01_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+//	StaticScene_01_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+//	StaticScene_01_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+//	StaticScene_01_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+//	StaticScene_01_shader->Compile();
+//	auto StaticScene_01_Mat = std::make_shared<Material>(StaticScene_01_shader);
+//	StaticScene_01_Mat->AddTexture(frame->textureBuffers[1]);
+//	StaticScene_01_Mat->AddTexture(frame->textureBuffers[2]);
+//	StaticScene_01_Mat->AddTexture(frame->textureBuffers[3]);
+//	StaticScene_01_Mat->LinkTextureForShader();
+//	StaticScene_01_Mat->SetJitter(false);
+//#pragma endregion
 
 #pragma region StaticScene_02
-	auto StaticScene_02_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PAPER::StaticScene_02_vs.c_str(),
+	/*auto StaticScene_02_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PAPER::StaticScene_02_vs.c_str(),
 		SHADER_PATH::RAY_MARCHING::PAPER::StaticScene_02_fs.c_str());
 	StaticScene_02_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
 	StaticScene_02_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
@@ -288,58 +322,349 @@ void Loop(GLFWwindow* window)
 	StaticScene_02_Mat->AddTexture(frame->textureBuffers[2]);
 	StaticScene_02_Mat->AddTexture(frame->textureBuffers[3]);
 	StaticScene_02_Mat->LinkTextureForShader();
-	StaticScene_02_Mat->SetJitter(false);
+	StaticScene_02_Mat->SetJitter(false);*/
 #pragma endregion
 
-#pragma region StaticScene_03
-	auto StaticScene_03_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_01_vs.c_str(),
-		SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_01_fs.c_str());
-	StaticScene_03_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
-	StaticScene_03_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
-	StaticScene_03_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
-	StaticScene_03_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
-	StaticScene_03_shader->Compile();
-	auto StaticScene_03_Mat = std::make_shared<Material>(StaticScene_03_shader);
-	StaticScene_03_Mat->AddTexture(frame->textureBuffers[1]);
-	StaticScene_03_Mat->AddTexture(frame->textureBuffers[2]);
-	StaticScene_03_Mat->AddTexture(frame->textureBuffers[3]);
-	StaticScene_03_Mat->LinkTextureForShader();
-	StaticScene_03_Mat->SetJitter(false);
-#pragma endregion
+//#pragma region StaticScene_03
+//	auto StaticScene_03_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_01_vs.c_str(),
+//		SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_01_fs.c_str());
+//	StaticScene_03_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+//	StaticScene_03_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+//	StaticScene_03_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+//	StaticScene_03_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+//	StaticScene_03_shader->Compile();
+//	auto StaticScene_03_Mat = std::make_shared<Material>(StaticScene_03_shader);
+//	StaticScene_03_Mat->AddTexture(frame->textureBuffers[1]);
+//	StaticScene_03_Mat->AddTexture(frame->textureBuffers[2]);
+//	StaticScene_03_Mat->AddTexture(frame->textureBuffers[3]);
+//	StaticScene_03_Mat->LinkTextureForShader();
+//	StaticScene_03_Mat->SetJitter(false);
+//#pragma endregion
 
-#pragma region StaticScene_04
-	auto sky_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_01_vs.c_str(), SHADER_PATH::RAY_MARCHING::SKY::earthSky_fs.c_str());
+    // Main Shader
+	auto PaperScene_Show = std::make_shared<Material>();
+
+	//Paper Scene 01 : Sky atmosphere
+#pragma region PaperScene_01_Sky
+#if SCENE_ID == 0
+	auto sky_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_01_Sky_VS.c_str(), SHADER_PATH::PAPER::PaperScene_01_Sky_FS.c_str());
+	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::PAPER);
 	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
 	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
 	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
 	sky_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
 	sky_sh->Compile();
-	auto StaticScene_04_Mat = std::make_shared<Material>(sky_sh);
-	StaticScene_04_Mat->AddTexture(frame->textureBuffers[1]);
-	StaticScene_04_Mat->AddTexture(frame->textureBuffers[2]);
-	StaticScene_04_Mat->AddTexture(frame->textureBuffers[3]);
-	StaticScene_04_Mat->LinkTextureForShader();
-	StaticScene_04_Mat->SetJitter(false);
-	StaticScene_04_Mat->Active();
+	auto PaperScene_01_Sky = std::make_shared<Material>(sky_sh);
+	PaperScene_01_Sky->SetJitter(false);
+	PaperScene_01_Sky->Active();
 	//std::cout << earthRadius << std::endl;
-	StaticScene_04_Mat->GetShader()->SetFloat(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::EARTH_RADIUS, 6360e3);
-	StaticScene_04_Mat->GetShader()->SetFloat(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::ATMOSHERE_RADIUS, 6420e3);
-	StaticScene_04_Mat->GetShader()->SetFloat(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::HR, 7994);
-	StaticScene_04_Mat->GetShader()->SetFloat(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::HM, 1200);
-	StaticScene_04_Mat->GetShader()->SetVec3(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::BETA_R, glm::vec3(3.8e-6f, 13.5e-6f, 33.1e-6f));
-	StaticScene_04_Mat->GetShader()->SetVec3(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::BETA_M, glm::vec3(21e-6f));
+	/*PaperScene_01_Sky->GetShader()->SetFloat(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::EARTH_RADIUS, 6360e3);
+	PaperScene_01_Sky->GetShader()->SetFloat(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::ATMOSHERE_RADIUS, 6420e3);
+	PaperScene_01_Sky->GetShader()->SetFloat(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::HR, 7994);
+	PaperScene_01_Sky->GetShader()->SetFloat(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::HM, 1200);
+	PaperScene_01_Sky->GetShader()->SetVec3(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::BETA_R, glm::vec3(3.8e-6f, 13.5e-6f, 33.1e-6f));
+	PaperScene_01_Sky->GetShader()->SetVec3(CONFIG::MATERIAL_SETTINGS::SKY_MODEL::BETA_M, glm::vec3(21e-6f));
+	PaperScene_01_Sky->Active();*/
+	PaperScene_Show = PaperScene_01_Sky->CopyWithTex();
+#endif 
 #pragma endregion
+
+	//Paper Scene 02: Fog Ball, case : N 
+#pragma region PaperScene_02_FogBall_N
+#if SCENE_ID == 1 && METHOD_ID == 0
+	// 01
+	auto FB_01_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_02_FogBall_VS.c_str(), SHADER_PATH::PAPER::PaperScene_02_FogBall_01_N_FS.c_str());
+	// 02
+	//auto FB_01_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_02_FogBall_VS.c_str(), SHADER_PATH::PAPER::PaperScene_02_FogBall_02_N_FS.c_str());
+	FB_01_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::PAPER);
+	FB_01_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	FB_01_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	FB_01_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	FB_01_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	FB_01_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	FB_01_sh->AddMacroDefine("IS_SHOW_SHADOW", SHADOW_ID);
+	FB_01_sh->Compile();
+	auto PaperScene_02_FogBall_01 = std::make_shared<Material>(FB_01_sh);
+	PaperScene_02_FogBall_01->SetJitter(false);
+	PaperScene_02_FogBall_01->Active();
+
+	PaperScene_Show = PaperScene_02_FogBall_01->CopyWithTex();
+#endif
+#pragma endregion
+
+	//Paper Scene 02: Fog Ball, case : T
+#pragma region PaperScene_02_FogBall_T
+#if SCENE_ID == 1 && METHOD_ID == 1
+	// 01
+	//auto FB_02_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_02_FogBall_VS.c_str(), SHADER_PATH::PAPER::PaperScene_02_FogBall_01_N_FS.c_str());
+	// 02
+	auto FB_02_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_02_FogBall_VS.c_str(), SHADER_PATH::PAPER::PaperScene_02_FogBall_01_T_FS.c_str());
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::PAPER);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	FB_02_sh->AddMacroDefine("IS_SHOW_SHADOW", SHADOW_ID);
+	FB_02_sh->Compile();
+	auto PaperScene_02_FogBall_T = std::make_shared<Material>(FB_02_sh);
+	PaperScene_02_FogBall_T->AddTexture(frame->textureBuffers[1]);
+	PaperScene_02_FogBall_T->AddTexture(frame->textureBuffers[2]);
+	PaperScene_02_FogBall_T->AddTexture(frame->textureBuffers[3]);
+	PaperScene_02_FogBall_T->LinkTextureForShader();
+	PaperScene_02_FogBall_T->SetJitter(false);
+	PaperScene_02_FogBall_T->Active();
+
+	PaperScene_Show = PaperScene_02_FogBall_T->CopyWithTex();
+#endif
+#pragma endregion
+
+	//Paper Scene 02: Fog Ball, case : S
+#pragma region PaperScene_02_FogBall_S
+#if SCENE_ID == 1 && METHOD_ID == 2
+	// 01
+	//auto FB_02_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_02_FogBall_VS.c_str(), SHADER_PATH::PAPER::PaperScene_02_FogBall_01_N_FS.c_str());
+	// 02
+	auto FB_02_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_02_FogBall_VS.c_str(), SHADER_PATH::PAPER::PaperScene_02_FogBall_01_S_FS.c_str());
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::PAPER);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	FB_02_sh->AddMacroDefine("IS_SHOW_SHADOW", SHADOW_ID);
+	FB_02_sh->AddMacroDefine("PHASE_FUNCTION_MEDIA", PHASE_ID);
+	FB_02_sh->AddMacroDefine("PHASE_FUNCTION_BLEND_OP", std::to_string(PHASE_OP));
+	FB_02_sh->Compile();
+	auto PaperScene_02_FogBall_S = std::make_shared<Material>(FB_02_sh);
+	PaperScene_02_FogBall_S->SetJitter(false);
+	PaperScene_02_FogBall_S->Active();
+
+	PaperScene_Show = PaperScene_02_FogBall_S->CopyWithTex();
+#endif
+#pragma endregion
+
+	//Paper Scene 02: Fog Ball, case : ST
+#pragma region PaperScene_02_FogBall_ST
+#if SCENE_ID == 1 && METHOD_ID == 3
+	// 01
+	//auto FB_02_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_02_FogBall_VS.c_str(), SHADER_PATH::PAPER::PaperScene_02_FogBall_01_N_FS.c_str());
+	// 02
+	auto FB_02_sh = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_02_FogBall_VS.c_str(), SHADER_PATH::PAPER::PaperScene_02_FogBall_01_ST_FS.c_str());
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::PAPER);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	FB_02_sh->AddMacroDefine("IS_SHOW_SHADOW", SHADOW_ID);
+	FB_02_sh->AddMacroDefine("PHASE_FUNCTION_MEDIA", PHASE_ID);
+	FB_02_sh->AddMacroDefine("PHASE_FUNCTION_BLEND_OP", std::to_string(PHASE_OP));
+	FB_02_sh->Compile();
+	auto PaperScene_02_FogBall_T = std::make_shared<Material>(FB_02_sh);
+	PaperScene_02_FogBall_T->AddTexture(frame->textureBuffers[1]);
+	PaperScene_02_FogBall_T->AddTexture(frame->textureBuffers[2]);
+	PaperScene_02_FogBall_T->AddTexture(frame->textureBuffers[3]);
+	PaperScene_02_FogBall_T->LinkTextureForShader();
+	PaperScene_02_FogBall_T->SetJitter(false);
+	PaperScene_02_FogBall_T->Active();
+
+	PaperScene_Show = PaperScene_02_FogBall_T->CopyWithTex();
+#endif
+#pragma endregion
+
+	//Paper Scene 03: Stanford Rabbits, case : N
+#pragma region PaperScene_03_StanfordRabbits_N
+#if SCENE_ID == 2 && METHOD_ID == 0
+	auto SR_01_sh_N = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_03_StanfordRabbits_VS.c_str(), SHADER_PATH::PAPER::PaperScene_03_StanfordRabbits_01_N_FS.c_str());
+	SR_01_sh_N->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::PAPER);
+	SR_01_sh_N->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	SR_01_sh_N->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	SR_01_sh_N->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	SR_01_sh_N->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	SR_01_sh_N->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	SR_01_sh_N->AddMacroDefine("IS_SHOW_SHADOW", SHADOW_ID);
+	SR_01_sh_N->Compile();
+	auto PaperScene_03_StanfordRabbits_01_N = std::make_shared<Material>(SR_01_sh_N);
+	PaperScene_03_StanfordRabbits_01_N->SetJitter(false);
+	PaperScene_03_StanfordRabbits_01_N->Active();
+
+	PaperScene_Show = PaperScene_03_StanfordRabbits_01_N->CopyWithTex();
+#endif
+#pragma endregion
+
+	//Paper Scene 03: Stanford Rabbits, case : T
+#pragma region PaperScene_03_StanfordRabbits_T
+#if SCENE_ID == 2 && METHOD_ID == 1
+	auto SR_01_sh_T = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_03_StanfordRabbits_VS.c_str(), SHADER_PATH::PAPER::PaperScene_03_StanfordRabbits_01_T_FS.c_str());
+	SR_01_sh_T->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::PAPER);
+	SR_01_sh_T->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	SR_01_sh_T->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	SR_01_sh_T->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	SR_01_sh_T->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	SR_01_sh_T->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	SR_01_sh_T->AddMacroDefine("IS_SHOW_SHADOW", SHADOW_ID);
+	SR_01_sh_T->Compile();
+	auto PaperScene_03_StanfordRabbits_01_T = std::make_shared<Material>(SR_01_sh_T);
+	PaperScene_03_StanfordRabbits_01_T->AddTexture(frame->textureBuffers[1]);
+	PaperScene_03_StanfordRabbits_01_T->AddTexture(frame->textureBuffers[2]);
+	PaperScene_03_StanfordRabbits_01_T->AddTexture(frame->textureBuffers[3]);
+	PaperScene_03_StanfordRabbits_01_T->LinkTextureForShader();
+	PaperScene_03_StanfordRabbits_01_T->SetJitter(false);
+	PaperScene_03_StanfordRabbits_01_T->Active();
+
+	PaperScene_Show = PaperScene_03_StanfordRabbits_01_T->CopyWithTex();
+#endif
+#pragma endregion
+
+	//Paper Scene 03: Stanford Rabbits, case : S
+#pragma region PaperScene_03_StanfordRabbits_S
+#if SCENE_ID == 2 && METHOD_ID == 2
+	auto SR_01_sh_S = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_03_StanfordRabbits_VS.c_str(), SHADER_PATH::PAPER::PaperScene_03_StanfordRabbits_01_S_FS.c_str());
+	SR_01_sh_S->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::PAPER);
+	SR_01_sh_S->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	SR_01_sh_S->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	SR_01_sh_S->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	SR_01_sh_S->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	SR_01_sh_S->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	SR_01_sh_S->AddMacroDefine("IS_SHOW_SHADOW", SHADOW_ID);
+	SR_01_sh_S->AddMacroDefine("PHASE_FUNCTION_MEDIA", PHASE_ID);
+	SR_01_sh_S->AddMacroDefine("PHASE_FUNCTION_BLEND_OP", std::to_string(PHASE_OP));
+	SR_01_sh_S->Compile();
+	auto PaperScene_03_StanfordRabbits_01_S = std::make_shared<Material>(SR_01_sh_S);
+	PaperScene_03_StanfordRabbits_01_S->SetJitter(false);
+	PaperScene_03_StanfordRabbits_01_S->Active();
+	PaperScene_Show = PaperScene_03_StanfordRabbits_01_S->CopyWithTex();
+#endif
+#pragma endregion
+
+	//Paper Scene 03: Stanford Rabbits, case : ST
+#pragma region PaperScene_03_StanfordRabbits_ST
+#if SCENE_ID == 2 && METHOD_ID == 3
+	auto SR_01_sh_ST = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_03_StanfordRabbits_VS.c_str(), SHADER_PATH::PAPER::PaperScene_03_StanfordRabbits_01_T_FS.c_str());
+	SR_01_sh_ST->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::PAPER);
+	SR_01_sh_ST->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	SR_01_sh_ST->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	SR_01_sh_ST->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	SR_01_sh_ST->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	SR_01_sh_ST->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	SR_01_sh_ST->AddMacroDefine("IS_SHOW_SHADOW", SHADOW_ID);
+	SR_01_sh_ST->AddMacroDefine("PHASE_FUNCTION_MEDIA", PHASE_ID);
+	SR_01_sh_ST->AddMacroDefine("PHASE_FUNCTION_BLEND_OP", std::to_string(PHASE_OP));
+	SR_01_sh_ST->Compile();
+	auto PaperScene_03_StanfordRabbits_01_ST = std::make_shared<Material>(SR_01_sh_ST);
+	PaperScene_03_StanfordRabbits_01_ST->AddTexture(frame->textureBuffers[1]);
+	PaperScene_03_StanfordRabbits_01_ST->AddTexture(frame->textureBuffers[2]);
+	PaperScene_03_StanfordRabbits_01_ST->AddTexture(frame->textureBuffers[3]);
+	PaperScene_03_StanfordRabbits_01_ST->LinkTextureForShader();
+	PaperScene_03_StanfordRabbits_01_ST->SetJitter(false);
+	PaperScene_03_StanfordRabbits_01_ST->Active();
+
+	PaperScene_Show = PaperScene_03_StanfordRabbits_01_ST->CopyWithTex();
+#endif
+#pragma endregion
+
+	//Paper Scene 04: Cloud of Sea, case : N
+#pragma region PaperScene_04_CloudOfSea_N
+#if SCENE_ID == 3 && METHOD_ID == 0
+	auto SoC_01_sh_N = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_04_CloudOfSea_VS.c_str(), SHADER_PATH::PAPER::PaperScene_04_CloudOfSea_01_N_FS.c_str());
+	SoC_01_sh_N->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::PAPER);
+	SoC_01_sh_N->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	SoC_01_sh_N->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	SoC_01_sh_N->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	SoC_01_sh_N->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	SoC_01_sh_N->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	SoC_01_sh_N->AddMacroDefine("IS_SHOW_SHADOW", SHADOW_ID);
+	SoC_01_sh_N->Compile();
+	auto PaperScene_04_CloudOfSea_01_N = std::make_shared<Material>(SoC_01_sh_N);
+	PaperScene_04_CloudOfSea_01_N->SetJitter(false);
+	PaperScene_04_CloudOfSea_01_N->Active();
+
+	PaperScene_Show = PaperScene_04_CloudOfSea_01_N->CopyWithTex();
+#endif
+#pragma endregion
+
+	//Paper Scene 04: Cloud of Sea, case : T
+#pragma region PaperScene_04_CloudOfSea_T
+#if SCENE_ID == 3 && METHOD_ID == 1
+	auto SoC_01_sh_T = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_04_CloudOfSea_VS.c_str(), SHADER_PATH::PAPER::PaperScene_04_CloudOfSea_01_T_FS.c_str());
+	SoC_01_sh_T->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::PAPER);
+	SoC_01_sh_T->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	SoC_01_sh_T->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	SoC_01_sh_T->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	SoC_01_sh_T->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	SoC_01_sh_T->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	SoC_01_sh_T->Compile();
+	auto PaperScene_04_CloudOfSea_01_T = std::make_shared<Material>(SoC_01_sh_T);
+	PaperScene_04_CloudOfSea_01_T->AddTexture(frame->textureBuffers[1]);
+	PaperScene_04_CloudOfSea_01_T->AddTexture(frame->textureBuffers[2]);
+	PaperScene_04_CloudOfSea_01_T->AddTexture(frame->textureBuffers[3]);
+	PaperScene_04_CloudOfSea_01_T->LinkTextureForShader();
+	PaperScene_04_CloudOfSea_01_T->SetJitter(false);
+	PaperScene_04_CloudOfSea_01_T->Active();
+
+	PaperScene_Show = PaperScene_04_CloudOfSea_01_T->CopyWithTex();
+#endif
+#pragma endregion
+
+	//Paper Scene 04: Cloud of Sea, case : S
+#pragma region PaperScene_04_CloudOfSea_S
+#if SCENE_ID == 3 && METHOD_ID == 2
+	auto SoC_01_sh_S = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_04_CloudOfSea_VS.c_str(), SHADER_PATH::PAPER::PaperScene_04_CloudOfSea_01_S_FS.c_str());
+	SoC_01_sh_S->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::PAPER);
+	SoC_01_sh_S->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	SoC_01_sh_S->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	SoC_01_sh_S->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	SoC_01_sh_S->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	SoC_01_sh_S->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	SoC_01_sh_S->Compile();
+	auto PaperScene_04_CloudOfSea_01_S = std::make_shared<Material>(SoC_01_sh_S);
+	PaperScene_04_CloudOfSea_01_S->SetJitter(false);
+	PaperScene_04_CloudOfSea_01_S->Active();
+
+	PaperScene_Show = PaperScene_04_CloudOfSea_01_S->CopyWithTex();
+#endif
+#pragma endregion
+
+	//Paper Scene 04: Cloud of Sea, case : ST
+#pragma region PaperScene_04_CloudOfSea_ST
+#if SCENE_ID == 3 && METHOD_ID == 3
+	auto SoC_01_sh_ST = std::make_shared<ShaderCompiler>(SHADER_PATH::PAPER::PaperScene_04_CloudOfSea_VS.c_str(), SHADER_PATH::PAPER::PaperScene_04_CloudOfSea_01_ST_FS.c_str());
+	SoC_01_sh_ST->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::PAPER);
+	SoC_01_sh_ST->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
+	SoC_01_sh_ST->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
+	SoC_01_sh_ST->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
+	SoC_01_sh_ST->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
+	SoC_01_sh_ST->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
+	SoC_01_sh_ST->Compile();
+	auto PaperScene_04_CloudOfSea_01_ST = std::make_shared<Material>(SoC_01_sh_ST);
+	PaperScene_04_CloudOfSea_01_ST->AddTexture(frame->textureBuffers[1]);
+	PaperScene_04_CloudOfSea_01_ST->AddTexture(frame->textureBuffers[2]);
+	PaperScene_04_CloudOfSea_01_ST->AddTexture(frame->textureBuffers[3]);
+	PaperScene_04_CloudOfSea_01_ST->LinkTextureForShader();
+	PaperScene_04_CloudOfSea_01_ST->SetJitter(false);
+	PaperScene_04_CloudOfSea_01_ST->Active();
+
+	PaperScene_Show = PaperScene_04_CloudOfSea_01_ST->CopyWithTex();
+#endif
+#pragma endregion
+
+
 	//bool useSky = true;
 
-	auto cloud_p_01 = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(StaticScene_03_Mat);
+	// Paper Scene 01 : Sky atmosphere
+	// auto cloud_p_01 = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(PaperScene_01_Sky);
+	// Paper Scene 02 - 01: Fog Ball
+	auto mainScenePass = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(PaperScene_Show);
+
 	//if(useSky) cloud_p_01 = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(StaticScene_04_Mat);
-	cloud_p_01->UpdateOutput(frame);
+	mainScenePass->UpdateOutput(frame);
 	//if(useSky) cloud_p_01->scene->MainCamera().Position = glm::vec3(0.0, 6360e3 + 1.0, 0.0);
-	SET_LIGHT(*cloud_p_01->scene);
+	SET_LIGHT(*mainScenePass->scene);
 
 
 #pragma region Foveated
-
+#if (METHOD_ID == 2 || METHOD_ID == 3) && TEST_NO_BLUR_AND_FOVEAL == 0
 	auto Foveated_P1_Shader = std::make_shared<ShaderCompiler>(SHADER_PATH::POST_RENDER::FOVEA::KernelFovea_vs.c_str(), SHADER_PATH::POST_RENDER::FOVEA::KernelFovea_fs.c_str());
 	Foveated_P1_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::POST_PROCESSING);
 	Foveated_P1_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
@@ -350,7 +675,7 @@ void Loop(GLFWwindow* window)
 	Foveated_P1_Shader->SetVec2(CONFIG::MATERIAL_SETTINGS::FOVEA_RENDER::RESOLUTION_NAME, re);
 	auto Foveated_P1_mat = std::make_shared<Material>(Foveated_P1_Shader);
 	Foveated_P1_mat->LinkTextureForShader();
-	auto Foveated_pass_1 = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(cloud_p_01, Foveated_P1_mat);
+	auto Foveated_pass_1 = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(mainScenePass, Foveated_P1_mat, (float)CONFIG::SCREEN_CONFIG::FOVEA::FOVEA_WIDTH, (float)CONFIG::SCREEN_CONFIG::FOVEA::FOVEA_HEIGHT);
 
 	auto Foveated_P2_Shader = std::make_shared<ShaderCompiler>(SHADER_PATH::POST_RENDER::FOVEA::KernelFovea_vs.c_str(), SHADER_PATH::POST_RENDER::FOVEA::KernelFovea_Pass2_fs.c_str());
 	Foveated_P2_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::POST_PROCESSING);
@@ -362,10 +687,12 @@ void Loop(GLFWwindow* window)
 	auto Foveated_P2_mat = std::make_shared<Material>(Foveated_P2_Shader);
 	Foveated_P2_mat->LinkTextureForShader();
 	auto Foveated_pass_2 = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(Foveated_pass_1, Foveated_P2_mat);
+#endif
 #pragma endregion
 
 
 #pragma region Blur
+#if (METHOD_ID == 2 || METHOD_ID == 3) && TEST_NO_BLUR_AND_FOVEAL == 0
 	// ------------------------------- Foveated Blur ----------------------------------------------
 	auto foveated_blur_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::POST_RENDER::BLUR::FoveatedBlur_vs.c_str(), SHADER_PATH::POST_RENDER::BLUR::FoveatedBlur_fs.c_str());
 	foveated_blur_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::POST_PROCESSING);
@@ -385,6 +712,17 @@ void Loop(GLFWwindow* window)
 	frame2->AddRenderObject(true);
 	foveated_blur_pass_Y->UpdateOutput(frame2);
 	// --------------------------------------------------------------------------------------------
+#endif
+#pragma endregion
+
+#pragma region ColorGrading
+#if METHOD_ID == 0 || METHOD_ID == 1 || TEST_NO_BLUR_AND_FOVEAL == 1
+	auto origin_show_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::POST_RENDER::ColorGrading::OriginShow_vs.c_str(), SHADER_PATH::POST_RENDER::ColorGrading::OriginShow_fs.c_str());
+	origin_show_shader->Compile();
+	auto origin_show_mat = std::make_shared<Material>(origin_show_shader);
+	origin_show_mat->LinkTextureForShader();
+	auto origin_show_pass = OPENGL_SCENE::PostPassFactory::Instance().CreateOne(mainScenePass, origin_show_mat);
+#endif
 #pragma endregion
 
 	//时钟重置，开始计时
@@ -395,7 +733,37 @@ void Loop(GLFWwindow* window)
 
 	const int blurTimes = 0;
 	
-	int frame_index = 0;
+
+#if METHOD_ID == 1 || METHOD_ID == 3
+	float F_dis, F_ang = 0.0;
+	mainScenePass->GetMat()->GetShader()->SetFloat(Algorithm::TFRM::UNIFORM_NAME::TEMPORAL_ACCELERATION_MUL_NAME, 1.0 / Algorithm::TFRM::Setting::TEMPORAL_ACCELERATION_MUL);
+#endif
+
+#if METHOD_ID == 2 || METHOD_ID == 3 || METHOD_ID == 1
+	mainScenePass->GetMat()->GetShader()->SetFloat(CONFIG::PAPER_DEFAULT_SETTINGS::FOVEATED_REGION_BOUND, FOVEATED_BOUND);
+#endif
+
+
+	mainScenePass->GetMat()->GetShader()->SetFloat(Algorithm::TFRM::UNIFORM_NAME::MAX_STEP_NAME, Algorithm::TFRM::Setting::MAX_STEP_NUM);
+	mainScenePass->GetMat()->GetShader()->SetFloat(Algorithm::TFRM::UNIFORM_NAME::MIN_STEP_NAME, Algorithm::TFRM::Setting::MIN_STEP_NUM);
+	mainScenePass->GetMat()->GetShader()->SetFloat(Algorithm::TFRM::UNIFORM_NAME::MAX_SHADOW_STEP_NAME, Algorithm::TFRM::Setting::MAX_SHADOW_STEP_NUM);
+	mainScenePass->GetMat()->GetShader()->SetFloat(Algorithm::TFRM::UNIFORM_NAME::MIN_SHADOW_STEP_NAME, Algorithm::TFRM::Setting::MIN_SHADOW_STEP_NUM);
+
+
+	// 结果保存的相关设置
+	METHOD_TYPE methodType_;
+	int sceneType = SCENE_ID;
+#if METHOD_ID == 0
+	methodType_ = METHOD_TYPE::GroudTruth;
+#elif METHOD_ID == 1
+	methodType_ = METHOD_TYPE::ContrastMethod_T;
+#elif METHOD_ID == 2
+	methodType_ = METHOD_TYPE::ContrastMethod_F;
+#else
+	methodType_ = METHOD_TYPE::MyMethod;
+#endif
+	int maxImgSaveNum = 30;
+	int imgIndex = 0;
 
 	// 测试
 	//Test();
@@ -411,16 +779,26 @@ void Loop(GLFWwindow* window)
 		// -----
 		INPUT::processInput(window);
 
+		// 计算历史算法的因子
+#if METHOD_ID == 1 || METHOD_ID == 3
+		Algorithm::TFRM::ComputeTFRM(F_dis, F_ang, INPUT::inputCamera);
+#endif
+
 		// render
 		// ------
 		//std::cout << Counter<0>::times<< std::endl;
-		cloud_p_01->BindOutput();
-		cloud_p_01->GetMat()->GetShader()->SetInt("IsFirstFrame", Counter<0>::times);
+		mainScenePass->BindOutput();
+		mainScenePass->GetMat()->GetShader()->SetInt("FrameIndex", Counter<0>::times);
+#if METHOD_ID == 1 || METHOD_ID == 3
+		mainScenePass->GetMat()->GetShader()->SetFloat(Algorithm::TFRM::UNIFORM_NAME::FACTOR_DIS, F_dis);
+		mainScenePass->GetMat()->GetShader()->SetFloat(Algorithm::TFRM::UNIFORM_NAME::FACTOR_ANG, F_ang);
+#endif
 		glClear(GL_DEPTH_BUFFER_BIT);
-		cloud_p_01->Draw();
+		mainScenePass->Draw();
 
 		//cloud_p_01->GetOutput()->CopyColorAttachmentToTex(preTex->Self(), 1);
 
+#if (METHOD_ID == 2 || METHOD_ID == 3) && TEST_NO_BLUR_AND_FOVEAL == 0
 		Foveated_pass_1->BindOutput();
 		glClear(GL_DEPTH_BUFFER_BIT);
 		Foveated_pass_1->Draw();
@@ -438,6 +816,7 @@ void Loop(GLFWwindow* window)
 		{
 			if (i % 2 == 0)
 			{
+
 				foveated_blur_pass_Y->BindOutput(foveated_blur_pass_X->GetOutput());
 				foveated_blur_pass_Y->GetMat()->GetShader()->SetInt("blurDir", 0);
 				glClear(GL_DEPTH_BUFFER_BIT);
@@ -455,6 +834,13 @@ void Loop(GLFWwindow* window)
 		foveated_blur_pass_Y->GetMat()->GetShader()->SetInt("blurDir", 0);
 		glClear(GL_DEPTH_BUFFER_BIT);
 		foveated_blur_pass_Y->Draw();
+#endif
+
+#if METHOD_ID == 0 || METHOD_ID == 1 || TEST_NO_BLUR_AND_FOVEAL == 1
+		origin_show_pass->BindOutput(0);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		origin_show_pass->Draw();
+#endif 
 
 		//OPENGL_SCENE::TestPass::Intance().DrawFoveated_Comp_09(p0, p0_1, p1, p2, p3);
 		//OPENGL_SCENE::TestPass::Intance().DrawFoveated_07(p0, p1, p2);
@@ -462,15 +848,20 @@ void Loop(GLFWwindow* window)
 		//OPENGL_SCENE::TestPass::Intance().Draw_FrameTest_04(p1, p2);
 		//OPENGL_SCENE::TestPass::Intance().DrawShadowTest_05(p0, p_debug);
 
-		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-		// -------------------------------------------------------------------------------
+
+		// 更新相机的历史数据
 		INPUT::inputCamera->UpdatePreMat();
 		INPUT::inputCamera->UpdatePreAttr();
 
-		BMPTool::Instance().GetScreenShot(SCENE_TYPE::MyMethod, 0, frame_index++);
 
-		if (frame_index > 200) frame_index = 0;
 
+		// 保存结果
+		BMPTool::Instance().GetScreenShot(methodType_, sceneType, imgIndex++);
+
+		if (imgIndex > maxImgSaveNum) imgIndex = 0;
+
+		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
+		// -------------------------------------------------------------------------------
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 

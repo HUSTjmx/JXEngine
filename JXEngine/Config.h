@@ -151,6 +151,18 @@ namespace CONFIG
 		}
 	}
 
+	namespace PAPER_DEFAULT_SETTINGS
+	{
+		// Type : Float
+		extern const std::string MAX_DISTANCE_IS_FOVEAL_REGION;
+		// Type : Float
+		extern const std::string MIN_SIZE_IS_FOVEAL_REGION;
+		// Type : Bool
+		extern const std::string MEDIASIZE_IS_LEQ_LIGHTZSIZE;
+		// Type : Float
+		extern const std::string FOVEATED_REGION_BOUND;
+	}
+
 	namespace SHADING_INCLUDE_CORE
 	{
 		extern const std::string address;
@@ -162,14 +174,16 @@ namespace CONFIG
 		extern const std::string RAY_MARCHING;
 		extern const std::string POST_PROCESSING;
 		extern const std::string COLOR;
+		extern const std::string PAPER;
 
 	}
 }
 
-enum class SCENE_TYPE
+enum class METHOD_TYPE
 {
 	GroudTruth,
 	MyMethod,
-	ContrastMethod
+	ContrastMethod_T,
+	ContrastMethod_F
 };
 
