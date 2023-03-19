@@ -1,7 +1,11 @@
 # 写在开头的一点话
 
-不知道说什么好，就先贴2021.9.29的一些渲染图，因为老师拖延了很多进度：
-
-![](README.assets/image3.gif)
-
 ![](README.assets/图片1.png)
+
+![9](JXEngine/Output/Scene(1)/GroudTruth/9.bmp)
+
+![18](JXEngine/Output/Scene(1)/GroudTruth/18.bmp)
+
+![11](JXEngine/Output/Scene(2)/GroudTruth/11.bmp)
+
+![17](JXEngine/Output/Scene(3)/MyMethod/17.bmp)
