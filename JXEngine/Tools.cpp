@@ -1,6 +1,5 @@
 #include "Tools.h"
 #include <iostream>
-
 std::string StringTool::DelLineFromFile(std::ifstream& file, unsigned int num)
 {
 	char temp[1024] = { 0 };
@@ -312,9 +311,10 @@ void BMPTool::ReadBMP(const char* FileName, RGBColor* ColorBuffer)
 	size_t size = 0;
 	while (true)
 	{
-		int iret = fread(&ColorBuffer[size], 1, 1, fp);
+		int iret = fread(&ColorBuffer[size], sizeof(RGBColor), 1, fp);
 		if (iret == 0)
 			break;
+		//std::cout << (int)ColorBuffer[size].R <<' '<< (int)ColorBuffer[size].G << ' ' << (int)ColorBuffer[size].B << std::endl;
 		size = size + iret;
 	}
 	fclose(fp);
@@ -349,4 +349,127 @@ void BMPTool::GetScreenShot(METHOD_TYPE type_, int scene_id, int frame)
 	//清理颜色数据内存
 	delete[] ColorBuffer;
 
+}
+
+void BMPTool::GetQualityResult(int scene_id, int frame)
+{
+	//申请颜色数据内存
+	RGBColor* ColorBuffer_N = new RGBColor[CONFIG::SCREEN_CONFIG::SCR_WIDTH * CONFIG::SCREEN_CONFIG::SCR_HEIGHT]{'a','b','c'};
+	RGBColor* ColorBuffer_T = new RGBColor[CONFIG::SCREEN_CONFIG::SCR_WIDTH * CONFIG::SCREEN_CONFIG::SCR_HEIGHT]{ 'a','b','c' };
+	RGBColor* ColorBuffer_S = new RGBColor[CONFIG::SCREEN_CONFIG::SCR_WIDTH * CONFIG::SCREEN_CONFIG::SCR_HEIGHT]{ 'a','b','c' };
+	RGBColor* ColorBuffer_ST = new RGBColor[CONFIG::SCREEN_CONFIG::SCR_WIDTH * CONFIG::SCREEN_CONFIG::SCR_HEIGHT]{ 'a','b','c' };
+
+	std::string fileNameBase = "Output\\Scene(" + std::to_string(scene_id) + ")\\";
+	std::string fileName_N = fileNameBase + "GroudTruth\\" + std::to_string(frame) + ".bmp";
+	std::string fileName_T = fileNameBase + "ContrastMethod_T\\" + std::to_string(frame) + ".bmp";
+	std::string fileName_S = fileNameBase + "ContrastMethod_F\\" + std::to_string(frame) + ".bmp";
+	std::string fileName_ST = fileNameBase + "MyMethod\\" + std::to_string(frame) + ".bmp";
+
+	ReadBMP(fileName_N.c_str(), ColorBuffer_N);
+	ReadBMP(fileName_T.c_str(), ColorBuffer_T);
+	ReadBMP(fileName_S.c_str(), ColorBuffer_S);
+	ReadBMP(fileName_ST.c_str(), ColorBuffer_ST);
+
+	std::string ResultNameBase = "Output\\QualityResult\\Scene(" + std::to_string(scene_id) + ")\\";
+	std::string ResultName_N_T = ResultNameBase + "N_T\\" + std::to_string(frame) + ".bmp";
+	std::string ResultName_N_S = ResultNameBase + "N_S\\" + std::to_string(frame) + ".bmp";
+	std::string ResultName_N_ST = ResultNameBase + "N_ST\\" + std::to_string(frame) + ".bmp";
+
+	RGBColor* ColorBuffer_N_T = new RGBColor[CONFIG::SCREEN_CONFIG::SCR_WIDTH * CONFIG::SCREEN_CONFIG::SCR_HEIGHT];
+	RGBColor* ColorBuffer_N_S = new RGBColor[CONFIG::SCREEN_CONFIG::SCR_WIDTH * CONFIG::SCREEN_CONFIG::SCR_HEIGHT];
+	RGBColor* ColorBuffer_N_ST = new RGBColor[CONFIG::SCREEN_CONFIG::SCR_WIDTH * CONFIG::SCREEN_CONFIG::SCR_HEIGHT];
+
+	float e1 = 0.0f, e2 = 0.0f, e3 = 0.0f;
+	float e1_m = 0.0f, e2_m = 0.0f, e3_m = 0.0f;
+
+	ComputeQualityError(ColorBuffer_N_T, ColorBuffer_N, ColorBuffer_T, e1, e1_m);
+	ComputeQualityError(ColorBuffer_N_S, ColorBuffer_N, ColorBuffer_S, e2, e2_m);
+	ComputeQualityError(ColorBuffer_N_ST, ColorBuffer_N, ColorBuffer_ST, e3, e3_m);
+
+	WriteBMP(ResultName_N_S.c_str(), ColorBuffer_N_S, CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+	WriteBMP(ResultName_N_T.c_str(), ColorBuffer_N_T, CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+	WriteBMP(ResultName_N_ST.c_str(), ColorBuffer_N_ST, CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+
+	FILE* fp_N_T;
+	FILE* fp_N_S;
+	FILE* fp_N_ST;
+	std::string writeMode = "wb";
+	if (frame > 0)
+	{
+		writeMode = "ab";
+	}
+
+	fopen_s(&fp_N_T, (ResultNameBase + "N_T\\ErrorResult.txt").c_str(), writeMode.c_str());
+	if (fp_N_T == nullptr)
+	{
+		std::cout << "creat <" << ResultNameBase + "N_T\\ErrorResult.txt" << "> ErrorFile Failure!" << std::endl;
+		return;
+	}
+
+	fopen_s(&fp_N_S, (ResultNameBase + "N_S\\ErrorResult.txt").c_str(), writeMode.c_str());
+	if (fp_N_S == nullptr)
+	{
+		std::cout << "creat <" << ResultNameBase + "N_S\\ErrorResult.txt" << "> ErrorFile Failure!" << std::endl;
+		return;
+	}
+
+	fopen_s(&fp_N_ST, (ResultNameBase + "N_ST\\ErrorResult.txt").c_str(), writeMode.c_str());
+	if (fp_N_ST == nullptr)
+	{
+		std::cout << "creat <" << ResultNameBase + "N_ST\\ErrorResult.txt" << "> ErrorFile Failure!" << std::endl;
+		return;
+	}
+
+	std::cout << e1 << ' ' << e2 << ' ' << e3 << std::endl;
+
+	std::string Line_N_T = ""; Line_N_T = Line_N_T + "Frame(" + std::to_string(frame) + ") : Total Error(" + std::to_string(e1) + "), MaxPixelError(" + std::to_string(e1_m) + ") " + '\n';
+	std::string Line_N_S = ""; Line_N_S = Line_N_S + "Frame(" + std::to_string(frame) + ") : Total Error(" + std::to_string(e2) + "), MaxPixelError(" + std::to_string(e2_m) + ") " + '\n';
+	std::string Line_N_ST = ""; Line_N_ST = Line_N_ST + "Frame(" + std::to_string(frame) + ") : Total Error(" + std::to_string(e3) + "), MaxPixelError(" + std::to_string(e3_m) + ") " + '\n';
+	fwrite(Line_N_T.c_str(), Line_N_T.size(), 1, fp_N_T);
+	fwrite(Line_N_S.c_str(), Line_N_S.size(), 1, fp_N_S);
+	fwrite(Line_N_ST.c_str(), Line_N_ST.size(), 1, fp_N_ST);
+	
+	fclose(fp_N_T);
+	fclose(fp_N_S);
+	fclose(fp_N_ST);
+
+	delete[] ColorBuffer_N;
+	delete[] ColorBuffer_T;
+	delete[] ColorBuffer_S;
+	delete[] ColorBuffer_ST;
+	delete[] ColorBuffer_N_T;
+	delete[] ColorBuffer_N_S;
+	delete[] ColorBuffer_N_ST;
+}
+
+// 0 : L1
+// 1 : L2 
+#define ErrorShowType 0
+void BMPTool::ComputeQualityError(RGBColor* ColorBufferA, RGBColor* ColorBufferB, RGBColor* ColorBufferC, float& errorL2, float& errorL2_m)
+{
+	for (int i = 0; i < CONFIG::SCREEN_CONFIG::SCR_WIDTH * CONFIG::SCREEN_CONFIG::SCR_HEIGHT; i++)
+	{
+		int R1 = abs((int)(ColorBufferB[i].R) - (int)(ColorBufferC[i].R));
+		int G1 = abs((int)(ColorBufferB[i].G) - (int)(ColorBufferC[i].G));
+		int B1 = abs((int)(ColorBufferB[i].B) - (int)(ColorBufferC[i].B));
+		//std::cout << R1 << ' ' << G1 << ' ' << B1 << std::endl;
+		//std::cout << (int)(ColorBufferB[i].R) << ' ' << (int)(ColorBufferB[i].G) << ' ' << (int)(ColorBufferB[i].B) << std::endl;
+#if ErrorShowType == 1
+		R1 = R1 * R1; R1 = R1 > 255 ? 255 : R1;
+		G1 = G1 * G1; G1 = G1 > 255 ? 255 : G1;
+		B1 = B1 * B1; B1 = B1 > 255 ? 255 : B1;
+#endif
+		ColorBufferA[i].R = (char)R1;
+		ColorBufferA[i].G = (char)G1;
+		ColorBufferA[i].B = (char)B1;
+
+#if ErrorShowType == 0
+		float temp = ((float)R1 / 255.0f + (float)R1 / 255.0f + (float)R1 / 255.0f) / 3.0f;
+#elif ErrorShowType == 1
+		float temp = (pow((float)R1 / 255.0f, 2.0f) + pow((float)R1 / 255.0f, 2.0f) + pow((float)R1 / 255.0f, 2.0f)) / 3.0f;
+#endif
+		if (temp > 0.999)continue;
+		errorL2 += temp;
+		errorL2_m = errorL2_m > temp ? errorL2_m : temp;
+	}
 }
