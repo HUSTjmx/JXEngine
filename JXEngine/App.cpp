@@ -186,13 +186,13 @@ void Test()
 // 1 : Fog Ball
 // 2 : Standford Rabbits
 // 3 : Cloud Sea
-#define SCENE_ID 0
+#define SCENE_ID 1
 
 // 0 : Origin Method
 // 1 : Temporal Method
 // 2 : Foveated Method
 // 3 : Full Method
-#define METHOD_ID 3
+#define METHOD_ID 0
 
 // false : No Shadow
 // true : Shadow
@@ -211,6 +211,8 @@ void Test()
 
 // 用于测试输出
 #define TEST_NO_BLUR_AND_FOVEAL 0
+#define ONLY_RENDER_ONE_TURN 1
+#define COMPUTER_QUALITY_ERROR 1
 
 void Loop(GLFWwindow* window)
 {
@@ -236,8 +238,8 @@ void Loop(GLFWwindow* window)
 	
 
 	// ------------------------------- only RayMarching -------------------------------------------
-	auto noisyTex = std::make_shared<Texture>(0, ASSETS::TEXTURE::NOISY::Gray_Noise_Medium.c_str(), "noisyTexture", GL_REPEAT);
-	auto preTex = std::make_shared<Texture>("preTexture");
+	//auto noisyTex = std::make_shared<Texture>(0, ASSETS::TEXTURE::NOISY::Gray_Noise_Medium.c_str(), "noisyTexture", GL_REPEAT);
+	//auto preTex = std::make_shared<Texture>("preTexture");
 
 	auto frame = std::make_shared<FrameBuffer>(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
 	frame->AddTexture(GL_RGB, "screenTex", false);
@@ -854,17 +856,24 @@ void Loop(GLFWwindow* window)
 		INPUT::inputCamera->UpdatePreAttr();
 
 
-
+#if COMPUTER_QUALITY_ERROR == 0
 		// 保存结果
 		BMPTool::Instance().GetScreenShot(methodType_, sceneType, imgIndex++);
+#elif COMPUTER_QUALITY_ERROR == 1
+		BMPTool::Instance().GetQualityResult(sceneType, imgIndex++);
+#endif
 
-		if (imgIndex > maxImgSaveNum) imgIndex = 0;
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
+#if ONLY_RENDER_ONE_TURN == 0
+		if (imgIndex > maxImgSaveNum) imgIndex = 0;
+#elif ONLY_RENDER_ONE_TURN == 1 || COMPUTER_QUALITY_ERROR == 1
+		if (imgIndex > maxImgSaveNum) break;
+#endif
 	}
 
 	//cloud_p_01.~shared_ptr();

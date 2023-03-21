@@ -610,8 +610,12 @@ public:
 
 	void GetScreenShot(METHOD_TYPE type_, int scene_id, int frame);
 
+	void GetQualityResult(int scene_id, int frame);
+
 private:
 	BMPTool() {}
+
+	void ComputeQualityError(RGBColor* ColorBufferA, RGBColor* ColorBufferB, RGBColor* ColorBufferC, float& errorL2, float& errorL2_m);
 };
 
 

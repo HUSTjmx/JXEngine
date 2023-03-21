@@ -16,7 +16,7 @@ uniform int IsFirstFrame;
 
 
 //0, 1 or 2
-#define BASIC_ANIMATED_MEDIA 1
+#define BASIC_ANIMATED_MEDIA 0
 // 0, 1
 #define ROTATE_MEDIA 0
 
@@ -39,7 +39,7 @@ uniform int IsFirstFrame;
 // YuShi Sphere
 #define OBJ_YUSHI_SPHERE 4.0
 // 0 : (default) sphere ; 1 : Torus ; 2 : Octahedron
-#define OBJ_TYPE 3
+#define OBJ_TYPE 1
     const vec3 YuShiPos = vec3(0.0, 0.0, -1.5);
 #if OBJ_TYPE == 0
     const float YushiRadius = 2.0;
