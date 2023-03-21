@@ -117,16 +117,6 @@ public:
 	// ...
 	unsigned int ID;
 
-private:
-
-	// Check errors when compile.
-	// ...
-	void CheckCompileErrors(GLuint shader, std::string type)const;
-
-	// Is we have geometryShader?
-	// ...
-	bool hasGeometry;
-
 	// Vertex shader code.
 	// ...
 	std::string vertexShader;
@@ -138,6 +128,16 @@ private:
 	// Geometry shader code.
 	// ...
 	std::string geometryShader;
+
+private:
+
+	// Check errors when compile.
+	// ...
+	void CheckCompileErrors(GLuint shader, std::string type)const;
+
+	// Is we have geometryShader?
+	// ...
+	bool hasGeometry;
 };
 
 template<typename T>

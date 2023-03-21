@@ -38,7 +38,8 @@ ShaderCompiler::ShaderCompiler(const char* vertexPath, const char* fragmentPath,
 		// convert stream into string
 		vertexShader = vShaderStream.str();
 		fragmentShader = fShaderStream.str();
-		
+		//std::cout << vertexShader << std::endl;
+
 		// if geometry shader path is present, also load a geometry shader
 		if (geometryPath != nullptr)
 		{

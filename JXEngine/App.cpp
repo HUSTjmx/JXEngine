@@ -192,7 +192,7 @@ void Test()
 // 1 : Temporal Method
 // 2 : Foveated Method
 // 3 : Full Method
-#define METHOD_ID 0
+#define METHOD_ID 2
 
 // false : No Shadow
 // true : Shadow
@@ -211,8 +211,17 @@ void Test()
 
 // 用于测试输出
 #define TEST_NO_BLUR_AND_FOVEAL 0
-#define ONLY_RENDER_ONE_TURN 1
-#define COMPUTER_QUALITY_ERROR 1
+#define ONLY_RENDER_ONE_TURN 0
+
+// 是否计算质量结果
+#define COMPUTER_QUALITY_ERROR 0
+
+// 是否计算帧率
+#define COMPUTER_TIME 1
+#define SHOW_FPS 0
+
+// 是否开启Gauss Blur
+#define USE_GAUSS_BLUR 1
 
 void Loop(GLFWwindow* window)
 {
@@ -223,23 +232,6 @@ void Loop(GLFWwindow* window)
 #endif // MSAA
 
 	//glEnable(GL_CULL_FACE);
-
-	// --------------------------------前向渲染 + RayMarching-------------------------------------
-	/*auto p0 = OPENGL_SCENE::TestPass::Intance().GetPass_BackFaceDepth_09_01();
-
-	auto p0_1 = OPENGL_SCENE::TestPass::Intance().GetPass_FrontFaceDepth_09_02();
-
-	auto p1 = OPENGL_SCENE::TestPass::Intance().GetPass_ShadowMap_09();
-
-	auto p2 = OPENGL_SCENE::TestPass::Intance().GetPass_Cloud_11_01(p1, p0);
-
-	auto p3 = OPENGL_SCENE::TestPass::Intance().GetPass_RayMarchingRendering(p2, p0, p0_1);*/
-	// -------------------------------------------------------------------------------------------
-	
-
-	// ------------------------------- only RayMarching -------------------------------------------
-	//auto noisyTex = std::make_shared<Texture>(0, ASSETS::TEXTURE::NOISY::Gray_Noise_Medium.c_str(), "noisyTexture", GL_REPEAT);
-	//auto preTex = std::make_shared<Texture>("preTexture");
 
 	auto frame = std::make_shared<FrameBuffer>(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
 	frame->AddTexture(GL_RGB, "screenTex", false);
@@ -694,7 +686,7 @@ void Loop(GLFWwindow* window)
 
 
 #pragma region Blur
-#if (METHOD_ID == 2 || METHOD_ID == 3) && TEST_NO_BLUR_AND_FOVEAL == 0
+#if (METHOD_ID == 2 || METHOD_ID == 3) && TEST_NO_BLUR_AND_FOVEAL == 0 && USE_GAUSS_BLUR == 1
 	// ------------------------------- Foveated Blur ----------------------------------------------
 	auto foveated_blur_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::POST_RENDER::BLUR::FoveatedBlur_vs.c_str(), SHADER_PATH::POST_RENDER::BLUR::FoveatedBlur_fs.c_str());
 	foveated_blur_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::POST_PROCESSING);
@@ -764,8 +756,17 @@ void Loop(GLFWwindow* window)
 #else
 	methodType_ = METHOD_TYPE::MyMethod;
 #endif
+
 	int maxImgSaveNum = 30;
 	int imgIndex = 0;
+	int frameIndex = 0;
+	int maxFrameIndex = 500;
+
+#if COMPUTER_TIME == 1
+	Timer& timer = Timer::Instance();
+	timer.Timing();
+	std::string timeInfo_all = "";
+#endif
 
 	// 测试
 	//Test();
@@ -774,23 +775,32 @@ void Loop(GLFWwindow* window)
 	// -----------
 	while (!glfwWindowShouldClose(window))
 	{
-		COUNTER(0);
-		Clock.Timing();
 
 		// input
 		// -----
 		INPUT::processInput(window);
+
+#if COMPUTER_TIME == 1
+		float t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0, t5 = 0.0, t6 = 0.0;
+		std::string timeInfo = "Frame(" + std::to_string(frameIndex) + ") : ---CPU Solve Data Start---";
+#endif
 
 		// 计算历史算法的因子
 #if METHOD_ID == 1 || METHOD_ID == 3
 		Algorithm::TFRM::ComputeTFRM(F_dis, F_ang, INPUT::inputCamera);
 #endif
 
+#if COMPUTER_TIME == 1
+		t1 = timer.Timing();
+		timeInfo = timeInfo + std::to_string(t1) + "(ms)" + "---Render Media Obj Start---";
+#endif
+
+
 		// render
 		// ------
 		//std::cout << Counter<0>::times<< std::endl;
 		mainScenePass->BindOutput();
-		mainScenePass->GetMat()->GetShader()->SetInt("FrameIndex", Counter<0>::times);
+		mainScenePass->GetMat()->GetShader()->SetInt("FrameIndex", frameIndex);
 #if METHOD_ID == 1 || METHOD_ID == 3
 		mainScenePass->GetMat()->GetShader()->SetFloat(Algorithm::TFRM::UNIFORM_NAME::FACTOR_DIS, F_dis);
 		mainScenePass->GetMat()->GetShader()->SetFloat(Algorithm::TFRM::UNIFORM_NAME::FACTOR_ANG, F_ang);
@@ -798,17 +808,33 @@ void Loop(GLFWwindow* window)
 		glClear(GL_DEPTH_BUFFER_BIT);
 		mainScenePass->Draw();
 
+#if COMPUTER_TIME == 1
+		t2 = timer.Timing();
+		timeInfo = timeInfo + std::to_string(t2) + "(ms)";
+#endif
+
 		//cloud_p_01->GetOutput()->CopyColorAttachmentToTex(preTex->Self(), 1);
 
 #if (METHOD_ID == 2 || METHOD_ID == 3) && TEST_NO_BLUR_AND_FOVEAL == 0
 		Foveated_pass_1->BindOutput();
 		glClear(GL_DEPTH_BUFFER_BIT);
 		Foveated_pass_1->Draw();
+
+#if COMPUTER_TIME == 1
+		t3 = timer.Timing();
+		timeInfo = timeInfo + "---Foveated Pass 1 Start---" + std::to_string(t3) + "(ms)";
+#endif
 		
 		Foveated_pass_2->BindOutput();
 		glClear(GL_DEPTH_BUFFER_BIT);
 		Foveated_pass_2->Draw();
 
+#if COMPUTER_TIME == 1
+		t4 = timer.Timing();
+		timeInfo = timeInfo+ "---Foveated Pass 2 Start---" + std::to_string(t4) + "(ms)";
+#endif
+
+#if USE_GAUSS_BLUR == 1
 		foveated_blur_pass_X->BindOutput();
 		foveated_blur_pass_X->GetMat()->GetShader()->SetInt("blurDir", 1);
 		glClear(GL_DEPTH_BUFFER_BIT);
@@ -836,6 +862,14 @@ void Loop(GLFWwindow* window)
 		foveated_blur_pass_Y->GetMat()->GetShader()->SetInt("blurDir", 0);
 		glClear(GL_DEPTH_BUFFER_BIT);
 		foveated_blur_pass_Y->Draw();
+
+#if COMPUTER_TIME == 1
+		t5 = timer.Timing();
+		timeInfo = timeInfo + "---Blur Pass Start---" + std::to_string(t5) + "(ms)";
+#endif
+
+#endif
+
 #endif
 
 #if METHOD_ID == 0 || METHOD_ID == 1 || TEST_NO_BLUR_AND_FOVEAL == 1
@@ -843,6 +877,14 @@ void Loop(GLFWwindow* window)
 		glClear(GL_DEPTH_BUFFER_BIT);
 		origin_show_pass->Draw();
 #endif 
+
+#if COMPUTER_TIME == 1
+		float t_all = t1 + t2 + t3 + t4 + t5 + t6;
+		t_all = t_all < 0.001 ? 0.001 : t_all;
+		timeInfo = timeInfo + "---End--- Total Cost Frame Time : " + std::to_string(t_all) + "(ms) / " + std::to_string(1.0 / t_all) + "(FPS) \n";
+		timeInfo_all += timeInfo;
+		//std::cout << timeInfo << std::endl;
+#endif
 
 		//OPENGL_SCENE::TestPass::Intance().DrawFoveated_Comp_09(p0, p0_1, p1, p2, p3);
 		//OPENGL_SCENE::TestPass::Intance().DrawFoveated_07(p0, p1, p2);
@@ -856,13 +898,21 @@ void Loop(GLFWwindow* window)
 		INPUT::inputCamera->UpdatePreAttr();
 
 
-#if COMPUTER_QUALITY_ERROR == 0
+#if COMPUTER_QUALITY_ERROR == 1 && COMPUTER_TIME == 0
 		// 保存结果
 		BMPTool::Instance().GetScreenShot(methodType_, sceneType, imgIndex++);
-#elif COMPUTER_QUALITY_ERROR == 1
+#elif COMPUTER_QUALITY_ERROR == 2 && COMPUTER_TIME == 0
 		BMPTool::Instance().GetQualityResult(sceneType, imgIndex++);
 #endif
 
+		frameIndex++;
+		if (frameIndex > maxFrameIndex)
+		{
+			frameIndex = 0;
+#if COMPUTER_TIME == 1
+			timeInfo_all = "";
+#endif
+		}
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
@@ -874,8 +924,17 @@ void Loop(GLFWwindow* window)
 #elif ONLY_RENDER_ONE_TURN == 1 || COMPUTER_QUALITY_ERROR == 1
 		if (imgIndex > maxImgSaveNum) break;
 #endif
+
 	}
 
+#if COMPUTER_TIME == 1
+	BMPTool::Instance().GetTimeResult(methodType_, sceneType, timeInfo_all);
+#endif
+
+	mainScenePass->GetMat()->GetShader()->vertexShader = "";
+	mainScenePass->GetMat()->GetShader()->fragmentShader = "";
+	frame->Delete();
+	exit(0);
 	//cloud_p_01.~shared_ptr();
 	//Foveated_pass_1.~shared_ptr();
 	//Foveated_pass_2.~shared_ptr();

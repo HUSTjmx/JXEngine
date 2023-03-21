@@ -612,6 +612,7 @@ public:
 
 	void GetQualityResult(int scene_id, int frame);
 
+	void GetTimeResult(METHOD_TYPE type_, int scene_id, const std::string& content);
 private:
 	BMPTool() {}
 

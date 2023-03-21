@@ -1,6 +1,6 @@
 ﻿  Tools.cpp
 D:\Projects\JXEngine\JXEngine\Tools.cpp(1,1): warning C4103: 包括标题后更改了对齐方式，可能是由于缺少 #pragma pack(pop)
 D:\Projects\JXEngine\JXEngine\Tools.cpp(224,21): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
-D:\Projects\JXEngine\JXEngine\Tools.cpp(450,20): warning C4018: “<”: 有符号/无符号不匹配
+D:\Projects\JXEngine\JXEngine\Tools.cpp(476,20): warning C4018: “<”: 有符号/无符号不匹配
 D:\Projects\JXEngine\JXEngine\Tools.cpp(240): warning C4715: “BufferTool::GetFormatByInternalFormat”: 不是所有的控件路径都返回值
   JXEngine.vcxproj -> D:\Projects\JXEngine\Debug\JXEngine.exe

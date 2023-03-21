@@ -846,14 +846,15 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
             scatteredLight = vec3(0.0);
         }*/
         stepsNum *= TEMPORAL_ACCELERATION_MUL;
+        stepsNum = t >= tmm.y ? 0 : stepsNum;
       
         for( int i = 0; i < stepsNum; ++i )
         {
-             if(t > tmm.y)
+           /*  if(t > tmm.y)
             { 
                 //pre_pos.w = 1.0;
                 break;
-            }           
+            }     */      
     
             vec3 p = ro + t * rd;
             getParticipatingMedia(sigmaS, sigmaE, p);

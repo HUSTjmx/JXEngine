@@ -442,6 +442,32 @@ void BMPTool::GetQualityResult(int scene_id, int frame)
 	delete[] ColorBuffer_N_ST;
 }
 
+void BMPTool::GetTimeResult(METHOD_TYPE type_, int scene_id, const std::string& content)
+{
+	std::string fileName = "Output\\TimeResult\\Scene(" + std::to_string(scene_id) + ")\\";
+
+	if (type_ == METHOD_TYPE::GroudTruth)
+		fileName += "GroudTruth.txt";
+	if (type_ == METHOD_TYPE::MyMethod)
+		fileName += "MyMethod.txt";
+	if (type_ == METHOD_TYPE::ContrastMethod_T)
+		fileName += "ContrastMethod_T.txt";
+	if (type_ == METHOD_TYPE::ContrastMethod_F)
+		fileName += "ContrastMethod_F.txt";
+
+	FILE* fp;
+
+	fopen_s(&fp, fileName.c_str(), "wb");
+	if (fp == nullptr)
+	{
+		std::cout << "creat <" << fileName<< "> TimeFile Failure!" << std::endl;
+		return;
+	}
+
+	fwrite(content.c_str(), content.size(), 1, fp);
+	fclose(fp);
+}
+
 // 0 : L1
 // 1 : L2 
 #define ErrorShowType 0

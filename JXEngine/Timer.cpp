@@ -31,7 +31,6 @@ float Timer::GetCurrentTime() const
 
 float Timer::FPS(bool isRealTimeShow)
 {
-	this->Timing();
 	float fps = 1.0 / deltaTime;
 	if(isRealTimeShow)
 		std::cout << "The fps is : " << (int)fps << std::endl;
