@@ -524,13 +524,15 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
         t = max(pre_t, t);
 
         stepsNum *= TEMPORAL_ACCELERATION_MUL;
+        stepsNum = t >= tmm.y ? 0 : stepsNum;
 
         for( int i = 0; i < stepsNum; ++i )
         {
+            /*
             if(t > tmm.y)
             { 
                 break;
-            }
+            }*/
 
             vec3 p = ro + t * rd;
             float density = getDensity(p - YuShiPos);

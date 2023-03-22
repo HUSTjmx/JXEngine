@@ -2,7 +2,7 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>D:\Projects\JXEngine\Debug\JXEngine.exe</FullPath>
+      <FullPath>D:\Projects\JXEngine\JXEngine\JXEngine.exe</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
   <ContentFiles />

@@ -187,12 +187,13 @@ void Test()
 // 2 : Standford Rabbits
 // 3 : Cloud Sea
 #define SCENE_ID 1
+#define OBJ_ID 2
 
 // 0 : Origin Method
 // 1 : Temporal Method
 // 2 : Foveated Method
 // 3 : Full Method
-#define METHOD_ID 2
+#define METHOD_ID 3
 
 // false : No Shadow
 // true : Shadow
@@ -217,7 +218,8 @@ void Test()
 #define COMPUTER_QUALITY_ERROR 0
 
 // 是否计算帧率
-#define COMPUTER_TIME 1
+// 不要使用此宏定义，因为用这种方法计算Pass的消耗时间是错的，我们应该去使用RenderDoc抓帧来获取数据
+#define COMPUTER_TIME 0
 #define SHOW_FPS 0
 
 // 是否开启Gauss Blur
@@ -377,6 +379,7 @@ void Loop(GLFWwindow* window)
 	FB_01_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
 	FB_01_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
 	FB_01_sh->AddMacroDefine("IS_SHOW_SHADOW", SHADOW_ID);
+	FB_01_sh->AddMacroDefine("OBJ_TYPE", OBJ_ID);
 	FB_01_sh->Compile();
 	auto PaperScene_02_FogBall_01 = std::make_shared<Material>(FB_01_sh);
 	PaperScene_02_FogBall_01->SetJitter(false);
@@ -400,6 +403,7 @@ void Loop(GLFWwindow* window)
 	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
 	FB_02_sh->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
 	FB_02_sh->AddMacroDefine("IS_SHOW_SHADOW", SHADOW_ID);
+	FB_02_sh->AddMacroDefine("OBJ_TYPE", OBJ_ID);
 	FB_02_sh->Compile();
 	auto PaperScene_02_FogBall_T = std::make_shared<Material>(FB_02_sh);
 	PaperScene_02_FogBall_T->AddTexture(frame->textureBuffers[1]);
@@ -429,6 +433,7 @@ void Loop(GLFWwindow* window)
 	FB_02_sh->AddMacroDefine("IS_SHOW_SHADOW", SHADOW_ID);
 	FB_02_sh->AddMacroDefine("PHASE_FUNCTION_MEDIA", PHASE_ID);
 	FB_02_sh->AddMacroDefine("PHASE_FUNCTION_BLEND_OP", std::to_string(PHASE_OP));
+	FB_02_sh->AddMacroDefine("OBJ_TYPE", OBJ_ID);
 	FB_02_sh->Compile();
 	auto PaperScene_02_FogBall_S = std::make_shared<Material>(FB_02_sh);
 	PaperScene_02_FogBall_S->SetJitter(false);
@@ -454,6 +459,7 @@ void Loop(GLFWwindow* window)
 	FB_02_sh->AddMacroDefine("IS_SHOW_SHADOW", SHADOW_ID);
 	FB_02_sh->AddMacroDefine("PHASE_FUNCTION_MEDIA", PHASE_ID);
 	FB_02_sh->AddMacroDefine("PHASE_FUNCTION_BLEND_OP", std::to_string(PHASE_OP));
+	FB_02_sh->AddMacroDefine("OBJ_TYPE", OBJ_ID);
 	FB_02_sh->Compile();
 	auto PaperScene_02_FogBall_T = std::make_shared<Material>(FB_02_sh);
 	PaperScene_02_FogBall_T->AddTexture(frame->textureBuffers[1]);
@@ -761,9 +767,9 @@ void Loop(GLFWwindow* window)
 	int imgIndex = 0;
 	int frameIndex = 0;
 	int maxFrameIndex = 500;
+	Timer& timer = Timer::Instance();
 
 #if COMPUTER_TIME == 1
-	Timer& timer = Timer::Instance();
 	timer.Timing();
 	std::string timeInfo_all = "";
 #endif
@@ -778,12 +784,15 @@ void Loop(GLFWwindow* window)
 
 		// input
 		// -----
+		timer.Timing();
 		INPUT::processInput(window);
 
 #if COMPUTER_TIME == 1
 		float t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0, t5 = 0.0, t6 = 0.0;
 		std::string timeInfo = "Frame(" + std::to_string(frameIndex) + ") : ---CPU Solve Data Start---";
+		timer.Timing();
 #endif
+
 
 		// 计算历史算法的因子
 #if METHOD_ID == 1 || METHOD_ID == 3
@@ -798,7 +807,6 @@ void Loop(GLFWwindow* window)
 
 		// render
 		// ------
-		//std::cout << Counter<0>::times<< std::endl;
 		mainScenePass->BindOutput();
 		mainScenePass->GetMat()->GetShader()->SetInt("FrameIndex", frameIndex);
 #if METHOD_ID == 1 || METHOD_ID == 3
@@ -807,13 +815,12 @@ void Loop(GLFWwindow* window)
 #endif
 		glClear(GL_DEPTH_BUFFER_BIT);
 		mainScenePass->Draw();
+		glFlush();
 
 #if COMPUTER_TIME == 1
 		t2 = timer.Timing();
 		timeInfo = timeInfo + std::to_string(t2) + "(ms)";
 #endif
-
-		//cloud_p_01->GetOutput()->CopyColorAttachmentToTex(preTex->Self(), 1);
 
 #if (METHOD_ID == 2 || METHOD_ID == 3) && TEST_NO_BLUR_AND_FOVEAL == 0
 		Foveated_pass_1->BindOutput();
@@ -883,15 +890,8 @@ void Loop(GLFWwindow* window)
 		t_all = t_all < 0.001 ? 0.001 : t_all;
 		timeInfo = timeInfo + "---End--- Total Cost Frame Time : " + std::to_string(t_all) + "(ms) / " + std::to_string(1.0 / t_all) + "(FPS) \n";
 		timeInfo_all += timeInfo;
-		//std::cout << timeInfo << std::endl;
+		std::cout << timeInfo << std::endl;
 #endif
-
-		//OPENGL_SCENE::TestPass::Intance().DrawFoveated_Comp_09(p0, p0_1, p1, p2, p3);
-		//OPENGL_SCENE::TestPass::Intance().DrawFoveated_07(p0, p1, p2);
-		//OPENGL_SCENE::TestPass::Intance().DrawBaseShadow_06(p1, p2);
-		//OPENGL_SCENE::TestPass::Intance().Draw_FrameTest_04(p1, p2);
-		//OPENGL_SCENE::TestPass::Intance().DrawShadowTest_05(p0, p_debug);
-
 
 		// 更新相机的历史数据
 		INPUT::inputCamera->UpdatePreMat();
