@@ -186,8 +186,8 @@ void Test()
 // 1 : Fog Ball
 // 2 : Standford Rabbits
 // 3 : Cloud Sea
-#define SCENE_ID 2
-#define OBJ_ID 1
+#define SCENE_ID 1
+#define OBJ_ID 3
 #define OBJ_IS_WAI 0
 
 // 0 : Origin Method
@@ -216,7 +216,7 @@ void Test()
 #define ONLY_RENDER_ONE_TURN 0
 
 // 是否计算质量结果
-#define COMPUTER_QUALITY_ERROR 0
+#define COMPUTER_QUALITY_ERROR 1
 
 // 是否计算帧率
 // 不要使用此宏定义，因为用这种方法计算Pass的消耗时间是错的，我们应该去使用RenderDoc抓帧来获取数据
@@ -779,7 +779,7 @@ void Loop(GLFWwindow* window)
 #endif
 
 #if OBJ_IS_WAI == 1
-	INPUT::inputCamera->ProcessMouseMovement(200.1,160.0);
+	INPUT::inputCamera->ProcessMouseMovement(180.1,150.0);
 #endif
 
 	// 测试
