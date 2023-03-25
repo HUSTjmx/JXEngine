@@ -95,7 +95,7 @@ vec4 render( in vec3 ro, in vec3 rd, float time, inout vec4 pre_pos, inout vec4 
     t = max(pre_t, t);
 
     stepsNum *= TEMPORAL_ACCELERATION_MUL;
-    stepsNum = t >= tmm.y ? 0 : stepsNum;
+    //stepsNum = t >= tmm.y ? 0 : stepsNum;
 
 	for(int i=0; i<stepsNum; i++)
 	{

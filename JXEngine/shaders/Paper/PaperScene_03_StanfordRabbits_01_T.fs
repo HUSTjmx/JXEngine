@@ -34,7 +34,9 @@ uniform float TEMPORAL_ACCELERATION_MUL;
 #define ABSORPTION  (0.1 * vec3(0.75, 0.5, 0.0))
 
 //0, 1 or 2
-#define BASIC_ANIMATED_MEDIA 0
+#define BASIC_ANIMATED_MEDIA 1
+#define BREAK_POINT_TEST 1
+#define BREAK_POINT_VALUE 2.0
 // 0, 1
 #define ROTATE_MEDIA 0
 
@@ -380,11 +382,17 @@ void getParticipatingMedia(out vec3 sigmaS, out vec3 sigmaE, in vec3 pos)
     sigmaE = max_f_v3(0.0000001, ABSORPTION + SCATTERING);
 #if BASIC_ANIMATED_MEDIA==1
     float r = floor(iTime);
+#if BREAK_POINT_TEST == 1
+    r = BREAK_POINT_VALUE;
+#endif
     sigmaS = abs(5.0* float3(rand(float3(r,0.0,1.0)),rand(float3(r,0.0,5.0)),rand(float3(r,0.0,9.0))));
     float3 absorption = abs(2.0* float3(rand(float3(r,1.0,2.0)),rand(float3(r,1.0,7.0)),rand(float3(r,1.0,7.0))));
     sigmaE = sigmaS + absorption;
 #elif BASIC_ANIMATED_MEDIA==2
     float r = iTime*0.2;
+#if BREAK_POINT_TEST == 1
+    r = BREAK_POINT_VALUE;
+#endif
     sigmaS = abs(5.0* float3(sin(r*1.1),sin(r*3.3),sin(r*5.5)));
     float3 absorption = abs( 2.0* float3(sin(r*2.2),sin(r*4.4),sin(r*6.6)));
     sigmaE = sigmaS + absorption;
@@ -451,8 +459,8 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
         vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius));
         float t = tmm.x;
         float stepsNum = MAX_STEP_NUM;
-        //float dt = .3;     //float dt = .2 - .195*cos(iTime*.05);//animated
-        float dt = (tmm.y - tmm.x) / stepsNum;   
+        float dt = .1;     //float dt = .2 - .195*cos(iTime*.05);//animated
+        //float dt = (tmm.y - tmm.x) / stepsNum;   
         vec3 transmittance = pre_transmittance.xyz;
         vec3 scatteredLight = pre_scat.xyz;
         vec3 sigmaS = vec3(0.0);
@@ -466,8 +474,8 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
 
         for( int i = 0; i < stepsNum; ++i )
         {
-            /*
-            if(t > tmm.y)
+            
+            /*if(t > tmm.y)
             { 
                 break;
             }*/
@@ -543,7 +551,6 @@ void main()
     vec3 M_dir = normalize(M_pos - LastViewPosWS);
 
     // Solve History Data
-#if BASIC_ANIMATED_MEDIA == 0
     bool isFirstFrame = FrameIndex == 0;
     pos_tex = mix(texture(FinalPos_In, M_uv), vec4(orig, 0.0), isFirstFrame);
     scat_tex = mix(texture(ScatterLight_In, M_uv), vec4(0.0, 0.0, 0.0, 1.0), isFirstFrame);
@@ -564,7 +571,6 @@ void main()
     pos_tex = mix(pos_tex, vec4(orig, 0.0), isRefresh);
     scat_tex = mix(scat_tex, vec4(0.0, 0.0, 0.0, 1.0), isRefresh);
     trans_tex = mix(trans_tex, vec4(1.0, 1.0, 1.0, 1.0), isRefresh);
-#endif
     // Compute ScatterLight
     vec3 baseColor = GetColor(res.y, orig, dir, pos_tex, scat_tex, trans_tex);
     vec3 baseColor2 = GetColor2(res2.y, orig, dir);

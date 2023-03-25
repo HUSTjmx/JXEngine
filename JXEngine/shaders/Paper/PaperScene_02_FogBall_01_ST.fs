@@ -35,7 +35,9 @@ uniform float TEMPORAL_ACCELERATION_MUL;
 #define SCATTERING  (0.7 * vec3(0.95, 0.5, 0.0))
 #define ABSORPTION  (0.0 * vec3(0.75, 0.5, 0.0))
 //0, 1 or 2
-#define BASIC_ANIMATED_MEDIA 0
+#define BASIC_ANIMATED_MEDIA 1
+#define BREAK_POINT_TEST 1
+#define BREAK_POINT_VALUE 0.0
 // 0, 1
 #define ROTATE_MEDIA 0
 
@@ -781,11 +783,17 @@ void getParticipatingMedia(out vec3 sigmaS, out vec3 sigmaE, in vec3 pos)
 
 #if BASIC_ANIMATED_MEDIA==1
     float r = floor(iTime);
+#if BREAK_POINT_TEST == 1
+    r = BREAK_POINT_VALUE;
+#endif
     sigmaS = sphereFog * abs(5.0* vec3(rand(vec3(r,0.0,1.0)),rand(vec3(r,0.0,5.0)),rand(vec3(r,0.0,9.0))));
     vec3 absorption = abs(0.0* vec3(rand(vec3(r,1.0,2.0)),rand(vec3(r,1.0,7.0)),rand(vec3(r,1.0,7.0))));
     sigmaE = sigmaS + absorption;
 #elif BASIC_ANIMATED_MEDIA==2
     float r = iTime*0.2;
+#if BREAK_POINT_TEST == 1
+    r = BREAK_POINT_VALUE;
+#endif
     sigmaS = sphereFog * abs(5.0* vec3(sin(r*1.1),sin(r*3.3),sin(r*5.5)));
     vec3 absorption = abs( 0.1* vec3(sin(r*2.2),sin(r*4.4),sin(r*6.6)));
     sigmaE = sigmaS + absorption;

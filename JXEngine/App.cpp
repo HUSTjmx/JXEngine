@@ -186,14 +186,15 @@ void Test()
 // 1 : Fog Ball
 // 2 : Standford Rabbits
 // 3 : Cloud Sea
-#define SCENE_ID 1
-#define OBJ_ID 2
+#define SCENE_ID 2
+#define OBJ_ID 1
+#define OBJ_IS_WAI 0
 
 // 0 : Origin Method
 // 1 : Temporal Method
 // 2 : Foveated Method
 // 3 : Full Method
-#define METHOD_ID 3
+#define METHOD_ID 0
 
 // false : No Shadow
 // true : Shadow
@@ -224,6 +225,9 @@ void Test()
 
 // 是否开启Gauss Blur
 #define USE_GAUSS_BLUR 1
+
+// 用于实验，代码控制相机移动
+#define NeedMachineMove 0
 
 void Loop(GLFWwindow* window)
 {
@@ -766,12 +770,16 @@ void Loop(GLFWwindow* window)
 	int maxImgSaveNum = 30;
 	int imgIndex = 0;
 	int frameIndex = 0;
-	int maxFrameIndex = 500;
+	int maxFrameIndex = 2000;
 	Timer& timer = Timer::Instance();
 
 #if COMPUTER_TIME == 1
 	timer.Timing();
 	std::string timeInfo_all = "";
+#endif
+
+#if OBJ_IS_WAI == 1
+	INPUT::inputCamera->ProcessMouseMovement(200.1,160.0);
 #endif
 
 	// 测试
@@ -784,14 +792,25 @@ void Loop(GLFWwindow* window)
 
 		// input
 		// -----
-		timer.Timing();
-		INPUT::processInput(window);
+		float deltaTime = timer.Timing();
 
-#if COMPUTER_TIME == 1
+#if NeedMachineMove == 0
+		INPUT::processInput(window);
+#endif
+
+#if NeedMachineMove == 1
+		INPUT::inputCamera->ProcessKeyboard(Camera_Movement::RIGHT, Clock.DeltaTime()/ 30.0);
+#endif
+
+#if NeedMachineMove == 2
+		INPUT::inputCamera->ProcessMouseMovement(10.1, 0.0);
+#endif
+
+//#if COMPUTER_TIME == 1
 		float t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0, t5 = 0.0, t6 = 0.0;
 		std::string timeInfo = "Frame(" + std::to_string(frameIndex) + ") : ---CPU Solve Data Start---";
 		timer.Timing();
-#endif
+//#endif
 
 
 		// 计算历史算法的因子
@@ -799,10 +818,11 @@ void Loop(GLFWwindow* window)
 		Algorithm::TFRM::ComputeTFRM(F_dis, F_ang, INPUT::inputCamera);
 #endif
 
-#if COMPUTER_TIME == 1
+//#if COMPUTER_TIME == 1
 		t1 = timer.Timing();
 		timeInfo = timeInfo + std::to_string(t1) + "(ms)" + "---Render Media Obj Start---";
-#endif
+		std::cout << timeInfo.c_str() << std::endl;
+//#endif
 
 
 		// render
@@ -815,7 +835,7 @@ void Loop(GLFWwindow* window)
 #endif
 		glClear(GL_DEPTH_BUFFER_BIT);
 		mainScenePass->Draw();
-		glFlush();
+		//glFlush();
 
 #if COMPUTER_TIME == 1
 		t2 = timer.Timing();
@@ -921,7 +941,8 @@ void Loop(GLFWwindow* window)
 
 #if ONLY_RENDER_ONE_TURN == 0
 		if (imgIndex > maxImgSaveNum) imgIndex = 0;
-#elif ONLY_RENDER_ONE_TURN == 1 || COMPUTER_QUALITY_ERROR == 1
+#endif
+#if ONLY_RENDER_ONE_TURN == 1
 		if (imgIndex > maxImgSaveNum) break;
 #endif
 

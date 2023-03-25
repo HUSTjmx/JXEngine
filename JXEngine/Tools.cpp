@@ -381,6 +381,7 @@ void BMPTool::GetQualityResult(int scene_id, int frame)
 
 	float e1 = 0.0f, e2 = 0.0f, e3 = 0.0f;
 	float e1_m = 0.0f, e2_m = 0.0f, e3_m = 0.0f;
+	float e1_v = 0.0f, e2_v = 0.0f, e3_v = 0.0f;
 
 	ComputeQualityError(ColorBuffer_N_T, ColorBuffer_N, ColorBuffer_T, e1, e1_m);
 	ComputeQualityError(ColorBuffer_N_S, ColorBuffer_N, ColorBuffer_S, e2, e2_m);
@@ -420,11 +421,18 @@ void BMPTool::GetQualityResult(int scene_id, int frame)
 		return;
 	}
 
-	std::cout << e1 << ' ' << e2 << ' ' << e3 << std::endl;
+	//std::cout << e1 << ' ' << e2 << ' ' << e3 << std::endl;
+	e1 = e1 / (CONFIG::SCREEN_CONFIG::SCR_WIDTH * CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+	e2 = e2 / (CONFIG::SCREEN_CONFIG::SCR_WIDTH * CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
+	e3 = e3 / (CONFIG::SCREEN_CONFIG::SCR_WIDTH * CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
 
-	std::string Line_N_T = ""; Line_N_T = Line_N_T + "Frame(" + std::to_string(frame) + ") : Total Error(" + std::to_string(e1) + "), MaxPixelError(" + std::to_string(e1_m) + ") " + '\n';
-	std::string Line_N_S = ""; Line_N_S = Line_N_S + "Frame(" + std::to_string(frame) + ") : Total Error(" + std::to_string(e2) + "), MaxPixelError(" + std::to_string(e2_m) + ") " + '\n';
-	std::string Line_N_ST = ""; Line_N_ST = Line_N_ST + "Frame(" + std::to_string(frame) + ") : Total Error(" + std::to_string(e3) + "), MaxPixelError(" + std::to_string(e3_m) + ") " + '\n';
+	ComputeVariance(ColorBuffer_N_T, e1, e1_v);
+	ComputeVariance(ColorBuffer_N_S, e2, e2_v);
+	ComputeVariance(ColorBuffer_N_ST, e3, e3_v);
+
+	std::string Line_N_T = ""; Line_N_T = Line_N_T + "Frame(" + std::to_string(frame) + ") : Total Error(" + std::to_string(e1) + "), MaxPixelError(" + std::to_string(e1_m) + "), PixelVariance(" + std::to_string(e1_v) + ") " + '\n';
+	std::string Line_N_S = ""; Line_N_S = Line_N_S + "Frame(" + std::to_string(frame) + ") : Total Error(" + std::to_string(e2) + "), MaxPixelError(" + std::to_string(e2_m) + "), PixelVariance(" + std::to_string(e2_v) + ") " + '\n';
+	std::string Line_N_ST = ""; Line_N_ST = Line_N_ST + "Frame(" + std::to_string(frame) + ") : Total Error(" + std::to_string(e3) + "), MaxPixelError(" + std::to_string(e3_m) + "), PixelVariance(" + std::to_string(e3_v) + ") " + '\n';
 	fwrite(Line_N_T.c_str(), Line_N_T.size(), 1, fp_N_T);
 	fwrite(Line_N_S.c_str(), Line_N_S.size(), 1, fp_N_S);
 	fwrite(Line_N_ST.c_str(), Line_N_ST.size(), 1, fp_N_ST);
@@ -498,4 +506,18 @@ void BMPTool::ComputeQualityError(RGBColor* ColorBufferA, RGBColor* ColorBufferB
 		errorL2 += temp;
 		errorL2_m = errorL2_m > temp ? errorL2_m : temp;
 	}
+}
+
+void BMPTool::ComputeVariance(RGBColor* ColorBufferA, float ave, float& var)
+{
+	for (int i = 0; i < CONFIG::SCREEN_CONFIG::SCR_WIDTH * CONFIG::SCREEN_CONFIG::SCR_HEIGHT; i++)
+	{
+		int R1 = (int)(ColorBufferA[i].R);
+		int G1 = (int)(ColorBufferA[i].G);
+		int B1 = (int)(ColorBufferA[i].B);
+
+		float temp = ((float)R1 / 255.0f + (float)R1 / 255.0f + (float)R1 / 255.0f) / 3.0f;
+		var += pow(temp - ave, 2);
+	}
+	var /= CONFIG::SCREEN_CONFIG::SCR_WIDTH * CONFIG::SCREEN_CONFIG::SCR_HEIGHT;
 }

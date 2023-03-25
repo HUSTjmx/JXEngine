@@ -6,8 +6,6 @@ D:\Projects\JXEngine\JXEngine\Actor.h(16): message : 参见“Transform”的声
 D:\Projects\JXEngine\JXEngine\TFRM_Algorithm.h(5,20): warning C4091: “extern ”: 没有声明变量时忽略“Camera”的左侧
 D:\Projects\JXEngine\JXEngine\App.cpp(124,20): warning C4018: “<”: 有符号/无符号不匹配
 D:\Projects\JXEngine\JXEngine\App.cpp(156,19): warning C4305: “=”: 从“double”到“float”截断
-D:\Projects\JXEngine\JXEngine\App.cpp(739,116): warning C4244: “参数”: 从“double”转换到“float”，可能丢失数据
-D:\Projects\JXEngine\JXEngine\App.cpp(743,118): warning C4305: “参数”: 从“double”到“float”截断
 D:\Projects\JXEngine\JXEngine\Counted.h(53,17): warning C4018: “>=”: 有符号/无符号不匹配
 D:\Projects\JXEngine\JXEngine\Counted.h(52): message : 在编译 类 模板 成员函数“void Counted<DirectionalLight>::init(void)”时
 D:\Projects\JXEngine\JXEngine\Counted.h(41): message : 查看对正在编译的函数 模板 实例化“void Counted<DirectionalLight>::init(void)”的引用

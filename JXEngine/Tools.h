@@ -617,6 +617,8 @@ private:
 	BMPTool() {}
 
 	void ComputeQualityError(RGBColor* ColorBufferA, RGBColor* ColorBufferB, RGBColor* ColorBufferC, float& errorL2, float& errorL2_m);
+
+	void ComputeVariance(RGBColor* ColorBufferA, float ave, float& var);
 };
 
 
