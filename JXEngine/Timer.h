@@ -69,6 +69,7 @@ public:
 	float GetCurrentTime()const;
 
 	// Get the FPS.
+	// need call Timing() before use
 	// ...
 	float FPS(bool isRealTimeShow = false);
 

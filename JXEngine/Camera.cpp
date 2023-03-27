@@ -2,6 +2,7 @@
 #include "Config.h"
 #include "Material.h"
 #include "ShaderCompiler.h"
+#include <iostream>
 
 glm::mat4 Camera::GetProjectionMatrix() const
 {
@@ -12,6 +13,7 @@ glm::mat4 Camera::GetProjectionMatrix() const
 
 void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime)
 {
+	//std::cout << "xxx" << std::endl;
 	float velocity = MovementSpeed * deltaTime;
 	if (direction == FORWARD)
 		Position += Front * velocity;
@@ -21,6 +23,7 @@ void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime)
 		Position -= Right * velocity;
 	if (direction == RIGHT)
 		Position += Right * velocity;
+	//std::cout << Position.x << ' ' << Position.y << ' ' << Position.z  << ' ' << deltaTime << std::endl;
 }
 
 void Camera::ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch)

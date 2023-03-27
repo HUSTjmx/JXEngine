@@ -4,11 +4,10 @@ in vec2 TexCoords;
 
 uniform mat4 view;
 uniform mat4 view_inv;
-uniform mat4 view_pre;
 uniform mat4 projection;
 uniform mat4 projection_inv;
 uniform mat4 projection_pre;
-uniform int IsFirstFrame;
+
 
 // Fog Material Settings
 #define SCATTERING  (0.7 * vec3(0.95, 0.5, 0.0))
@@ -16,7 +15,9 @@ uniform int IsFirstFrame;
 
 
 //0, 1 or 2
-#define BASIC_ANIMATED_MEDIA 0
+#define BASIC_ANIMATED_MEDIA 1
+#define BREAK_POINT_TEST 1
+#define BREAK_POINT_VALUE 0.0
 // 0, 1
 #define ROTATE_MEDIA 0
 
@@ -39,14 +40,17 @@ uniform int IsFirstFrame;
 // YuShi Sphere
 #define OBJ_YUSHI_SPHERE 4.0
 // 0 : (default) sphere ; 1 : Torus ; 2 : Octahedron
+#ifndef OBJ_TYPE
 #define OBJ_TYPE 1
+#endif
     const vec3 YuShiPos = vec3(0.0, 0.0, -1.5);
 #if OBJ_TYPE == 0
     const float YushiRadius = 2.0;
 #elif OBJ_TYPE == 1
     const vec2 YushiRadius = vec2(1.0, 0.5);
 #elif OBJ_TYPE == 2
-    const float YushiRadius = 1.2;
+    const float YushiRadius = 0.85;
+    vec3 YUshiSize = vec3(1.1, 0.4, 1.1);
 #elif OBJ_TYPE == 3
     const float YushiRadius = 2.2;
 #endif
@@ -136,16 +140,64 @@ float sdPlane(vec3 p, vec3 n /* normalized */, float h)
     return dot(p, n) + h;
 }
 
-float sdSphere(vec3 p, vec3 center, float s)
+float opUnion( float d1, float d2 )
 {
-    return length(p - center) - s;
+    return min(d1,d2);
 }
-float sdOctahedron( vec3 p, vec3 center, float s)
+
+float opSubtraction( float d1, float d2 )
 {
-    p = p - center;
-    p = abs(p);
-    return (p.x+p.y+p.z-s)*0.57735027;
+    return max(-d1,d2);
 }
+
+float opIntersection( float d1, float d2 )
+{
+    return max(d1,d2);
+}
+
+float opSmoothUnion( float d1, float d2, float k )
+{
+    float h = max(k-abs(d1-d2),0.0);
+    return min(d1, d2) - h*h*0.25/k;
+}
+
+float opSmoothSubtraction( float d1, float d2, float k )
+{
+    return -opSmoothUnion(d1,-d2,k);
+    
+    //float h = max(k-abs(-d1-d2),0.0);
+    //return max(-d1, d2) + h*h*0.25/k;
+}
+
+float opSmoothIntersection( float d1, float d2, float k )
+{
+    return -opSmoothUnion(-d1,-d2,k);
+
+    //float h = max(k-abs(d1-d2),0.0);
+    //return max(d1, d2) + h*h*0.25/k;
+}
+
+//-------------------------------------------------
+
+float sdRoundBox( vec3 p, vec3 b, float r )
+{
+  vec3 d = abs(p) - b;
+  return min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0)) - r;
+}
+
+
+
+float sdShape(vec3 p, vec3 center)
+{
+    float d = 1e10;
+    vec3 q = p - center;
+    float an = 0.0;
+    float d1 = sdSphere(q - vec3(0.0, 0.5 + 0.3 * an, 0.0), YushiRadius);
+    float d2 = sdRoundBox(q, YUshiSize, 0.1); 
+    float dt = opSmoothUnion(d1, d2, 0.25);
+    return min(d, dt);
+}
+
 #endif
 
 #if OBJ_TYPE == 3
@@ -548,9 +600,9 @@ vec2 Map(in vec3 pos)
 #if OBJ_TYPE == 0
     res = opU(res, vec2(sdSphere(pos, YuShiPos, YushiRadius), OBJ_YUSHI_SPHERE));
 #elif OBJ_TYPE == 1
-    res = opU(res, vec2(sdSphere(pos, YuShiPos, YushiRadius.x + 2.5), OBJ_YUSHI_SPHERE));
+    res = opU(res, vec2(sdSphere(pos, YuShiPos, YushiRadius.x + 0.5), OBJ_YUSHI_SPHERE));
 #elif OBJ_TYPE == 2
-    res = opU(res, vec2(sdSphere(pos, YuShiPos, YushiRadius + 2.5), OBJ_YUSHI_SPHERE));
+    res = opU(res, vec2(sdSphere(pos - YuShiPos, max_v3_elem(YUshiSize) + 3.5), OBJ_YUSHI_SPHERE));
 #elif OBJ_TYPE == 3
     res = opU(res, vec2(sdSphere(pos, YuShiPos, YushiRadius + 5.5), OBJ_YUSHI_SPHERE));
 #endif
@@ -668,7 +720,8 @@ void getParticipatingMedia(out vec3 sigmaS, out vec3 sigmaE, in vec3 pos)
     //pos = (pos - YuShiPos) * rotate_around_y(180 * sin(iTime * rotateSpeed)) + YuShiPos;
     float sphereFog = clamp(sdTorus(pos, YuShiPos, YushiRadius) * -3.2, 0.0, 1.0);
 #elif OBJ_TYPE == 2
-    float sphereFog = clamp(sdOctahedron(pos, YuShiPos, YushiRadius) * -3.2, 0.0, 1.0);
+    pos = (pos - YuShiPos) * rotate_around_x(45) + YuShiPos;
+    float sphereFog = clamp(sdShape(pos, YuShiPos) * -3.2, 0.0, 1.0);
 #elif OBJ_TYPE == 3
     pos = (pos + vec3(-0.9, 1.0, 0.0) - YuShiPos) * rotate_around_y(90) + YuShiPos;
     float sphereFog = clamp(sdDragon(pos) * -3.2, 0.0, 1.0);
@@ -679,11 +732,17 @@ void getParticipatingMedia(out vec3 sigmaS, out vec3 sigmaE, in vec3 pos)
 
 #if BASIC_ANIMATED_MEDIA==1
     float r = floor(iTime);
+#if BREAK_POINT_TEST == 1
+    r = BREAK_POINT_VALUE;
+#endif
     sigmaS = sphereFog * abs(5.0* vec3(rand(vec3(r,0.0,1.0)),rand(vec3(r,0.0,5.0)),rand(vec3(r,0.0,9.0))));
     vec3 absorption = abs(0.0* vec3(rand(vec3(r,1.0,2.0)),rand(vec3(r,1.0,7.0)),rand(vec3(r,1.0,7.0))));
     sigmaE = sigmaS + absorption;
 #elif BASIC_ANIMATED_MEDIA==2
     float r = iTime*0.2;
+#if BREAK_POINT_TEST == 1
+    r = BREAK_POINT_VALUE;
+#endif
     sigmaS = sphereFog * abs(5.0* vec3(sin(r*1.1),sin(r*3.3),sin(r*5.5)));
     vec3 absorption = abs( 0.1* vec3(sin(r*2.2),sin(r*4.4),sin(r*6.6)));
     sigmaE = sigmaS + absorption;
@@ -748,7 +807,7 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
 #elif OBJ_TYPE == 1
         vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, max(YushiRadius.x, YushiRadius.y) + 1.0));
 #elif OBJ_TYPE == 2
-        vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius + 2.0));
+        vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, max(max_v3_elem(YUshiSize), YushiRadius + 3.5) + 0.5));
 #elif OBJ_TYPE == 3
         vec2 tmm = iSphere(ro, rd, vec4(YuShiPos, YushiRadius));
 #endif

@@ -44,6 +44,8 @@ uniform float TEMPORAL_ACCELERATION_MUL;
 
 //0, 1 or 2
 #define BASIC_ANIMATED_MEDIA 0
+#define BREAK_POINT_TEST 1
+#define BREAK_POINT_VALUE 2.0
 // 0, 1
 #define ROTATE_MEDIA 0
 
@@ -421,11 +423,17 @@ void getParticipatingMedia(out vec3 sigmaS, out vec3 sigmaE, in vec3 pos)
     sigmaE = max_f_v3(0.0000001, ABSORPTION + SCATTERING);
 #if BASIC_ANIMATED_MEDIA==1
     float r = floor(iTime);
+#if BREAK_POINT_TEST == 1
+    r = BREAK_POINT_VALUE;
+#endif
     sigmaS = abs(5.0* float3(rand(float3(r,0.0,1.0)),rand(float3(r,0.0,5.0)),rand(float3(r,0.0,9.0))));
     float3 absorption = abs(2.0* float3(rand(float3(r,1.0,2.0)),rand(float3(r,1.0,7.0)),rand(float3(r,1.0,7.0))));
     sigmaE = sigmaS + absorption;
 #elif BASIC_ANIMATED_MEDIA==2
     float r = iTime*0.2;
+#if BREAK_POINT_TEST == 1
+    r = BREAK_POINT_VALUE;
+#endif
     sigmaS = abs(5.0* float3(sin(r*1.1),sin(r*3.3),sin(r*5.5)));
     float3 absorption = abs( 2.0* float3(sin(r*2.2),sin(r*4.4),sin(r*6.6)));
     sigmaE = sigmaS + absorption;
@@ -524,13 +532,15 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
         t = max(pre_t, t);
 
         stepsNum *= TEMPORAL_ACCELERATION_MUL;
+        stepsNum = t >= tmm.y ? 0 : stepsNum;
 
         for( int i = 0; i < stepsNum; ++i )
         {
+            /*
             if(t > tmm.y)
             { 
                 break;
-            }
+            }*/
 
             vec3 p = ro + t * rd;
             float density = getDensity(p - YuShiPos);
@@ -605,7 +615,7 @@ void main()
     vec3 M_dir = normalize(M_pos - LastViewPosWS);
 
     // Solve History Data
-#if BASIC_ANIMATED_MEDIA == 0
+//#if BASIC_ANIMATED_MEDIA == 0
     bool isFirstFrame = FrameIndex == 0;
     pos_tex = mix(texture(FinalPos_In, M_uv), vec4(orig, 0.0), isFirstFrame);
     scat_tex = mix(texture(ScatterLight_In, M_uv), vec4(0.0, 0.0, 0.0, 1.0), isFirstFrame);
@@ -626,7 +636,7 @@ void main()
     pos_tex = mix(pos_tex, vec4(orig, 0.0), isRefresh);
     scat_tex = mix(scat_tex, vec4(0.0, 0.0, 0.0, 1.0), isRefresh);
     trans_tex = mix(trans_tex, vec4(1.0, 1.0, 1.0, 1.0), isRefresh);
-#endif
+//#endif
     // Compute ScatterLight
     vec3 baseColor = GetColor(res.y, orig, dir, pos_tex, scat_tex, trans_tex);
     vec3 baseColor2 = GetColor2(res2.y, orig, dir);

@@ -100,7 +100,7 @@ void main()
     vec3 color = computeIncidentLight_T(orig, dir, sun, 0.0, 100000.0);
 
     // 添加云雾
-    color += Gain_33(cloud_Patu(dir), 1.0) * 1.2;
+    //color += Gain_33(cloud_Patu(dir), 1.0) * 1.2;
 
     color = GammaCorrection(color);
 

@@ -32,9 +32,12 @@ namespace INPUT
 
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 			glfwSetWindowShouldClose(window, true);
-
+		//std::cout << "xxx" << std::endl;
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		{
 			inputCamera->ProcessKeyboard(FORWARD, Clock.DeltaTime());
+			//std::cout << "xxx" << std::endl;
+		}
 		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 			inputCamera->ProcessKeyboard(BACKWARD, Clock.DeltaTime());
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
