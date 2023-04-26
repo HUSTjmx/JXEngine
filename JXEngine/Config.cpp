@@ -182,3 +182,15 @@ namespace CONFIG
 		const std::string PAPER = address + "Paper.cg";
 	}
 }
+
+namespace PaperShow
+{
+	int sceneID = 1;
+	int objID = 3;
+	int objIsWai = 0;
+
+	int methodID = 0;
+	int shadowID = 0;
+
+	int isUseGaussBlur = 1;
+}

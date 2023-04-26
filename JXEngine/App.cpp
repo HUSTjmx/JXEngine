@@ -24,6 +24,11 @@
 
 //#define  __MSAA__ 1
 
+// 代码版本控制
+// 0 : 开发版
+// 1 : 演示版
+#define IS_PAPER_SHOW 1
+
 void InitGlfw();
 void TestAndSetWindow(GLFWwindow* window);
 void GetSupportExtensions();
@@ -98,7 +103,9 @@ void TestAndSetWindow(GLFWwindow* window)
 	glfwSetFramebufferSizeCallback(window, INPUT::framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, INPUT::mouse_callback);
 	glfwSetScrollCallback(window, INPUT::scroll_callback);
-
+#if IS_PAPER_SHOW == 1
+	glfwSetKeyCallback(window, INPUT::key_callback);
+#endif
 	// tell GLFW to capture our mouse
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
@@ -182,12 +189,14 @@ void Test()
 	JMX_INPUT_GLM(new_pos);
 }
 
+
+
 // 0 : Sky
 // 1 : Fog Ball
 // 2 : Standford Rabbits
 // 3 : Cloud Sea
 #define SCENE_ID 1
-#define OBJ_ID 3
+#define OBJ_ID 2
 #define OBJ_IS_WAI 0
 
 // 0 : Origin Method
@@ -220,7 +229,7 @@ void Test()
 
 // 是否计算帧率
 // 不要使用此宏定义，因为用这种方法计算Pass的消耗时间是错的，我们应该去使用RenderDoc抓帧来获取数据
-#define COMPUTER_TIME 0
+#define COMPUTER_TIME 3
 #define SHOW_FPS 0
 
 // 是否开启Gauss Blur
@@ -228,6 +237,7 @@ void Test()
 
 // 用于实验，代码控制相机移动
 #define NeedMachineMove 0
+
 
 void Loop(GLFWwindow* window)
 {
@@ -238,6 +248,8 @@ void Loop(GLFWwindow* window)
 #endif // MSAA
 
 	//glEnable(GL_CULL_FACE);
+
+#if IS_PAPER_SHOW == 0
 
 	auto frame = std::make_shared<FrameBuffer>(CONFIG::SCREEN_CONFIG::SCR_WIDTH, CONFIG::SCREEN_CONFIG::SCR_HEIGHT);
 	frame->AddTexture(GL_RGB, "screenTex", false);
@@ -807,8 +819,8 @@ void Loop(GLFWwindow* window)
 #endif
 
 //#if COMPUTER_TIME == 1
-		float t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0, t5 = 0.0, t6 = 0.0;
-		std::string timeInfo = "Frame(" + std::to_string(frameIndex) + ") : ---CPU Solve Data Start---";
+//		float t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0, t5 = 0.0, t6 = 0.0;
+//		std::string timeInfo = "Frame(" + std::to_string(frameIndex) + ") : ---CPU Solve Data Start---";
 		timer.Timing();
 //#endif
 
@@ -819,9 +831,9 @@ void Loop(GLFWwindow* window)
 #endif
 
 //#if COMPUTER_TIME == 1
-		t1 = timer.Timing();
-		timeInfo = timeInfo + std::to_string(t1) + "(ms)" + "---Render Media Obj Start---";
-		std::cout << timeInfo.c_str() << std::endl;
+		timer.Timing();
+//		timeInfo = timeInfo + std::to_string(t1) + "(ms)" + "---Render Media Obj Start---";
+//		std::cout << timeInfo.c_str() << std::endl;
 //#endif
 
 
@@ -948,13 +960,28 @@ void Loop(GLFWwindow* window)
 
 	}
 
+
+#endif
+
+#if IS_PAPER_SHOW == 1
+	while (!glfwWindowShouldClose(window))
+	{
+		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+			glfwSetWindowShouldClose(window, true);
+
+		glfwSwapBuffers(window);
+		glfwPollEvents();
+	}
+	
+#endif
+
 #if COMPUTER_TIME == 1
 	BMPTool::Instance().GetTimeResult(methodType_, sceneType, timeInfo_all);
 #endif
 
-	mainScenePass->GetMat()->GetShader()->vertexShader = "";
-	mainScenePass->GetMat()->GetShader()->fragmentShader = "";
-	frame->Delete();
+	//mainScenePass->GetMat()->GetShader()->vertexShader = "";
+	//mainScenePass->GetMat()->GetShader()->fragmentShader = "";
+	//frame->Delete();
 	exit(0);
 	//cloud_p_01.~shared_ptr();
 	//Foveated_pass_1.~shared_ptr();

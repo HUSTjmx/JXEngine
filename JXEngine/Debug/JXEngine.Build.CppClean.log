@@ -1,9 +1,9 @@
 d:\projects\jxengine\jxengine\debug\vc142.pdb
 d:\projects\jxengine\jxengine\debug\vc142.idb
 d:\projects\jxengine\jxengine\debug\glad.obj
-d:\projects\jxengine\jxengine\debug\uniformbuffer.obj
 d:\projects\jxengine\jxengine\debug\tools.obj
 d:\projects\jxengine\jxengine\debug\timer.obj
+d:\projects\jxengine\jxengine\debug\tfrm_algorithm.obj
 d:\projects\jxengine\jxengine\debug\texture.obj
 d:\projects\jxengine\jxengine\debug\testscene.obj
 d:\projects\jxengine\jxengine\debug\shadercompiler.obj
@@ -23,11 +23,11 @@ d:\projects\jxengine\jxengine\debug\app.obj
 d:\projects\jxengine\jxengine\debug\actor.obj
 d:\projects\jxengine\jxengine\debug\window.obj
 d:\projects\jxengine\jxengine\debug\vertexmodel.obj
-d:\projects\jxengine\jxengine\debug\tfrm_algorithm.obj
-d:\projects\jxengine\debug\jxengine.exe
+d:\projects\jxengine\jxengine\debug\uniformbuffer.obj
 d:\projects\jxengine\jxengine\debug\jxengine.ilk
-d:\projects\jxengine\debug\jxengine.pdb
-d:\projects\jxengine\jxengine\debug\shadercompiler.obj.enc
+d:\projects\jxengine\jxengine\jxengine.exe
+d:\projects\jxengine\jxengine\jxengine.pdb
+d:\projects\jxengine\debug\..\jxengine\jxengine.pdb
 d:\projects\jxengine\jxengine\debug\jxengine.tlog\cl.command.1.tlog
 d:\projects\jxengine\jxengine\debug\jxengine.tlog\cl.read.1.tlog
 d:\projects\jxengine\jxengine\debug\jxengine.tlog\cl.write.1.tlog

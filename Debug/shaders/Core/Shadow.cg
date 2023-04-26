@@ -1,0 +1,261 @@
+// Sampler range for PCF.
+// [-a, a] * [-a, a].
+// ...
+#define NUM_SAMPLES 15
+
+#define PCF_SAMPLER_RADIUS 4
+#define PCF_SAMPLER_NUM NUM_SAMPLES
+#define BLOCK_SEARCH_NUM NUM_SAMPLES
+#define NUM_RINGS 10.0
+
+#define LIGHT_WORLD_SIZE 0.01
+#define LIGHT_FRUSTUM_WIDTH 10.0
+#define LIGHT_SIZE_UV (LIGHT_WORLD_SIZE / LIGHT_FRUSTUM_WIDTH)
+
+#define NEAR_PLANE 1.0
+
+// Sampler mode.
+// 1 : Uniform disk.
+// 0 : Poisson disk.
+// ...
+#define SAMPLE_MODE 0
+
+
+// Disk Sample
+// ...
+// -------------------------------------------------
+
+// Sampler Array.
+// ...
+vec2 poissonDisk[NUM_SAMPLES];
+
+// Possion Disk Sampler
+// ...
+void PoissonDiskSamples(const vec2 randomSeed)
+{
+    float ANGLE_STEP = PI2 * float(NUM_RINGS) / float(NUM_SAMPLES);
+    float INV_NUM_SAMPLES = 1.0 / (NUM_SAMPLES);
+
+    float angle = hash12(randomSeed) * PI2;
+    float radius = INV_NUM_SAMPLES;
+    float radiusStep = radius;
+
+    for(int i = 0; i < NUM_SAMPLES; i++)
+    {
+        poissonDisk[i] = vec2(cos(angle), sin(angle)) * pow(radius, 0.75);
+        radius += radiusStep;
+        angle += ANGLE_STEP;
+    } 
+}
+
+// Uniform Disk Sampler.
+// ...
+void UniformDiskSamples(const vec2 randomSeed)
+{
+    float randNum = hash12(randomSeed);
+    float sampleX = hash11(randNum);
+    float sampleY = hash11(sampleX);
+
+    float angle = sampleX * PI2;
+    float radius = sqrt(sampleY);
+
+    for(int i = 0 ; i < NUM_SAMPLES; ++i)
+    {
+        poissonDisk[i] = vec2(radius * cos(angle), radius * sin(angle));
+
+        sampleX = hash11(sampleY);
+        sampleY = hash11(sampleX);
+
+        angle = sampleX * PI2;
+        radius = sqrt(sampleY);
+    }
+}
+
+
+
+
+// Compute Bias with NoL
+// ...
+float GetBias(float NoL)
+{
+    return max(0.05 * (1.0 - NoL), 0.005);
+}
+
+
+// Get shadow item with bias.
+// ...
+float GetShadowByCmpDepth_Bias(float closestDepth, float currentDepth, float bias)
+{
+    // check whether current frag pos is in shadow
+    float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
+
+    if(currentDepth > 1.0)
+        shadow = 0.0;
+
+    return clamp(1.0 - shadow, 0.0, 1.0) ;
+}
+
+// Base Shadow calculation.
+// ...
+float ShadowCalculation_Base(vec4 fragPosLightSpace, sampler2D shadowMap, float NoL)
+{
+    // perform perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float closestDepth = texture(shadowMap, projCoords.xy).r; 
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+
+    float bias = GetBias(NoL);
+
+    return GetShadowByCmpDepth_Bias(closestDepth, currentDepth, bias);
+}
+
+// The Shared Step for PCF and most shadow algorithm.
+// ...
+float PCF_Filter(sampler2D shadowMap, vec2 uv, float currentDepth, float filterRadius, float bias)
+{
+    float shadow = 0.0;
+
+    for(int i = 0; i < PCF_SAMPLER_NUM; ++i)
+    {
+        float closestDepth = texture(shadowMap, uv + poissonDisk[i] * filterRadius).r;
+        shadow += GetShadowByCmpDepth_Bias(closestDepth, currentDepth, bias);
+    }
+
+    for(int i = 0; i < PCF_SAMPLER_NUM; ++i)
+    {
+        float closestDepth = texture(shadowMap, uv - poissonDisk[i].yx * filterRadius).r;
+        shadow += GetShadowByCmpDepth_Bias(closestDepth, currentDepth, bias);
+    }
+
+    return shadow / float((2.0 * PCF_SAMPLER_NUM));
+}
+
+// PCF Shadow Calculation v1.
+// Uniform Sampler.
+// ...
+float ShadowCalculation_PCF_v1(vec4 fragPosLightSpace, sampler2D shadowMap, float NoL)
+{
+    // perform perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+
+    float shadow = 0.0;
+
+    float bias = GetBias(NoL);
+
+    int num = (PCF_SAMPLER_RADIUS + 1) * (PCF_SAMPLER_RADIUS + 1);
+
+    for(int x = -1 * PCF_SAMPLER_RADIUS; x <= PCF_SAMPLER_RADIUS; ++x)
+        for(int y = -1 * PCF_SAMPLER_RADIUS; y <= PCF_SAMPLER_RADIUS; ++y)
+        {
+            float closestDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
+            shadow += GetShadowByCmpDepth_Bias(closestDepth, currentDepth, bias);
+        }
+
+    return clamp(shadow / float(num), 0.0, 1.0);
+}
+
+// PCF Shadow Calculation v2.
+// Uniform Disk Random Sampler.
+// ...
+float ShadowCalculation_PCF_v2(vec4 fragPosLightSpace, sampler2D shadowMap, float NoL)
+{
+    // perform perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+
+    float shadow = 0.0;
+
+    float bias = GetBias(NoL);
+
+#if SAMPLE_MODE
+    UniformDiskSamples(projCoords.xy);
+#else
+    PoissonDiskSamples(projCoords.xy);
+#endif
+
+    shadow = PCF_Filter(shadowMap, projCoords.xy, currentDepth, texelSize.x * PCF_SAMPLER_RADIUS, bias);
+
+    return shadow ;
+}
+
+
+// find block for PCSS
+// ...
+float findBlocker(sampler2D shadowMap, vec2 uv, float zReceiver)
+{
+    float searchRadius = LIGHT_SIZE_UV * (zReceiver -NEAR_PLANE) / zReceiver;
+    float blockDepthSum = 0.0;
+    int numBlockers = 0;
+
+    for(int i = 0; i < BLOCK_SEARCH_NUM; ++i)
+    {
+        float shadowMapDepth = texture(shadowMap, uv + poissonDisk[i] * searchRadius).r;
+
+        if(shadowMapDepth < zReceiver)
+        {
+            blockDepthSum += shadowMapDepth;
+            numBlockers++;
+        }
+    }
+
+    if(numBlockers == 0)
+        return -1.0;
+
+    return blockDepthSum / float(numBlockers);
+}
+
+
+// Compute penumbra size.
+// ...
+float GetPenumbraSize(float zReceiver, float zBlocker)
+{
+    return (zReceiver - zBlocker) / zBlocker;
+}
+
+// PCSS.
+// ...
+float ShadowCalculation_PCSS_v1(vec4 fragPosLightSpace, sampler2D shadowMap, float NoL)
+{
+    // perform perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+
+    vec2 uv = projCoords.xy;
+    
+    float zReceiver = projCoords.z;
+
+#if SAMPLE_MODE
+    UniformDiskSamples(projCoords.xy);
+#else
+    PoissonDiskSamples(projCoords.xy);
+#endif
+
+    float zBlocker = findBlocker(shadowMap, uv, zReceiver);
+    if(zBlocker == -1.0)
+        return 1.0;
+
+    float penumbraRadio = GetPenumbraSize(zReceiver, zBlocker);
+   
+    float filterRadius = penumbraRadio * LIGHT_SIZE_UV * NEAR_PLANE / zReceiver;
+
+    float bias = GetBias(NoL);
+
+    return PCF_Filter(shadowMap, uv, zReceiver, filterRadius, bias);
+
+}
