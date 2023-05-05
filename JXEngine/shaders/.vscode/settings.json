@@ -93,4 +93,5 @@
         "\"C:/Users/ZoroD/AppData/Local/Programs/Microsoft VS Code/Code.exe\" \"C:/Users/ZoroD/AppData/Local/Programs/Microsoft VS Code/resources/app/out/cli.js\" -gr \"%f\":\"%l\"",
         "%PDF%",
     ],
+    "C_Cpp.errorSquiggles": "disabled",
 }

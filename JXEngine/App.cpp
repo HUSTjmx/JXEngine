@@ -27,7 +27,7 @@
 // 代码版本控制
 // 0 : 开发版
 // 1 : 演示版
-#define IS_PAPER_SHOW 1
+#define IS_PAPER_SHOW 0
 
 void InitGlfw();
 void TestAndSetWindow(GLFWwindow* window);
@@ -195,15 +195,15 @@ void Test()
 // 1 : Fog Ball
 // 2 : Standford Rabbits
 // 3 : Cloud Sea
-#define SCENE_ID 1
-#define OBJ_ID 2
+#define SCENE_ID 2
+#define OBJ_ID 3
 #define OBJ_IS_WAI 0
 
 // 0 : Origin Method
 // 1 : Temporal Method
 // 2 : Foveated Method
 // 3 : Full Method
-#define METHOD_ID 0
+#define METHOD_ID 3
 
 // false : No Shadow
 // true : Shadow

@@ -5,13 +5,13 @@ namespace CONFIG
 
 	namespace SCREEN_CONFIG
 	{
-		unsigned int SCR_WIDTH = 1000;
-		unsigned int SCR_HEIGHT = 800;
+		unsigned int SCR_WIDTH = 1600;
+		unsigned int SCR_HEIGHT = 1200;
 
 		namespace FOVEA
 		{
-			unsigned int FOVEA_WIDTH = 1000;
-			unsigned int FOVEA_HEIGHT = 800;
+			unsigned int FOVEA_WIDTH = 1600;
+			unsigned int FOVEA_HEIGHT = 1200;
 		}
 	}
 

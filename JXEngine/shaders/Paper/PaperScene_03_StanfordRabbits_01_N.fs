@@ -24,7 +24,7 @@ uniform int IsFirstFrame;
 //0, 1 or 2
 #define BASIC_ANIMATED_MEDIA 1
 #define BREAK_POINT_TEST 1
-#define BREAK_POINT_VALUE 0.3
+#define BREAK_POINT_VALUE 2
 // 0, 1
 #define ROTATE_MEDIA 0
 
