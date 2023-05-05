@@ -761,7 +761,11 @@ float volumetricShadow(in vec3 from, in vec3 to)
 #if IS_SHOW_SHADOW == false
     return 1.0;
 #else
-    const float numStep = MAX_SHADOW_STEP_NUM; // quality control. Bump to avoid shadow alisaing
+    float numStep = MAX_SHADOW_STEP_NUM; // quality control. Bump to avoid shadow alisaing
+    #if OBJ_TYPE == 3
+    numStep = 4;
+    #endif 
+    
     vec3 shadow = vec3(1.0);
     vec3 sigmaS = vec3(0.0);
     vec3 sigmaE = vec3(0.0);
@@ -813,6 +817,9 @@ vec3 GetColor(in float ID, in vec3 ro, in vec3 rd, inout vec4 pre_pos, inout vec
 #endif
         float t = tmm.x;
         float stepsNum = MAX_STEP_NUM;
+#if OBJ_TYPE == 3
+        stepsNum = 12;
+#endif
         float dt = (tmm.y - tmm.x) / stepsNum;     //float dt = .2 - .195*cos(iTime*.05);//animated
         vec3 transmittance = vec3(1.0, 1.0, 1.0);
         vec3 scatteredLight = vec3(0.0);

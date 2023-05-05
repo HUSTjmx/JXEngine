@@ -1,0 +1,74 @@
+uniform vec2 Resolution;
+#define PIXEL_SIZE vec2(1.0 / Resolution)
+
+uniform float iTime;
+
+uniform vec3 viewPosWS;
+uniform vec3 LastViewPosWS;
+uniform vec3 view_center_dir;
+uniform vec3 Last_view_center_dir;
+uniform float near_plane;
+uniform float far_plane;
+
+//��׼����
+uniform vec3 baseColor;
+uniform float metallic;
+uniform float roughness;
+uniform float reflectance;
+uniform vec3 emissive;
+
+
+uniform sampler2D texture_albedo1;
+uniform sampler2D texture_normal1;
+
+
+//��ɫ��ӳ��
+//diffuse color
+vec3 BaseColorReMap(vec3 color, float metallic)
+{
+    return (1.0 - metallic) * color;
+}
+
+//��������ӳ��
+//Fresnel��������f0�����ҶԵ���ʶ����ǵ�ɫ��
+vec3 ReflectanceReMap(float reflec)
+{
+    return vec3(0.16 * reflec * reflec);
+}
+
+//���������ʼ���Fresnel������f0
+float GetF0WithIOR(float n)
+{
+    float a = n - 1.0;
+    float b = n + 1.0;
+    return a * a / (b * b);
+}
+
+//����̣�����f0����������
+float GetIORWithF0(float f0)
+{
+    float a = 1.0 - sqrt(f0);
+    return 2.0 / a - 1.0;
+}
+
+
+//��ȡF90�������棬һ����1
+float GetF90_C()
+{
+    return 1.0;
+}
+
+
+//�������ʺͽ������ʵ�f0, ���淴�����ɫ���Խ����Ļ�ɫ
+vec3 GetF0_All(vec3 base_color, float metal, float reflec)
+{
+    return ReflectanceReMap(reflec) * (1.0 - metal) + base_color * metal;
+}
+
+
+//�ֲڶ���ӳ�� 
+//a = roughness * roughness
+float RoughnessReMap(float rough)
+{
+    return rough * rough;
+}

@@ -137,7 +137,7 @@ bool HistoryRejection(in vec3 N1)
     //return F_ANG > 1.01;
     //return F_ANG + (FOVEA_Factor * Const_Factor)  > 1.04;
     // F_ANG / (FOVEA_Factor * Const_Factor) < 1.0;
-    return F_DIS > 1.1 || F_ANG > 1.001;
+    return F_DIS > 1.14 || F_ANG > 1.005;
 }
 
 void main()

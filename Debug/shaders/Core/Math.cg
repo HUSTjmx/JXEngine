@@ -1,0 +1,403 @@
+#define PI 3.14159265358
+#define PI_INV 0.31830988618
+#define HALF_PI (0.5 * PI)
+#define PI2 6.28318530
+#define GAMMA 0.4545454545
+
+
+// Range remapping from [0, 1] to [-1, 1].
+// ...
+float RemapNDC(float a)
+{
+    return a * 2.0 - 1.0;
+}
+
+vec2 ReMapNDC_V2(vec2 a)
+{
+    return vec2(RemapNDC(a.x), RemapNDC(a.y));
+}
+
+ vec3 ReMapNDC_V3(vec3 a)
+ {
+     return vec3(RemapNDC(a.x), RemapNDC(a.y), RemapNDC(a.z));
+ }
+
+// Get Linear depth.
+// ...
+float LinearizeDepth(float depth, float near, float far)
+{
+    float z = RemapNDC(depth);
+    return (2.0 * near * far) / (far + near - z * (far - near));
+    
+}
+
+// AlphaTest
+// ...
+float AlphaTest(float alpha, float min_)
+{
+    if (alpha < min_)
+        discard;
+    return 1.0;
+}
+
+// Gamma Correction
+// ...
+vec3 GammaCorrection(vec3 color)
+{
+    return pow(color, vec3(GAMMA));
+}
+
+// Random Creation.
+// We do not use Trigonometric function.
+// ...
+// -----------------------------------------------------
+//  1 out, 1 in...
+float hash11(float p)
+{
+    //p = fract(p * .1031);
+    //p *= p + 33.33;
+    //p *= p + p;
+    //return fract(p);
+    return fract(sin(p) * 10000.0);
+}
+
+//----------------------------------------------------------------------------------------
+//  1 out, 2 in
+// ...
+float hash12(vec2 uv)
+{
+	//vec3 p3  = fract(vec3(p.xyx) * .1031);
+    //p3 += dot(p3, p3.yzx + 33.33);
+    //return fract((p3.x + p3.y) * p3.z);
+
+    const float a = 12.9898, b = 78.233, c = 43758.5453;
+    float dt = dot(uv.xy, vec2(a, b)), sn = mod(dt, PI);
+    return fract(sin(sn) * c);
+}
+
+//----------------------------------------------------------------------------------------
+//  1 out, 3 in
+// ...
+float hash13(vec3 p3)
+{
+	p3  = fract(p3 * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+//----------------------------------------------------------------------------------------
+//  2 out, 1 in
+// ...
+vec2 hash21(float p)
+{
+	vec3 p3 = fract(vec3(p) * vec3(.1031, .1030, .0973));
+	p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.xx+p3.yz)*p3.zy);
+
+}
+
+//----------------------------------------------------------------------------------------
+///  2 out, 2 in
+// ...
+vec2 hash22(vec2 p)
+{
+	vec3 p3 = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yzx+33.33);
+    return fract((p3.xx+p3.yz)*p3.zy);
+
+}
+
+//----------------------------------------------------------------------------------------
+///  2 out, 3 in
+// ...
+vec2 hash23(vec3 p3)
+{
+	p3 = fract(p3 * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yzx+33.33);
+    return fract((p3.xx+p3.yz)*p3.zy);
+}
+
+//----------------------------------------------------------------------------------------
+//  3 out, 1 in
+// ...
+vec3 hash31(float p)
+{
+   vec3 p3 = fract(vec3(p) * vec3(.1031, .1030, .0973));
+   p3 += dot(p3, p3.yzx+33.33);
+   return fract((p3.xxy+p3.yzz)*p3.zyx); 
+}
+
+
+//----------------------------------------------------------------------------------------
+///  3 out, 2 in
+// ...
+vec3 hash32(vec2 p)
+{
+	vec3 p3 = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yxz+33.33);
+    return fract((p3.xxy+p3.yzz)*p3.zyx);
+}
+
+//----------------------------------------------------------------------------------------
+///  3 out, 3 in
+// ...
+vec3 hash33(vec3 p3)
+{
+	p3 = fract(p3 * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yxz+33.33);
+    return fract((p3.xxy + p3.yxx)*p3.zyx);
+
+}
+
+//----------------------------------------------------------------------------------------
+// 4 out, 1 in
+// ...
+vec4 hash41(float p)
+{
+	vec4 p4 = fract(vec4(p) * vec4(.1031, .1030, .0973, .1099));
+    p4 += dot(p4, p4.wzxy+33.33);
+    return fract((p4.xxyz+p4.yzzw)*p4.zywx);
+    
+}
+
+//----------------------------------------------------------------------------------------
+// 4 out, 2 in
+// ...
+vec4 hash42(vec2 p)
+{
+	vec4 p4 = fract(vec4(p.xyxy) * vec4(.1031, .1030, .0973, .1099));
+    p4 += dot(p4, p4.wzxy+33.33);
+    return fract((p4.xxyz+p4.yzzw)*p4.zywx);
+
+}
+
+//----------------------------------------------------------------------------------------
+// 4 out, 3 in
+// ...
+vec4 hash43(vec3 p)
+{
+	vec4 p4 = fract(vec4(p.xyzx)  * vec4(.1031, .1030, .0973, .1099));
+    p4 += dot(p4, p4.wzxy+33.33);
+    return fract((p4.xxyz+p4.yzzw)*p4.zywx);
+}
+
+//----------------------------------------------------------------------------------------
+// 4 out, 4 in
+// ...
+vec4 hash44(vec4 p4)
+{
+	p4 = fract(p4  * vec4(.1031, .1030, .0973, .1099));
+    p4 += dot(p4, p4.wzxy+33.33);
+    return fract((p4.xxyz+p4.yzzw)*p4.zywx);
+}
+
+
+// IQ Noise
+// ...
+float noise31_IQ(vec3 rp)
+{
+    vec3 ip = floor(rp);
+    rp -= ip;
+    vec3 s = vec3(7, 157, 113);
+    vec4 h = vec4(0.0, s.yz, s.y + s.z) + dot(ip, s);
+    rp = rp * rp * (3.0 - 2.0 * rp);
+    h = mix(fract(sin(h) * 43758.5), fract(sin(h + s.x) * 43758.5), rp.x);
+    h.xy = mix(h.xz, h.yw, rp.y);
+    return mix(h.x, h.y, rp.z);
+}
+
+// FBM v1
+// Base.
+// ...
+float fbm_v1(vec3 x)
+{
+    float r = 0.0;
+    float w = 1.0;
+    float s = 1.0;
+    for(int i = 0; i < 5; i++)
+    {
+        w *= 0.5;
+        s *= 2.0;
+        r += w * noise31_IQ(s * x);
+    }
+    return r;
+}
+
+// FBM v2
+// ...
+float fbm_v2(vec3 x, float H, int numOctaves)
+{
+    float G = exp2(-H);
+    float f = 1.0;
+    float a = 1.0;
+    float t = 0.0;
+    for(int i = 0; i < numOctaves; ++i)
+    {
+        t += a * noise31_IQ(f * x);
+        f *= 2.0;
+        a *= G;
+    }
+    return t;
+}
+
+// FBM v3
+// Use noisy texture.
+// ...
+float displacementSimple_FBM_v3(sampler2D noiseTexture, vec2 p)
+{
+    float f;
+    f = 0.5000 * texture(noiseTexture, p).x; p = p * 2.0;
+    f += 0.2500 * texture(noiseTexture, p).x; p = p * 2.0;
+    f += 0.1250 * texture(noiseTexture, p).x; p = p * 2.0;
+    f += 0.0625 * texture(noiseTexture, p).x; p = p * 2.0;
+    return f;
+}
+
+// FBM v4
+// Use noisy texture.
+// ...
+float displacementSimple_FBM_v4(sampler2D noiseTexture, vec3 p)
+{
+    return (displacementSimple_FBM_v3(noiseTexture, p.xy) +
+            displacementSimple_FBM_v3(noiseTexture, p.xz) +
+            displacementSimple_FBM_v3(noiseTexture, p.yz)) / 3.0;
+}
+
+
+
+
+// Some useful math functions.
+// ...
+// ---------------------------------------------------
+// ---------------------------------------------------
+
+float Gain_11(float x, float k)
+{
+    float a = 0.5 * pow(2.0 * ((x < 0.5) ? x : 1.0 - x), k);
+    return (x < 0.5) ? a : 1.0 - a;
+}
+
+vec3 Gain_33(vec3 x, float k)
+{
+    return vec3(Gain_11(x.x, k), Gain_11(x.y, k), Gain_11(x.z, k));
+}
+
+// L2 Paradigm
+// ...
+float L2(float x, float y){
+    return sqrt(x * x + y * y);
+}
+
+// Max function with 4 items.
+// ...
+float max4(float l1,float l2, float l3, float l4){
+    return max(max(l1, l2), max(l3, l4));
+}
+
+// Judge function.
+// if in > 0.0, return 0.0.
+// else return 1.0.
+// ...
+float l(float y){
+    if(y < 0.0)return 1.0;
+    return 0.0;
+}
+
+// Right atan.
+// ...
+float atan2(float x, float y){
+    if(x > 0.)return atan(y/x);
+    if(x < 0. && y >= 0.) return atan(y/x) + PI;
+    if(x < 0. && y < 0.) return atan(y/x) - PI;
+    if(x == 0. && y > 0.) return HALF_PI;
+    if(x == 0. && y < 0.) return -1. * HALF_PI;
+    return 0.0;
+}
+
+// Judge uv in range [0, 1].
+// ...
+float inRange(vec2 uv){
+    if(uv.x < 0.0001 || uv.x > 1.0)return -1.0;
+    if(uv.y < 0.0001 || uv.y > 1.0)return -1.0;
+    return 1.0;
+}
+
+// Judge uv in range [n, m].
+// ...
+float inRange(vec2 uv, float n, float m){
+    if(uv.x < n || uv.x > m)return -1.0;
+    if(uv.y < n || uv.y > m)return -1.0;
+    return 1.0;
+}
+
+// ...
+vec2 csqr(vec2 a)
+{
+    return vec2(a.x * a.x - a.y * a.y, 2.* a.x * a.y);
+}
+
+// Compute the angle between two ray.
+// ...
+float GetAngle_2Ray(vec3 ray1, vec3 ray2)
+{
+    float n = dot(ray1, ray2);
+    float a = length(ray1);
+    float b = length(ray2);
+    return n / ( a * b );
+}
+
+float gain(float x, float k) 
+{
+    const float a = 0.5 * pow(2.0 * ((x < 0.5) ? x : 1.0 - x), k);
+    return (x < 0.5) ? a : 1.0 - a;
+}
+
+float expStep(float x, float k, float n)
+{
+    return exp(-k * pow(x, n));
+}
+
+float almostIdentity( float x, float m, float n )
+{
+    if( x>m ) return x;
+    const float a = 2.0*n - m;
+    const float b = 2.0*m - 3.0*n;
+    const float t = x/m;
+    return (a*t + b)*t*t + n;
+}
+
+float almostIdentity( float x )
+{
+    return x*x*(2.0-x);
+}
+
+mat3 rotate_around_x(in float angle_degrees)
+{
+	float angle = radians(angle_degrees);
+	float _sin = sin(angle);
+	float _cos = cos(angle);
+	return mat3(1, 0, 0, 0, _cos, -_sin, 0, _sin, _cos);
+}
+
+mat3 rotate_around_y(in float angle_degrees)
+{
+	float angle = radians(angle_degrees);
+	float _sin = sin(angle);
+	float _cos = cos(angle);
+	return mat3(_cos, 0, _sin, 0, 1, 0, -_sin, 0, _cos);
+}
+
+vec3 max_f_v3(float min_, vec3 v)
+{
+    return vec3(max(min_, v.x), max(min_, v.y), max(min_, v.z));
+}
+
+float max_v3_elem(vec3 v)
+{
+    return max(v.x, max(v.y, v.z));
+}
+
+float M_smoothstep( float x )
+{
+  return x*x*(3.0-2.0*x);
+}

@@ -24,7 +24,7 @@ namespace Algorithm
 
 		namespace Setting
 		{
-			float TEMPORAL_ACCELERATION_MUL = 4.0;
+			float TEMPORAL_ACCELERATION_MUL = 2.0;
 
 			float MAX_DISTANCE_IS_FOVEAL_REGION = 80.0f;
 			float MIN_SIZE_IS_FOVEAL_REGION = 4;

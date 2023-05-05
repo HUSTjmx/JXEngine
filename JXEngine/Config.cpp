@@ -5,13 +5,13 @@ namespace CONFIG
 
 	namespace SCREEN_CONFIG
 	{
-		unsigned int SCR_WIDTH = 1000;
-		unsigned int SCR_HEIGHT = 800;
+		unsigned int SCR_WIDTH = 1600;
+		unsigned int SCR_HEIGHT = 1200;
 
 		namespace FOVEA
 		{
-			unsigned int FOVEA_WIDTH = 1000;
-			unsigned int FOVEA_HEIGHT = 800;
+			unsigned int FOVEA_WIDTH = 1600;
+			unsigned int FOVEA_HEIGHT = 1200;
 		}
 	}
 
@@ -181,4 +181,16 @@ namespace CONFIG
 		const std::string COLOR = address + "Color.cg";
 		const std::string PAPER = address + "Paper.cg";
 	}
+}
+
+namespace PaperShow
+{
+	int sceneID = 1;
+	int objID = 3;
+	int objIsWai = 0;
+
+	int methodID = 0;
+	int shadowID = 0;
+
+	int isUseGaussBlur = 1;
 }

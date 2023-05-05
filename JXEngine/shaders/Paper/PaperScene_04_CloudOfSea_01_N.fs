@@ -10,7 +10,7 @@ uniform mat4 projection;
 uniform mat4 projection_inv;
 uniform mat4 projection_pre;
 
-#define AnimaControl 0.0
+#define AnimaControl 1.0
 
 
 mat2 rot(in float a){float c = cos(a), s = sin(a);return mat2(c,s,-s,c);}

@@ -1,0 +1,31 @@
+
+// Optimizaton for getting the saturation (HSV Type) of a rgb color.
+// ...
+float GetSat_V1(vec3 c)
+{
+    c.gb = vec2(max(c.g, c.b), min(c.g, c.b));
+	c.rg = vec2(max(c.r, c.g), min(c.r, c.g));   
+	return (c.r - min(c.g, c.b)) / (c.r + 1e-7);
+}
+
+// Further optimization for getting the saturation.
+// ...
+float GetSat_V2(vec3 c)
+{
+    float mi = min(min(c.x, c.y), c.z);
+    float ma = max(max(c.x, c.y), c.z);
+    return (ma - mi)/(ma+ 1e-7);
+}
+
+// Improved rgb lerp.
+// ...
+vec3 iLerp(in vec3 a, in vec3 b, in float x)
+{
+    vec3 ic = mix(a, b, x) + vec3(1e-6, 0., 0.);
+    float sd = abs(getsat(ic) - mix(getsat(a), getsat(b), x));
+    vec3 dir = normalize(vec3(2. * ic.x - ic.y - ic.z, 2. * ic.y - ic.x - ic.z, 2. * ic.z - ic.y - ic.x));
+    float lgt = dot(vec3(1.0), ic);
+    float ff = dot(dir, normalize(ic));
+    ic += 1.5 * dir * sd * ff * lgt;
+    return clamp(ic, 0., 1.);
+}

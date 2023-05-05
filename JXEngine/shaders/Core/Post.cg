@@ -23,7 +23,8 @@ float K(float a){
 // ...
 float K_inv(float a){
     return sqrt(a);
-    return a;
+    return sqrt(sqrt(a));
+   // return a;
 }
 
 // Get Fovea Point

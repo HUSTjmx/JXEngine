@@ -76,5 +76,62 @@ namespace INPUT
 	{
 		inputCamera->ProcessMouseScroll(yoffset);
 	}
+
+	int addWin = 0;
+	int sceneID = 0;
+	int objID = 0;
+	int method_ID = 0;
+	bool useGauss = true;
+	int changeID = 0;
+	std::string exePath = "sonExe";
+	void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+	{
+		if (key == GLFW_KEY_F && action == GLFW_PRESS)
+		{
+			sceneID++;
+			sceneID = sceneID % 4;
+		}
+
+		if (key == GLFW_KEY_G && action == GLFW_PRESS)
+		{
+			method_ID++;
+			method_ID = method_ID % 4;
+			if (sceneID == 0)method_ID = 0;
+		}
+
+		if (key == GLFW_KEY_H && action == GLFW_PRESS)
+		{
+			if (sceneID != 1)objID = 0;
+			else
+			{
+				objID++;
+				objID = objID % 3;
+			}
+		}
+
+		std::string exePath2 = exePath + "\\JXEngine_" + std::to_string(sceneID) + '_' + std::to_string(method_ID) + '_' + std::to_string(objID) + ".exe";
+
+
+		if (key == GLFW_KEY_J && action == GLFW_PRESS)
+		{
+			useGauss = !useGauss;
+		}
+
+		if (key == GLFW_KEY_K && action == GLFW_PRESS)
+		{
+			changeID++;
+			changeID = changeID % 3;
+		}
+
+		if (key == GLFW_KEY_Z && action == GLFW_PRESS)
+		{
+			if(!useGauss)exePath2 = exePath + "\\JXEngine_2_2_0_NGauss.exe";
+			if (changeID == 1)exePath2 = exePath + "\\Change\\JXEngine_1_0_1_Change.exe";
+			if (changeID == 2)exePath2 = exePath + "\\Change\\JXEngine_1_0_2_Change.exe";
+			if (changeID == 3)exePath2 = exePath + "\\Change\\JXEngine_2_0_0_Change.exe";
+			//std::cout << exePath2 << std::endl;
+			system(exePath2.c_str());
+		}
+	}
 }
 

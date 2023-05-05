@@ -4,13 +4,15 @@ D:\Projects\JXEngine\JXEngine\App.cpp(9,1): warning C4103: 包括标题后更改
 D:\Projects\JXEngine\JXEngine\Material.h(21,16): warning C4099: “Transform”: 类型名称以前使用“struct”现在使用的是“class”
 D:\Projects\JXEngine\JXEngine\Actor.h(16): message : 参见“Transform”的声明
 D:\Projects\JXEngine\JXEngine\TFRM_Algorithm.h(5,20): warning C4091: “extern ”: 没有声明变量时忽略“Camera”的左侧
-D:\Projects\JXEngine\JXEngine\App.cpp(124,20): warning C4018: “<”: 有符号/无符号不匹配
-D:\Projects\JXEngine\JXEngine\App.cpp(156,19): warning C4305: “=”: 从“double”到“float”截断
+D:\Projects\JXEngine\JXEngine\App.cpp(131,20): warning C4018: “<”: 有符号/无符号不匹配
+D:\Projects\JXEngine\JXEngine\App.cpp(163,19): warning C4305: “=”: 从“double”到“float”截断
+D:\Projects\JXEngine\JXEngine\App.cpp(755,116): warning C4244: “参数”: 从“double”转换到“float”，可能丢失数据
+D:\Projects\JXEngine\JXEngine\App.cpp(759,118): warning C4305: “参数”: 从“double”到“float”截断
 D:\Projects\JXEngine\JXEngine\Counted.h(53,17): warning C4018: “>=”: 有符号/无符号不匹配
 D:\Projects\JXEngine\JXEngine\Counted.h(52): message : 在编译 类 模板 成员函数“void Counted<DirectionalLight>::init(void)”时
 D:\Projects\JXEngine\JXEngine\Counted.h(41): message : 查看对正在编译的函数 模板 实例化“void Counted<DirectionalLight>::init(void)”的引用
 D:\Projects\JXEngine\JXEngine\Counted.h(40): message : 在编译 类 模板 成员函数“Counted<DirectionalLight>::Counted(void)”时
 D:\Projects\JXEngine\JXEngine\Light.h(63): message : 查看对正在编译的函数 模板 实例化“Counted<DirectionalLight>::Counted(void)”的引用
 D:\Projects\JXEngine\JXEngine\Light.h(59): message : 查看对正在编译的 类 模板 实例化“Counted<DirectionalLight>”的引用
-D:\Projects\JXEngine\JXEngine\App.cpp(130): warning C4715: “CheckExtension”: 不是所有的控件路径都返回值
+D:\Projects\JXEngine\JXEngine\App.cpp(137): warning C4715: “CheckExtension”: 不是所有的控件路径都返回值
   JXEngine.vcxproj -> D:\Projects\JXEngine\JXEngine\JXEngine.exe

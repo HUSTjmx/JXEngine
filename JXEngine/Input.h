@@ -19,6 +19,7 @@ namespace INPUT
 	extern void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 	extern void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 	extern void processInput(GLFWwindow* window);
+	extern void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 }
 

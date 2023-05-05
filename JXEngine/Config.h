@@ -179,6 +179,18 @@ namespace CONFIG
 	}
 }
 
+namespace PaperShow
+{
+	extern int sceneID;
+	extern int objID;
+	extern int objIsWai;
+
+	extern int methodID;
+	extern int shadowID;
+
+	extern int isUseGaussBlur;
+}
+
 enum class METHOD_TYPE
 {
 	GroudTruth,
