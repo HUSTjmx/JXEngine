@@ -196,7 +196,7 @@ void Test()
 // 2 : Standford Rabbits
 // 3 : Cloud Sea
 #define SCENE_ID 2
-#define OBJ_ID 3
+#define OBJ_ID 1
 #define OBJ_IS_WAI 0
 
 // 0 : Origin Method
@@ -261,97 +261,6 @@ void Loop(GLFWwindow* window)
 	frame->NotifyGL();
 	frame->AddRenderObject(true);
 
-#pragma region CloudScene_MAT_0
-	/*auto cloud_shader_01 = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_02_vs.c_str(),
-		SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_02_fs.c_str());
-	cloud_shader_01->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
-	cloud_shader_01->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
-	cloud_shader_01->Compile();
-	auto cloud_mat_01 = std::make_shared<Material>(cloud_shader_01);
-	cloud_mat_01->AddTexture(noisyTex);
-	cloud_mat_01->AddTexture(frame->textureBuffers[1]);
-	cloud_mat_01->AddTexture(frame->textureBuffers[2]);
-	cloud_mat_01->AddTexture(frame->textureBuffers[3]);
-	cloud_mat_01->LinkTextureForShader();
-	cloud_mat_01->SetJitter(true);*/
-#pragma endregion
-
-#pragma region MysteryMountains_MAT
-	/*auto MysteryMoutains_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::FBM_GREAT_EFFECT::MysteryMoutains_vs.c_str(),
-		SHADER_PATH::RAY_MARCHING::FBM_GREAT_EFFECT::MysteryMoutains_fs.c_str());
-	MysteryMoutains_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::RAY_MARCHING);
-	MysteryMoutains_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
-	MysteryMoutains_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
-	MysteryMoutains_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
-	MysteryMoutains_shader->Compile();
-	auto MysteryMoutains_mat = std::make_shared<Material>(MysteryMoutains_shader);
-	MysteryMoutains_mat->AddTexture(noisyTex);
-	MysteryMoutains_mat->AddTexture(preTex);
-	MysteryMoutains_mat->LinkTextureForShader();*/
-#pragma endregion
-
-#pragma region PlayingMarble
-	//auto PlayingMarble_Shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::MEDIA::PlayingMarble_vs.c_str(),
-	//	SHADER_PATH::RAY_MARCHING::MEDIA::PlayingMarble_fs.c_str());
-	//PlayingMarble_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
-	//PlayingMarble_Shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
-	//PlayingMarble_Shader->Compile();
-	//auto PlayingMarble_mat = std::make_shared<Material>(PlayingMarble_Shader);
-	//// Todo. Add history texture.
-	//cloud_mat_01->AddTexture(frame->textureBuffers[1]);
-	//cloud_mat_01->AddTexture(frame->textureBuffers[2]);
-	//cloud_mat_01->AddTexture(frame->textureBuffers[3]);
-	//PlayingMarble_mat->LinkTextureForShader();
-	//PlayingMarble_mat->SetJitter(false);
-#pragma endregion
-
-#pragma region StaicScene_01
-//	auto StaticScene_01_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PAPER::StaticScene_01_vs.c_str(),
-//		SHADER_PATH::RAY_MARCHING::PAPER::StaticScene_01_fs.c_str());
-//	StaticScene_01_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
-//	StaticScene_01_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
-//	StaticScene_01_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
-//	StaticScene_01_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
-//	StaticScene_01_shader->Compile();
-//	auto StaticScene_01_Mat = std::make_shared<Material>(StaticScene_01_shader);
-//	StaticScene_01_Mat->AddTexture(frame->textureBuffers[1]);
-//	StaticScene_01_Mat->AddTexture(frame->textureBuffers[2]);
-//	StaticScene_01_Mat->AddTexture(frame->textureBuffers[3]);
-//	StaticScene_01_Mat->LinkTextureForShader();
-//	StaticScene_01_Mat->SetJitter(false);
-//#pragma endregion
-
-#pragma region StaticScene_02
-	/*auto StaticScene_02_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PAPER::StaticScene_02_vs.c_str(),
-		SHADER_PATH::RAY_MARCHING::PAPER::StaticScene_02_fs.c_str());
-	StaticScene_02_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
-	StaticScene_02_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
-	StaticScene_02_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
-	StaticScene_02_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
-	StaticScene_02_shader->Compile();
-	auto StaticScene_02_Mat = std::make_shared<Material>(StaticScene_02_shader);
-	StaticScene_02_Mat->AddTexture(frame->textureBuffers[1]);
-	StaticScene_02_Mat->AddTexture(frame->textureBuffers[2]);
-	StaticScene_02_Mat->AddTexture(frame->textureBuffers[3]);
-	StaticScene_02_Mat->LinkTextureForShader();
-	StaticScene_02_Mat->SetJitter(false);*/
-#pragma endregion
-
-//#pragma region StaticScene_03
-//	auto StaticScene_03_shader = std::make_shared<ShaderCompiler>(SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_01_vs.c_str(),
-//		SHADER_PATH::RAY_MARCHING::PURE_CLOUD::Cloud_01_fs.c_str());
-//	StaticScene_03_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::BRDF);
-//	StaticScene_03_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::LIGHT);
-//	StaticScene_03_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::MATH);
-//	StaticScene_03_shader->AddIncludeFile(CONFIG::SHADING_INCLUDE_CORE::UNIFORM);
-//	StaticScene_03_shader->Compile();
-//	auto StaticScene_03_Mat = std::make_shared<Material>(StaticScene_03_shader);
-//	StaticScene_03_Mat->AddTexture(frame->textureBuffers[1]);
-//	StaticScene_03_Mat->AddTexture(frame->textureBuffers[2]);
-//	StaticScene_03_Mat->AddTexture(frame->textureBuffers[3]);
-//	StaticScene_03_Mat->LinkTextureForShader();
-//	StaticScene_03_Mat->SetJitter(false);
-//#pragma endregion
 
     // Main Shader
 	auto PaperScene_Show = std::make_shared<Material>();

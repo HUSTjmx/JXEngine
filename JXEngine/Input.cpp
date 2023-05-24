@@ -105,7 +105,7 @@ namespace INPUT
 			else
 			{
 				objID++;
-				objID = objID % 3;
+				objID = objID % 4;
 			}
 		}
 

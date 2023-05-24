@@ -32,7 +32,7 @@ uniform mat4 projection_pre;
 //0, 1 or 2
 #define BASIC_ANIMATED_MEDIA 1
 #define BREAK_POINT_TEST 1
-#define BREAK_POINT_VALUE 2.0
+#define BREAK_POINT_VALUE 4.0
 // 0, 1
 #define ROTATE_MEDIA 0
 
